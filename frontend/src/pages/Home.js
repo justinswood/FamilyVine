@@ -1,26 +1,24 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-function Home() {
+const Home = () => {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-center p-6">
-      <img src="/logo.png" alt="FamilyVine Logo" className="w-32 mb-4" />
-      <h1 className="text-4xl font-bold mb-2">Welcome to FamilyVine</h1>
-      <p className="text-lg text-gray-600 mb-6">Preserve your family's legacy, beautifully.</p>
-
+    <div className="max-w-4xl mx-auto text-center py-20">
+      <h1 className="text-4xl font-bold text-green-700 mb-4">Welcome to FamilyVine</h1>
+      <p className="text-lg text-gray-700 mb-8">
+        FamilyVine helps you visually map and preserve your family's legacy. Add members, photos, life stories,
+        and see how you're all connected—across generations and geography.
+      </p>
       <div className="space-x-4">
-        <Link to="/members/1" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-          View a Member
+        <Link to="/members" className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+          View Members
         </Link>
-        <Link to="/add" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+        <Link to="/add" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
           Add Member
-        </Link>
-        <Link to="/map" className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded">
-          Explore Map
         </Link>
       </div>
     </div>
   );
-}
+};
 
 export default Home;
