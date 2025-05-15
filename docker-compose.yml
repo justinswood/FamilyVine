@@ -1,4 +1,3 @@
-
 services:
   frontend:
     build: ./frontend
@@ -17,7 +16,8 @@ services:
       - "5000:5000"
     volumes:
       - ./backend:/app
-      - ./uploads:/app/uploads
+      - uploads_data:/app/uploads
+      - gallery_uploads:/app/uploads/gallery
     depends_on:
       - db
 
@@ -31,6 +31,24 @@ services:
       - "5432:5432"
     volumes:
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - db_data:/var/lib/postgresql/data
 
 volumes:
   db_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: C:/Docker-Compose/FamilyVine/db_data
+  uploads_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: C:/Docker-Compose/FamilyVine/uploads
+  gallery_uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: C:/Docker-Compose/FamilyVine/uploads/gallery
