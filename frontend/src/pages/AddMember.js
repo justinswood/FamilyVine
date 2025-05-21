@@ -71,8 +71,15 @@ const AddMember = () => {
       // Use FormData for file uploads
       const form = new FormData();
       
+      // Format dates properly before adding to FormData
+      const formattedData = {
+        ...formData,
+        birth_date: formData.birth_date ? formData.birth_date.split('T')[0] : '',
+        death_date: formData.death_date ? formData.death_date.split('T')[0] : ''
+      };
+      
       // Add all form fields to FormData
-      Object.entries(formData).forEach(([key, value]) => {
+      Object.entries(formattedData).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           form.append(key, value);
         }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import PhotoTagger from '../components/PhotoTagger';
+import PhotoTagging from '../components/PhotoTagging'; // Changed from PhotoTagger
 
 const AlbumView = () => {
   const { id } = useParams();
@@ -123,8 +123,17 @@ const AlbumView = () => {
     setShowTagger(true);
   };
 
-  const handleTagUpdate = () => {
-    fetchAlbum(); // Refresh album data to show updated tag counts
+  // Updated handlers for the new PhotoTagging component
+  const handleTagSaved = (newTag) => {
+    console.log('New tag saved:', newTag);
+    // Optionally refresh album data to update any tag counts
+    fetchAlbum();
+  };
+
+  const handleTagDeleted = (tagId) => {
+    console.log('Tag deleted:', tagId);
+    // Optionally refresh album data to update any tag counts
+    fetchAlbum();
   };
 
   // New function to handle photo enlargement
@@ -423,17 +432,22 @@ const AlbumView = () => {
         </div>
       )}
 
-      {/* Photo Tagger Modal */}
+      {/* Photo Tagging Modal - Updated to use new PhotoTagging component */}
       {showTagger && selectedPhoto && (
-        <PhotoTagger
-          photo={selectedPhoto}
-          album={album}
-          onClose={() => {
-            setShowTagger(false);
-            setSelectedPhoto(null);
-          }}
-          onTagAdded={handleTagUpdate}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="max-w-6xl w-full max-h-full overflow-auto">
+            <PhotoTagging
+              photo={selectedPhoto}
+              albumId={album.id}
+              onSaveTag={handleTagSaved}
+              onDeleteTag={handleTagDeleted}
+              onClose={() => {
+                setShowTagger(false);
+                setSelectedPhoto(null);
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

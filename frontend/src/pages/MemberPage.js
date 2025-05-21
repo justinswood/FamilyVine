@@ -55,6 +55,55 @@ const MemberPage = () => {
     setShowAddRelationship(false);
   };
 
+  // Helper function to format dates correctly (avoids timezone issues)
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    
+    // Extract just the date part (YYYY-MM-DD) and parse manually
+    const dateOnly = dateString.split('T')[0];
+    const [year, month, day] = dateOnly.split('-');
+    
+    // Create date using local timezone (not UTC)
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Helper function to calculate age
+  const calculateAge = (birthDateString, deathDateString = null) => {
+    if (!birthDateString) return null;
+    
+    // Parse birth date
+    const birthOnly = birthDateString.split('T')[0];
+    const [birthYear, birthMonth, birthDay] = birthOnly.split('-').map(Number);
+    const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
+    
+    // Use death date if person is deceased, otherwise use current date
+    let endDate;
+    if (deathDateString) {
+      const deathOnly = deathDateString.split('T')[0];
+      const [deathYear, deathMonth, deathDay] = deathOnly.split('-').map(Number);
+      endDate = new Date(deathYear, deathMonth - 1, deathDay);
+    } else {
+      endDate = new Date();
+    }
+    
+    // Calculate age
+    let age = endDate.getFullYear() - birthDate.getFullYear();
+    const monthDiff = endDate.getMonth() - birthDate.getMonth();
+    
+    // Adjust age if birthday hasn't occurred this year
+    if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    return age;
+  };
+
   if (loading || !member) {
     return <p>Loading...</p>;
   }
@@ -70,13 +119,26 @@ const MemberPage = () => {
           />
         )}
         <h1 className="text-2xl font-bold mb-1">
-          {member.first_name} {member.last_name}
+          {member.first_name} {member.middle_name && `${member.middle_name} `}{member.last_name}
         </h1>
         {member.pronouns && <p className="text-gray-500 italic">{member.pronouns}</p>}
         {member.birth_date && (
-          <p className="text-gray-600 mt-2">
-            {new Date(member.birth_date).toLocaleDateString()} – {member.death_date ? new Date(member.death_date).toLocaleDateString() : 'Present'}
-          </p>
+          <div className="text-gray-600 mt-2 text-center">
+            <p>
+              {formatDate(member.birth_date)} – {member.death_date ? formatDate(member.death_date) : 'Present'}
+            </p>
+            {(() => {
+              const age = calculateAge(member.birth_date, member.death_date);
+              if (age !== null) {
+                return (
+                  <p className="text-sm text-gray-500 mt-1">
+                    {member.death_date ? `(Lived ${age} years)` : `(${age} years old)`}
+                  </p>
+                );
+              }
+              return null;
+            })()}
+          </div>
         )}
 
         <div className="text-left mt-6 space-y-2">

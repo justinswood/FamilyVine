@@ -46,6 +46,42 @@ const upload = multer({
   }
 });
 
+// Helper function to parse dates properly (fixes timezone issues)
+const parseDate = (dateStr) => {
+  if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return null;
+  
+  // Handle various input formats
+  let dateInput = dateStr.toString();
+  
+  // If the input contains 'T' (ISO format), strip the time part
+  if (dateInput.includes('T')) {
+    dateInput = dateInput.split('T')[0];
+  }
+  
+  // If the input contains 'Z' or timezone info, handle it
+  if (dateInput.includes('Z') || dateInput.match(/[+-]\d{2}:\d{2}$/)) {
+    const date = new Date(dateStr);
+    return date.toISOString().split('T')[0];
+  }
+  
+  // Check if it's already in YYYY-MM-DD format
+  if (dateInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    return dateInput;
+  }
+  
+  // Try to parse as date and format
+  try {
+    const date = new Date(dateStr);
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().split('T')[0];
+    }
+  } catch (e) {
+    console.warn(`Could not parse date: ${dateStr}`);
+  }
+  
+  return null;
+};
+
 router.get('/', async (req, res) => {
   const result = await pool.query('SELECT * FROM members ORDER BY id DESC');
   res.json(result.rows);
@@ -72,7 +108,8 @@ router.post('/', upload.single('photo'), async (req, res) => {
       'INSERT INTO members (first_name, middle_name, last_name, relationship, gender, is_alive, birth_date, death_date, birth_place, death_place, location, occupation, pronouns, email, phone, photo_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *',
       [
         first_name, middle_name, last_name, relationship, gender, is_alive === 'true',
-        birth_date || null, death_date || null, birth_place || null, death_place || null,
+        parseDate(birth_date), parseDate(death_date), // Fix: Use parseDate function
+        birth_place || null, death_place || null,
         location || null, occupation || null, pronouns || null, email || null, phone || null, photo_url
       ]
     );
@@ -108,7 +145,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
       [
         first_name, middle_name, last_name,
         relationship, gender, is_alive === 'true',
-        birth_date || null, death_date || null,
+        parseDate(birth_date), parseDate(death_date), // Fix: Use parseDate function
         birth_place || null, death_place || null,
         location || null, occupation || null, pronouns || null,
         email || null, phone || null, finalPhotoUrl,
@@ -249,9 +286,9 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
           member.middle_name || null,
           member.last_name,
           member.gender || null,
-          member.birth_date || null,
+          parseDate(member.birth_date), // Fix: Use parseDate function
           member.birth_place || null,
-          member.death_date || null,
+          parseDate(member.death_date), // Fix: Use parseDate function
           member.death_place || null,
           member.location || null,
           member.occupation || null,

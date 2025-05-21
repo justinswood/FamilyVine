@@ -303,21 +303,13 @@ router.put('/:id/cover/:photoId', async (req, res) => {
 router.post('/:albumId/photos/:photoId/tags', async (req, res) => {
   try {
     const { photoId } = req.params;
-    const { 
-      member_id, 
-      x_coordinate = null, 
-      y_coordinate = null,
-      width = null,
-      height = null,
-      confidence = null,
-      is_verified = true 
-    } = req.body;
+    const { member_id } = req.body;
     
     if (!member_id) {
       return res.status(400).json({ error: 'Member ID is required' });
     }
     
-    // Check if this member is already tagged in this photo
+    // Check if this tag already exists
     const existingTag = await pool.query(
       'SELECT id FROM photo_tags WHERE photo_id = $1 AND member_id = $2',
       [photoId, member_id]
@@ -328,162 +320,16 @@ router.post('/:albumId/photos/:photoId/tags', async (req, res) => {
     }
     
     const query = `
-      INSERT INTO photo_tags (
-        photo_id, member_id, x_coordinate, y_coordinate, 
-        width, height, confidence, is_verified
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO photo_tags (photo_id, member_id, is_verified)
+      VALUES ($1, $2, true)
       RETURNING *
     `;
     
-    const values = [
-      photoId, member_id, x_coordinate, y_coordinate,
-      width, height, confidence, is_verified
-    ];
-    
-    const result = await pool.query(query, values);
-    
-    // Get member details for response
-    const memberQuery = `SELECT first_name, last_name FROM members WHERE id = $1`;
-    const memberResult = await pool.query(memberQuery, [member_id]);
-    const member = memberResult.rows[0];
-    
-    res.status(201).json({
-      ...result.rows[0],
-      member_name: `${member.first_name} ${member.last_name}`,
-      x_coordinate: result.rows[0].x_coordinate ? parseFloat(result.rows[0].x_coordinate) : null,
-      y_coordinate: result.rows[0].y_coordinate ? parseFloat(result.rows[0].y_coordinate) : null,
-      width: result.rows[0].width ? parseFloat(result.rows[0].width) : null,
-      height: result.rows[0].height ? parseFloat(result.rows[0].height) : null,
-      confidence: result.rows[0].confidence ? parseFloat(result.rows[0].confidence) : null
-    });
+    const result = await pool.query(query, [photoId, member_id]);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error adding photo tag:', error);
     res.status(500).json({ error: 'Failed to add tag' });
-  }
-});
-
-// Get all tags for a specific photo
-router.get('/:albumId/photos/:photoId/tags', async (req, res) => {
-  try {
-    const { photoId } = req.params;
-    
-    const query = `
-      SELECT 
-        pt.*,
-        m.first_name,
-        m.last_name,
-        m.photo_url
-      FROM photo_tags pt
-      JOIN members m ON pt.member_id = m.id
-      WHERE pt.photo_id = $1
-      ORDER BY pt.tagged_at DESC
-    `;
-    
-    const result = await pool.query(query, [photoId]);
-    
-    // Transform data to match frontend expectations
-    const tags = result.rows.map(tag => ({
-      id: tag.id,
-      member_id: tag.member_id,
-      member_name: `${tag.first_name} ${tag.last_name}`,
-      x_coordinate: tag.x_coordinate ? parseFloat(tag.x_coordinate) : null,
-      y_coordinate: tag.y_coordinate ? parseFloat(tag.y_coordinate) : null,
-      width: tag.width ? parseFloat(tag.width) : null,
-      height: tag.height ? parseFloat(tag.height) : null,
-      confidence: tag.confidence ? parseFloat(tag.confidence) : null,
-      is_verified: tag.is_verified,
-      tagged_by: tag.tagged_by,
-      tagged_at: tag.tagged_at,
-      photo_id: tag.photo_id
-    }));
-    
-    res.json(tags);
-  } catch (error) {
-    console.error('Error fetching photo tags:', error);
-    res.status(500).json({ error: 'Failed to fetch photo tags' });
-  }
-});
-
-// Update/edit a tag
-router.put('/:albumId/photos/:photoId/tags/:tagId', async (req, res) => {
-  try {
-    const { tagId } = req.params;
-    const { 
-      is_verified,
-      x_coordinate,
-      y_coordinate,
-      width,
-      height,
-      confidence
-    } = req.body;
-    
-    // Build dynamic update query based on provided fields
-    const updateFields = [];
-    const values = [];
-    let valueIndex = 1;
-    
-    if (is_verified !== undefined) {
-      updateFields.push(`is_verified = $${valueIndex++}`);
-      values.push(is_verified);
-    }
-    if (x_coordinate !== undefined) {
-      updateFields.push(`x_coordinate = $${valueIndex++}`);
-      values.push(x_coordinate);
-    }
-    if (y_coordinate !== undefined) {
-      updateFields.push(`y_coordinate = $${valueIndex++}`);
-      values.push(y_coordinate);
-    }
-    if (width !== undefined) {
-      updateFields.push(`width = $${valueIndex++}`);
-      values.push(width);
-    }
-    if (height !== undefined) {
-      updateFields.push(`height = $${valueIndex++}`);
-      values.push(height);
-    }
-    if (confidence !== undefined) {
-      updateFields.push(`confidence = $${valueIndex++}`);
-      values.push(confidence);
-    }
-    
-    if (updateFields.length === 0) {
-      return res.status(400).json({ error: 'No fields to update' });
-    }
-    
-    const query = `
-      UPDATE photo_tags 
-      SET ${updateFields.join(', ')}
-      WHERE id = $${valueIndex}
-      RETURNING *
-    `;
-    values.push(tagId);
-    
-    const result = await pool.query(query, values);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Tag not found' });
-    }
-    
-    // Get updated tag with member info
-    const updatedTag = result.rows[0];
-    const memberQuery = `SELECT first_name, last_name FROM members WHERE id = $1`;
-    const memberResult = await pool.query(memberQuery, [updatedTag.member_id]);
-    const member = memberResult.rows[0];
-    
-    res.json({
-      ...updatedTag,
-      member_name: `${member.first_name} ${member.last_name}`,
-      x_coordinate: updatedTag.x_coordinate ? parseFloat(updatedTag.x_coordinate) : null,
-      y_coordinate: updatedTag.y_coordinate ? parseFloat(updatedTag.y_coordinate) : null,
-      width: updatedTag.width ? parseFloat(updatedTag.width) : null,
-      height: updatedTag.height ? parseFloat(updatedTag.height) : null,
-      confidence: updatedTag.confidence ? parseFloat(updatedTag.confidence) : null
-    });
-  } catch (error) {
-    console.error('Error updating tag:', error);
-    res.status(500).json({ error: 'Failed to update tag' });
   }
 });
 

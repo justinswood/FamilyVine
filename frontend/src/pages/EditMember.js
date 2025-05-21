@@ -30,7 +30,13 @@ const EditMember = () => {
   useEffect(() => {
     axios.get(`${process.env.REACT_APP_API}/api/members/${id}`)
       .then(res => {
-        const memberData = { ...res.data, is_alive: res.data.is_alive ? 'true' : 'false' };
+        const memberData = { 
+          ...res.data, 
+          is_alive: res.data.is_alive ? 'true' : 'false',
+          // Format dates to YYYY-MM-DD format for date inputs
+          birth_date: res.data.birth_date ? res.data.birth_date.split('T')[0] : '',
+          death_date: res.data.death_date ? res.data.death_date.split('T')[0] : ''
+        };
         setFormData(memberData);
         // Set preview URL if member has a photo
         if (memberData.photo_url) {
@@ -42,7 +48,14 @@ const EditMember = () => {
 
   const handleChange = e => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // For date fields, ensure we store only YYYY-MM-DD format
+    if ((name === 'birth_date' || name === 'death_date') && value) {
+      const dateValue = value.includes('T') ? value.split('T')[0] : value;
+      setFormData(prev => ({ ...prev, [name]: dateValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleFileChange = e => {
@@ -85,8 +98,15 @@ const EditMember = () => {
       // Always use FormData for member updates since we might have files
       const form = new FormData();
       
+      // Format dates properly before adding to FormData
+      const formattedData = {
+        ...formData,
+        birth_date: formData.birth_date ? formData.birth_date.split('T')[0] : '',
+        death_date: formData.death_date ? formData.death_date.split('T')[0] : ''
+      };
+      
       // Add all form fields to FormData
-      Object.entries(formData).forEach(([key, value]) => {
+      Object.entries(formattedData).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           form.append(key, value);
         }
@@ -111,14 +131,29 @@ const EditMember = () => {
     }
   };
 
-  // Cleanup preview URL when component unmounts
-  useEffect(() => {
-    return () => {
-      if (previewUrl && previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [previewUrl]);
+  const handleDelete = async () => {
+    const memberName = `${formData.first_name} ${formData.last_name}`;
+    
+    // Double confirmation for extra safety
+    const confirmMessage = `Are you sure you want to delete ${memberName}? This action cannot be undone.`;
+    const confirmed = window.confirm(confirmMessage);
+    
+    if (!confirmed) return;
+    
+    // Second confirmation
+    const secondConfirm = window.confirm('This will permanently delete all associated data. Are you absolutely sure?');
+    
+    if (!secondConfirm) return;
+    
+    try {
+      await axios.delete(`${process.env.REACT_APP_API}/api/members/${id}`);
+      alert(`${memberName} has been deleted successfully.`);
+      navigate('/members'); // Navigate back to member list
+    } catch (err) {
+      console.error('Error deleting member:', err);
+      alert('Error deleting member. Please try again.');
+    }
+  };
 
   return (
     <div className="max-w-2xl mx-auto p-4">
@@ -236,9 +271,21 @@ const EditMember = () => {
           />
         </div>
 
-        <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
-          Save Changes
-        </button>
+        <div className="flex space-x-4 pt-4">
+          <button 
+            type="submit" 
+            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition-colors"
+          >
+            Save Changes
+          </button>
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition-colors"
+          >
+            Delete Member
+          </button>
+        </div>
       </form>
 
       {/* Photo Cropper Modal */}
