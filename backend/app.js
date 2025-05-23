@@ -10,6 +10,7 @@ const app = express();
 const corsOptions = {
   origin: [
     'http://localhost:3000',           // Local development
+    'http://192.168.1.120:3000',       // Local network access
     'https://family.techwoods.cc',     // Production domain
     'http://family.techwoods.cc'       // HTTP fallback
   ],

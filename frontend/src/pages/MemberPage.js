@@ -1,8 +1,11 @@
+// Update your frontend/src/pages/MemberPage.js
+
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import RelationshipsList from '../components/RelationshipsList';
 import AddRelationship from '../components/AddRelationship';
+import ProfileImage from '../components/ProfileImage'; // Add this import
 
 const MemberPage = () => {
   const { id } = useParams();
@@ -50,8 +53,6 @@ const MemberPage = () => {
   };
 
   const handleRelationshipAdded = () => {
-    // This will trigger a re-render of the RelationshipsList component
-    // since the key prop will change
     setShowAddRelationship(false);
   };
 
@@ -59,11 +60,8 @@ const MemberPage = () => {
   const formatDate = (dateString) => {
     if (!dateString) return '';
     
-    // Extract just the date part (YYYY-MM-DD) and parse manually
     const dateOnly = dateString.split('T')[0];
     const [year, month, day] = dateOnly.split('-');
-    
-    // Create date using local timezone (not UTC)
     const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     
     return date.toLocaleDateString('en-US', {
@@ -77,12 +75,10 @@ const MemberPage = () => {
   const calculateAge = (birthDateString, deathDateString = null) => {
     if (!birthDateString) return null;
     
-    // Parse birth date
     const birthOnly = birthDateString.split('T')[0];
     const [birthYear, birthMonth, birthDay] = birthOnly.split('-').map(Number);
     const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
     
-    // Use death date if person is deceased, otherwise use current date
     let endDate;
     if (deathDateString) {
       const deathOnly = deathDateString.split('T')[0];
@@ -92,11 +88,9 @@ const MemberPage = () => {
       endDate = new Date();
     }
     
-    // Calculate age
     let age = endDate.getFullYear() - birthDate.getFullYear();
     const monthDiff = endDate.getMonth() - birthDate.getMonth();
     
-    // Adjust age if birthday hasn't occurred this year
     if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
       age--;
     }
@@ -111,13 +105,15 @@ const MemberPage = () => {
   return (
     <div className="max-w-3xl mx-auto p-4">
       <div className="bg-white shadow rounded p-6 text-center">
-        {member.photo_url && (
-          <img
-            src={`${process.env.REACT_APP_API}/${member.photo_url}`}
-            alt={member.first_name + ' ' + member.last_name}
-            className="mx-auto mb-4 w-40 h-40 object-cover rounded-full border"
+        {/* Replace the old image code with ProfileImage component */}
+        <div className="mb-4 flex justify-center">
+          <ProfileImage 
+            member={member} 
+            size="large"
+            className="shadow-lg"
           />
-        )}
+        </div>
+
         <h1 className="text-2xl font-bold mb-1">
           {member.first_name} {member.middle_name && `${member.middle_name} `}{member.last_name}
         </h1>
