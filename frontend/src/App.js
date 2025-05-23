@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import Home from './pages/HomePage';
+import HomePage from './pages/HomePage';
 import AddMember from './pages/AddMember';
 import EditMember from './pages/EditMember';
 import MemberPage from './pages/MemberPage';
@@ -12,7 +12,7 @@ import AlbumView from './pages/AlbumView';
 import FamilyTree from './pages/FamilyTree';
 import VisualTreePage from './pages/VisualTreePage';
 import Settings from './pages/Settings';
-import HomePage from './pages/HomePage';
+import TimelinePage from './pages/TimelinePage';
 
 function App() {
   useEffect(() => {
@@ -97,7 +97,13 @@ function App() {
                 Visual Tree
               </Link>
               <Link 
-                to="/settings" 
+                to="/timeline" 
+                className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+              >
+                Timeline
+              </Link>
+              <Link 
+                to="/settings"
                 className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
               >
                 Settings
@@ -106,7 +112,7 @@ function App() {
           </div>
         </nav>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/add" element={<AddMember />} />
           <Route path="/members" element={<MemberList />} />
           <Route path="/members/:id" element={<MemberPage />} />
@@ -118,7 +124,7 @@ function App() {
           <Route path="/family-tree/:id" element={<FamilyTree />} />
           <Route path="/visual-tree" element={<VisualTreePage />} />
           <Route path="/settings" element={<Settings />} />
-		  <Route path="/" element={<HomePage />} />
+          <Route path="/timeline" element={<TimelinePage />} />
         </Routes>
       </div>
     </BrowserRouter>

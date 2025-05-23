@@ -2,24 +2,34 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "3000:80"
     environment:
-      - CHOKIDAR_USEPOLLING=true
-    volumes:
-      - ./frontend:/app
+      - REACT_APP_API=https://family.techwoods.cc
+      - NODE_ENV=production
     depends_on:
       - backend
+    restart: unless-stopped
 
   backend:
     build: ./backend
     ports:
       - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=familytree
+      - DB_USER=user
+      - DB_PASSWORD=pass
+      - CORS_ORIGIN=https://family.techwoods.cc
     volumes:
       - ./backend:/app
+      - /app/node_modules
       - uploads_data:/app/uploads
       - gallery_uploads:/app/uploads/gallery
     depends_on:
       - db
+    restart: unless-stopped
 
   db:
     image: postgres:14
@@ -32,6 +42,7 @@ services:
     volumes:
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
       - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
 
 volumes:
   db_data:

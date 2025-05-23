@@ -390,10 +390,10 @@ const HomePage = () => {
       {/* Footer with attribution */}
       <footer className="text-center py-8 mt-16 border-t border-gray-200">
         <p className="text-gray-600">
-          Built with love for your family by <span className="font-semibold">FamilyVine</span>
+          Built With Love by Justin Woods
         </p>
         <p className="text-sm text-gray-500 mt-2">
-          © {new Date().getFullYear()} - Preserving memories for generations to come
+          © {new Date().getFullYear()} - For Those Before and Those Who Come After..
         </p>
       </footer>
     </div>
