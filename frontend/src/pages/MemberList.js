@@ -1,14 +1,18 @@
+// frontend/src/pages/MemberList.js
+// UPDATED VERSION - Remove getPhotoUrl and use ProfileImage component
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import SearchFilter from '../components/SearchFilter';
 import MemberCard from '../components/MemberCard';
+import ProfileImage from '../components/ProfileImage'; // ADD THIS IMPORT
 
 const MemberList = () => {
   // Your existing state
   const [allMembers, setAllMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]); // New: for filtered results
-  const [imageErrors, setImageErrors] = useState(new Set());
+  // REMOVE: const [imageErrors, setImageErrors] = useState(new Set()); // Delete this line
   
   // New state for enhanced features
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
@@ -60,33 +64,12 @@ const MemberList = () => {
     setFilteredMembers(sorted);
   };
 
-  // Your existing functions - completely unchanged
-  const getPhotoUrl = (member) => {
-    // If we've already had an error with this image, return placeholder
-    if (imageErrors.has(member.id)) {
-      return 'https://via.placeholder.com/80x80/cccccc/666666?text=No+Photo';
-    }
-
-    if (!member.photo_url) {
-      return 'https://via.placeholder.com/80x80/cccccc/666666?text=No+Photo';
-    }
-
-    // If it's already a full URL, use it
-    if (member.photo_url.startsWith('http')) {
-      return member.photo_url;
-    }
-
-    // If it starts with '/', remove it to avoid double slashes
-    const cleanPath = member.photo_url.startsWith('/') 
-      ? member.photo_url.substring(1) 
-      : member.photo_url;
-
-    return `${process.env.REACT_APP_API}/${cleanPath}`;
-  };
-
-  const handleImageError = (memberId) => {
-    setImageErrors(prev => new Set([...prev, memberId]));
-  };
+  // REMOVE ALL OLD getPhotoUrl and handleImageError functions
+  // DELETE these functions completely:
+  /*
+  const getPhotoUrl = (member) => { ... }
+  const handleImageError = (memberId) => { ... }
+  */
 
   // FIXED: Function to check if member is deceased with better logic
   const isDeceased = (member) => {
@@ -190,17 +173,16 @@ const MemberList = () => {
       ) : (
         <>
           {viewMode === 'list' ? (
-            // UPDATED list view - with deceased icon and better styling
+            // UPDATED list view - using ProfileImage component
             <div className="space-y-4">
               {filteredMembers.map(member => (
                 <div key={member.id} className="bg-white p-4 rounded shadow flex items-center space-x-4">
                   <div className="relative inline-block">
-                    <img
-                      src={getPhotoUrl(member)}
-                      alt={`${member.first_name} ${member.last_name}`}
-                      className="w-16 h-16 rounded-full object-cover"
-                      onError={() => handleImageError(member.id)}
-                      loading="lazy"
+                    {/* REPLACED: Old img tag with ProfileImage component */}
+                    <ProfileImage 
+                      member={member} 
+                      size="small"
+                      className=""
                     />
                   </div>
                   <div className="flex-1">
@@ -234,7 +216,7 @@ const MemberList = () => {
               ))}
             </div>
           ) : (
-            // Grid view using MemberCard component
+            // Grid view using MemberCard component (this should already work)
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredMembers.map(member => (
                 <MemberCard key={member.id} member={member} />
