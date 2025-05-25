@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AddMember from './pages/AddMember';
 import EditMember from './pages/EditMember';
@@ -13,6 +13,83 @@ import FamilyTree from './pages/FamilyTree';
 import VisualTreePage from './pages/VisualTreePage';
 import Settings from './pages/Settings';
 import TimelinePage from './pages/TimelinePage';
+import LoginPage from './pages/LoginPage';
+
+// Navigation Component
+const Navigation = () => {
+  const location = useLocation();
+  
+  // Hide navigation on login page
+  if (location.pathname === '/login') {
+    return null;
+  }
+
+  return (
+    <nav className="bg-white dark:bg-gray-800 shadow mb-6 transition-colors duration-200">
+      <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+        <Link to="/" className="text-2xl font-bold text-green-700 dark:text-green-400">
+          FamilyVine
+        </Link>
+        <div className="space-x-6">
+          <Link 
+            to="/members" 
+            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+          >
+            View Members
+          </Link>
+          <Link 
+            to="/add" 
+            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+          >
+            Add Member
+          </Link>
+          <Link 
+            to="/import-csv" 
+            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+          >
+            Import CSV
+          </Link>
+          <Link 
+            to="/gallery" 
+            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+          >
+            Gallery
+          </Link>
+          <Link 
+            to="/map" 
+            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+          >
+            Map
+          </Link>
+          <Link 
+            to="/visual-tree" 
+            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+          >
+            Visual Tree
+          </Link>
+          <Link 
+            to="/timeline" 
+            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+          >
+            Timeline
+          </Link>
+          <Link 
+            to="/settings"
+            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+          >
+            Settings
+          </Link>
+          <Link 
+            to="/login"
+            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+          >
+            Logout
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+};
 
 function App() {
   useEffect(() => {
@@ -54,63 +131,9 @@ function App() {
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
-        <nav className="bg-white dark:bg-gray-800 shadow mb-6 transition-colors duration-200">
-          <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
-            <Link to="/" className="text-2xl font-bold text-green-700 dark:text-green-400">
-              FamilyVine
-            </Link>
-            <div className="space-x-6">
-              <Link 
-                to="/members" 
-                className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
-              >
-                View Members
-              </Link>
-              <Link 
-                to="/add" 
-                className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
-              >
-                Add Member
-              </Link>
-              <Link 
-                to="/import-csv" 
-                className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
-              >
-                Import CSV
-              </Link>
-              <Link 
-                to="/gallery" 
-                className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
-              >
-                Gallery
-              </Link>
-              <Link 
-                to="/map" 
-                className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
-              >
-                Map
-              </Link>
-              <Link 
-                to="/visual-tree" 
-                className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
-              >
-                Visual Tree
-              </Link>
-              <Link 
-                to="/timeline" 
-                className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
-              >
-                Timeline
-              </Link>
-              <Link 
-                to="/settings"
-                className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
-              >
-                Settings
-              </Link>
-            </div>
-          </div>
-        </nav>
+        {/* Navigation will automatically hide on login page */}
+        <Navigation />
+        
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/add" element={<AddMember />} />
@@ -125,6 +148,7 @@ function App() {
           <Route path="/visual-tree" element={<VisualTreePage />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/timeline" element={<TimelinePage />} />
+          <Route path="/login" element={<LoginPage />} />
         </Routes>
       </div>
     </BrowserRouter>
