@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import ProfileImage from '../components/ProfileImage'; // ADD THIS IMPORT
 import './Timeline.css'; // Import the CSS
 
 const Timeline = () => {
@@ -36,7 +37,7 @@ const Timeline = () => {
             location: member.birth_place || 'Unknown location',
             memberId: member.id,
             memberName: fullName,
-            photoUrl: member.photo_url
+            member: member // ADD FULL MEMBER OBJECT FOR ProfileImage
           });
         }
         
@@ -50,7 +51,7 @@ const Timeline = () => {
             location: member.death_place || 'Unknown location',
             memberId: member.id,
             memberName: fullName,
-            photoUrl: member.photo_url
+            member: member // ADD FULL MEMBER OBJECT FOR ProfileImage
           });
         }
       });
@@ -184,19 +185,14 @@ const Timeline = () => {
                       }`}>
                         <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
                           <div className="flex items-center mb-3">
-                            {/* Photo - Made bigger */}
-                            {event.photoUrl && (
-                              <div className={`${index % 2 === 0 ? 'mr-4' : 'ml-4 order-last'}`}>
-                                <img 
-                                  src={`${process.env.REACT_APP_API}/${event.photoUrl}`}
-                                  alt={event.memberName}
-                                  className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                                  onError={(e) => {
-                                    e.target.src = 'https://via.placeholder.com/64';
-                                  }}
-                                />
-                              </div>
-                            )}
+                            {/* REPLACED: Use ProfileImage component instead of img with onError */}
+                            <div className={`${index % 2 === 0 ? 'mr-4' : 'ml-4 order-last'}`}>
+                              <ProfileImage 
+                                member={event.member} 
+                                size="small" 
+                                className="border-2 border-gray-200" 
+                              />
+                            </div>
                             
                             {/* Year and type - Made bigger */}
                             <div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import ProfileImage from '../components/ProfileImage'; // ADD THIS IMPORT
 
 const Home = () => {
   const [stats, setStats] = useState({
@@ -86,21 +87,6 @@ const Home = () => {
     }
   ];
 
-  const getPhotoUrl = (member) => {
-    if (!member.photo_url) {
-      return 'https://via.placeholder.com/80x80/cccccc/666666?text=No+Photo';
-    }
-    
-    if (member.photo_url.startsWith('http')) {
-      return member.photo_url;
-    }
-    
-    const cleanPath = member.photo_url.startsWith('/') 
-      ? member.photo_url.substring(1) 
-      : member.photo_url;
-    
-    return `${process.env.REACT_APP_API}/${cleanPath}`;
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
@@ -149,10 +135,11 @@ const Home = () => {
                 to={`/members/${member.id}`}
                 className="bg-white rounded-lg shadow p-4 text-center hover:shadow-lg transition-shadow"
               >
-                <img
-                  src={getPhotoUrl(member)}
-                  alt={`${member.first_name} ${member.last_name}`}
-                  className="w-20 h-20 rounded-full object-cover mx-auto mb-3"
+                {/* REPLACED: Use ProfileImage instead of img with getPhotoUrl */}
+                <ProfileImage 
+                  member={member} 
+                  size="small" 
+                  className="mx-auto mb-3" 
                 />
                 <h3 className="font-semibold text-gray-800 text-sm">
                   {member.first_name} {member.last_name}
