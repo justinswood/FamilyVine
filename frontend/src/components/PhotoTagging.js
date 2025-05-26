@@ -173,9 +173,9 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
               transform: 'translate(-50%, -50%)'
             }}
           >
-            {/* Face Tag Marker */}
+            {/* Face Tag Marker - Hidden by default, visible on hover */}
             <div className="relative">
-              <div className={`w-16 h-20 border-4 rounded-lg bg-opacity-20 ${
+              <div className={`w-16 h-20 border-4 rounded-lg bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity ${
                 tag.is_verified ? 'border-blue-500 bg-blue-500' : 'border-yellow-500 bg-yellow-500'
               }`}></div>
               
