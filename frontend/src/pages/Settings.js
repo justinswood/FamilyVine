@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Database, Shield, Bell, Palette, User, Save } from 'lucide-react';
+import { Download, Database, Shield, Bell, Palette, User, Save, Upload } from 'lucide-react';
 import ExportFamilyData from '../components/ExportFamilyData';
+import CSVImport from './CSVImport'; // Import the CSVImport component
 import axios from 'axios';
 
 const Settings = () => {
@@ -42,7 +43,7 @@ const Settings = () => {
     // Check URL parameters for tab
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
-    if (tab && ['general', 'display', 'privacy', 'export', 'notifications'].includes(tab)) {
+    if (tab && ['general', 'display', 'privacy', 'import', 'export', 'notifications'].includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
@@ -144,6 +145,7 @@ const Settings = () => {
     { id: 'general', label: 'General', icon: <Database className="w-4 h-4" /> },
     { id: 'display', label: 'Display', icon: <Palette className="w-4 h-4" /> },
     { id: 'privacy', label: 'Privacy', icon: <Shield className="w-4 h-4" /> },
+    { id: 'import', label: 'Import Data', icon: <Upload className="w-4 h-4" /> }, // NEW TAB
     { id: 'export', label: 'Export Data', icon: <Download className="w-4 h-4" /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
   ];
@@ -308,6 +310,34 @@ const Settings = () => {
     </div>
   );
 
+  // NEW: Import Data tab content
+  const renderImportSettings = () => (
+    <div className="space-y-6">
+      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">Import Family Data</h3>
+        <p className="text-green-700 dark:text-green-300 text-sm mb-4">
+          Import family members from CSV files or other data sources to quickly build your family tree.
+        </p>
+      </div>
+
+      {/* CSV Import Section */}
+      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+        <CSVImport />
+      </div>
+
+      {/* Future import options placeholder */}
+      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Coming Soon</h4>
+        <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+          <li>• GEDCOM file import</li>
+          <li>• Excel/Google Sheets import</li>
+          <li>• Import from other family tree services</li>
+          <li>• Photo bulk import from cloud services</li>
+        </ul>
+      </div>
+    </div>
+  );
+
   const renderExportSettings = () => (
     <div className="space-y-6">
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
@@ -458,11 +488,12 @@ const Settings = () => {
             {activeTab === 'general' && renderGeneralSettings()}
             {activeTab === 'display' && renderDisplaySettings()}
             {activeTab === 'privacy' && renderPrivacySettings()}
+            {activeTab === 'import' && renderImportSettings()}
             {activeTab === 'export' && renderExportSettings()}
             {activeTab === 'notifications' && renderNotificationSettings()}
 
-            {/* Save Button */}
-            {activeTab !== 'export' && (
+            {/* Save Button - Don't show for import/export tabs */}
+            {activeTab !== 'export' && activeTab !== 'import' && (
               <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={saveSettings}

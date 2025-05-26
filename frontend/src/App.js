@@ -46,65 +46,82 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow mb-6 transition-colors duration-200">
+    <nav className="bg-white dark:bg-gray-800 shadow-lg mb-6 transition-colors duration-200 border-b-2 border-green-100 dark:border-green-800">
       <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
-        <Link to="/" className="text-2xl font-bold text-green-700 dark:text-green-400">
+        {/* Logo with enhanced styling */}
+        <Link 
+          to="/" 
+          className="text-2xl font-bold text-green-700 dark:text-green-400 hover:text-green-600 dark:hover:text-green-300 transition-all duration-300 transform hover:scale-105"
+        >
           FamilyVine
         </Link>
-        <div className="space-x-6">
+        
+        {/* Navigation Links with Enhanced Styling */}
+        <div className="flex items-center space-x-2">
           <Link 
             to="/members" 
-            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
           >
-            View Members
+            <span className="relative z-10">View Members</span>
+            {/* Subtle underline animation */}
+            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
           </Link>
+          
           <Link 
             to="/add" 
-            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
           >
-            Add Member
+            <span className="relative z-10">Add Member</span>
+            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
           </Link>
-          <Link 
-            to="/import-csv" 
-            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
-          >
-            Import CSV
-          </Link>
+          
           <Link 
             to="/gallery" 
-            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
           >
-            Gallery
+            <span className="relative z-10">Gallery</span>
+            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
           </Link>
+          
           <Link 
             to="/map" 
-            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
           >
-            Map
+            <span className="relative z-10">Map</span>
+            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
           </Link>
+          
           <Link 
             to="/visual-tree" 
-            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
           >
-            Visual Tree
+            <span className="relative z-10">Visual Tree</span>
+            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
           </Link>
+          
           <Link 
             to="/timeline" 
-            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
           >
-            Timeline
+            <span className="relative z-10">Timeline</span>
+            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
           </Link>
+          
           <Link 
             to="/settings"
-            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
           >
-            Settings
+            <span className="relative z-10">Settings</span>
+            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
           </Link>
+          
+          {/* Logout button with special styling */}
           <button
             onClick={handleLogout}
-            className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
+            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:shadow-md transform hover:-translate-y-0.5 group ml-2"
           >
-            Logout
+            <span className="relative z-10">Logout</span>
+            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-red-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
           </button>
         </div>
       </div>

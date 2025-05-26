@@ -367,7 +367,7 @@ const HomePage = () => {
               Add Your First Member
             </Link>
             <Link
-              to="/csv-import"
+              to="/settings?tab=import"
               className="px-10 py-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-full text-lg font-semibold hover:from-gray-700 hover:to-gray-800 transition-all transform hover:scale-105 shadow-xl"
             >
               Import Existing Data
