@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import AddMember from './pages/AddMember';
 import EditMember from './pages/EditMember';
@@ -15,6 +15,19 @@ import Settings from './pages/Settings';
 import TimelinePage from './pages/TimelinePage';
 import LoginPage from './pages/LoginPage';
 
+// Component to protect routes - redirects to login if not authenticated
+const ProtectedRoute = ({ children }) => {
+  const isLoggedIn = localStorage.getItem('familyVine_loggedIn') === 'true';
+  
+  if (!isLoggedIn) {
+    // Redirect to login page if not authenticated
+    return <Navigate to="/login" replace />;
+  }
+  
+  // If authenticated, show the requested page
+  return children;
+};
+
 // Navigation Component
 const Navigation = () => {
   const location = useLocation();
@@ -23,6 +36,14 @@ const Navigation = () => {
   if (location.pathname === '/login') {
     return null;
   }
+
+  const handleLogout = () => {
+    // Clear login status
+    localStorage.removeItem('familyVine_loggedIn');
+    localStorage.removeItem('familyVine_user');
+    // Page will automatically redirect to login due to ProtectedRoute
+    window.location.reload();
+  };
 
   return (
     <nav className="bg-white dark:bg-gray-800 shadow mb-6 transition-colors duration-200">
@@ -79,12 +100,12 @@ const Navigation = () => {
           >
             Settings
           </Link>
-          <Link 
-            to="/login"
+          <button
+            onClick={handleLogout}
             className="text-gray-700 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 font-medium transition-colors"
           >
             Logout
-          </Link>
+          </button>
         </div>
       </div>
     </nav>
@@ -92,6 +113,8 @@ const Navigation = () => {
 };
 
 function App() {
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
   useEffect(() => {
     // Load and apply theme on app start
     const savedSettings = localStorage.getItem('familyVineSettings');
@@ -109,6 +132,10 @@ function App() {
     };
 
     window.addEventListener('storage', handleStorageChange);
+    
+    // Quick auth check (you can make this more sophisticated later)
+    setIsCheckingAuth(false);
+    
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
@@ -128,6 +155,18 @@ function App() {
     }
   };
 
+  // Show loading while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading FamilyVine...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
@@ -135,20 +174,75 @@ function App() {
         <Navigation />
         
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/add" element={<AddMember />} />
-          <Route path="/members" element={<MemberList />} />
-          <Route path="/members/:id" element={<MemberPage />} />
-          <Route path="/members/:id/edit" element={<EditMember />} />
-          <Route path="/map" element={<MapPage />} />
-          <Route path="/import-csv" element={<CSVImport />} />
-          <Route path="/gallery" element={<Gallery />} />
-          <Route path="/gallery/:id" element={<AlbumView />} />
-          <Route path="/family-tree/:id" element={<FamilyTree />} />
-          <Route path="/visual-tree" element={<VisualTreePage />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/timeline" element={<TimelinePage />} />
+          {/* Login route - accessible without authentication */}
           <Route path="/login" element={<LoginPage />} />
+          
+          {/* All other routes are protected */}
+          <Route path="/" element={
+            <ProtectedRoute>
+              <HomePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/add" element={
+            <ProtectedRoute>
+              <AddMember />
+            </ProtectedRoute>
+          } />
+          <Route path="/members" element={
+            <ProtectedRoute>
+              <MemberList />
+            </ProtectedRoute>
+          } />
+          <Route path="/members/:id" element={
+            <ProtectedRoute>
+              <MemberPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/members/:id/edit" element={
+            <ProtectedRoute>
+              <EditMember />
+            </ProtectedRoute>
+          } />
+          <Route path="/map" element={
+            <ProtectedRoute>
+              <MapPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/import-csv" element={
+            <ProtectedRoute>
+              <CSVImport />
+            </ProtectedRoute>
+          } />
+          <Route path="/gallery" element={
+            <ProtectedRoute>
+              <Gallery />
+            </ProtectedRoute>
+          } />
+          <Route path="/gallery/:id" element={
+            <ProtectedRoute>
+              <AlbumView />
+            </ProtectedRoute>
+          } />
+          <Route path="/family-tree/:id" element={
+            <ProtectedRoute>
+              <FamilyTree />
+            </ProtectedRoute>
+          } />
+          <Route path="/visual-tree" element={
+            <ProtectedRoute>
+              <VisualTreePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          } />
+          <Route path="/timeline" element={
+            <ProtectedRoute>
+              <TimelinePage />
+            </ProtectedRoute>
+          } />
         </Routes>
       </div>
     </BrowserRouter>
