@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import PhotoCropper from '../components/PhotoCropper';
+import PhotoGalleryPicker from '../components/PhotoGalleryPicker';
 
 const EditMember = () => {
   const { id } = useParams();
@@ -26,6 +27,10 @@ const EditMember = () => {
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [showCropper, setShowCropper] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
+  
+  // NEW STATES for gallery picker
+  const [showGalleryPicker, setShowGalleryPicker] = useState(false);
+  const [galleryPhotoPath, setGalleryPhotoPath] = useState(null);
 
   useEffect(() => {
     axios.get(`${process.env.REACT_APP_API}/api/members/${id}`)
@@ -67,6 +72,9 @@ const EditMember = () => {
         return;
       }
       
+      // Clear any gallery selection when user uploads a file
+      setGalleryPhotoPath(null);
+      
       // Set the selected file and show cropper
       setSelectedImageFile(file);
       setShowCropper(true);
@@ -91,6 +99,27 @@ const EditMember = () => {
     if (fileInput) fileInput.value = '';
   };
 
+  // Handle gallery photo selection
+  const handleGalleryPhotoSelect = (photoPath) => {
+    setGalleryPhotoPath(photoPath);
+    setShowGalleryPicker(false);
+    
+    // Clear any uploaded file when using gallery photo
+    setPhotoFile(null);
+    
+    // Set preview URL for gallery photo
+    setPreviewUrl(`${process.env.REACT_APP_API}/${photoPath}`);
+    
+    // Clear the file input
+    const fileInput = document.getElementById('photo-upload');
+    if (fileInput) fileInput.value = '';
+  };
+
+  // Cancel gallery picker
+  const handleGalleryCancel = () => {
+    setShowGalleryPicker(false);
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     
@@ -112,9 +141,13 @@ const EditMember = () => {
         }
       });
       
-      // Add photo file if selected and cropped
+      // Handle both file upload and gallery photo
       if (photoFile) {
+        // User uploaded and cropped a new photo
         form.append('photo', photoFile);
+      } else if (galleryPhotoPath) {
+        // User selected a photo from gallery
+        form.append('photo_url', galleryPhotoPath);
       }
 
       // Send FormData (not JSON)
@@ -235,18 +268,43 @@ const EditMember = () => {
           </>
         )}
 
+        {/* Photo Section */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Upload & Crop Photo</label>
-          <input 
-            id="photo-upload"
-            type="file" 
-            accept="image/*" 
-            onChange={handleFileChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-          />
-          <p className="text-sm text-gray-500 mt-1">
-            Select an image to crop it to the perfect profile photo
+          <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
+          
+          {/* Photo selection buttons */}
+          <div className="flex space-x-3 mb-3">
+            <div>
+              <input 
+                id="photo-upload"
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileChange}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => document.getElementById('photo-upload').click()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Upload & Crop Photo
+              </button>
+            </div>
+            
+            <button
+              type="button"
+              onClick={() => setShowGalleryPicker(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              Choose from Gallery
+            </button>
+          </div>
+          
+          <p className="text-sm text-gray-500 mb-3">
+            Upload a new photo to crop it, or choose an existing photo from your gallery
           </p>
+          
+          {/* Preview */}
           {previewUrl && (
             <div className="mt-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Current Photo:</label>
@@ -255,6 +313,11 @@ const EditMember = () => {
                 alt="Preview" 
                 className="w-32 h-32 object-cover rounded-full border"
               />
+              {galleryPhotoPath && (
+                <p className="text-xs text-green-600 mt-1">
+                  ✓ Using photo from gallery
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -294,6 +357,14 @@ const EditMember = () => {
           imageFile={selectedImageFile}
           onCropComplete={handleCropComplete}
           onCancel={handleCropCancel}
+        />
+      )}
+
+      {/* Gallery Picker Modal */}
+      {showGalleryPicker && (
+        <PhotoGalleryPicker
+          onPhotoSelect={handleGalleryPhotoSelect}
+          onCancel={handleGalleryCancel}
         />
       )}
     </div>

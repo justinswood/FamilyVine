@@ -120,7 +120,16 @@ router.post('/', upload.single('photo'), async (req, res) => {
   }
 });
 
+// UPDATED PUT ROUTE - Add better debugging for crop functionality
 router.put('/:id', upload.single('photo'), async (req, res) => {
+  console.log('=== MEMBER UPDATE DEBUG ===');
+  console.log('Request body:', req.body);
+  console.log('Uploaded file:', req.file ? req.file.filename : 'No file uploaded');
+  console.log('All form fields:');
+  Object.keys(req.body).forEach(key => {
+    console.log(`  ${key}: "${req.body[key]}" (type: ${typeof req.body[key]})`);
+  });
+
   const {
     first_name, middle_name, last_name, relationship,
     gender, is_alive, birth_date, death_date,
@@ -128,8 +137,18 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
     occupation, pronouns, email, phone, photo_url
   } = req.body;
 
-  if (!first_name || !last_name) {
-    return res.status(400).json({ error: 'First and last name are required.' });
+  console.log('Extracted first_name:', first_name);
+  console.log('Extracted last_name:', last_name);
+
+  // Add better validation with detailed error messages
+  if (!first_name || first_name.trim() === '') {
+    console.log('ERROR: first_name is missing or empty');
+    return res.status(400).json({ error: 'First name is required and cannot be empty.' });
+  }
+
+  if (!last_name || last_name.trim() === '') {
+    console.log('ERROR: last_name is missing or empty');
+    return res.status(400).json({ error: 'Last name is required and cannot be empty.' });
   }
 
   // Handle photo during update
@@ -137,9 +156,13 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
   if (req.file) {
     // Fix: Store path without leading slash
     finalPhotoUrl = `uploads/${req.file.filename}`;
+    console.log('Using uploaded file for photo_url:', finalPhotoUrl);
+  } else {
+    console.log('Using existing photo_url:', finalPhotoUrl);
   }
 
   try {
+    console.log('Attempting database update...');
     const result = await pool.query(
       'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, relationship = $4, gender = $5, is_alive = $6, birth_date = $7, death_date = $8, birth_place = $9, death_place = $10, location = $11, occupation = $12, pronouns = $13, email = $14, phone = $15, photo_url = $16 WHERE id = $17 RETURNING *',
       [
@@ -152,9 +175,12 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
         req.params.id
       ]
     );
+    
+    console.log('Database update successful');
+    console.log('Updated member:', result.rows[0]);
     res.json(result.rows[0]);
   } catch (err) {
-    console.error(err);
+    console.error('Database update error:', err);
     res.status(500).json({ error: 'Failed to update member.' });
   }
 });

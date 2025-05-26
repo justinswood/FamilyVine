@@ -1,9 +1,177 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import PhotoTagging from '../components/PhotoTagging'; // Changed from PhotoTagger
+import PhotoTagging from '../components/PhotoTagging';
+import PhotoCropper from '../components/PhotoCropper'; // Add this import
+
+// Add this new component for member selection
+// Replace your MemberSelectionModal component with this simplified version
+
+const MemberSelectionModal = ({ isOpen, onClose, onSelectMember, croppedFile }) => {
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  useEffect(() => {
+    if (isOpen) {
+      fetchMembers();
+    }
+  }, [isOpen]);
+  
+  const fetchMembers = async () => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_API}/api/members`);
+      setMembers(response.data);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+      alert('Failed to load family members. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleSelectMember = async (memberId) => {
+    setSaving(true);
+    try {
+      console.log('Starting to save cropped image for member:', memberId);
+      
+      // First, get the current member data
+      const memberResponse = await axios.get(`${process.env.REACT_APP_API}/api/members/${memberId}`);
+      const memberData = memberResponse.data;
+      
+      console.log('Current member data:', memberData);
+      
+      // Create FormData with ONLY the essential fields
+      const formData = new FormData();
+      
+      // Add the photo file
+      formData.append('photo', croppedFile);
+      
+      // Add ONLY the required fields and existing data
+      formData.append('first_name', memberData.first_name);
+      formData.append('last_name', memberData.last_name);
+      
+      // Add other fields only if they actually exist (not null/undefined)
+      if (memberData.middle_name) formData.append('middle_name', memberData.middle_name);
+      if (memberData.gender) formData.append('gender', memberData.gender);
+      if (memberData.relationship) formData.append('relationship', memberData.relationship);
+      if (memberData.birth_date) formData.append('birth_date', memberData.birth_date);
+      if (memberData.death_date) formData.append('death_date', memberData.death_date);
+      if (memberData.birth_place) formData.append('birth_place', memberData.birth_place);
+      if (memberData.death_place) formData.append('death_place', memberData.death_place);
+      if (memberData.location) formData.append('location', memberData.location);
+      if (memberData.occupation) formData.append('occupation', memberData.occupation);
+      if (memberData.pronouns) formData.append('pronouns', memberData.pronouns);
+      if (memberData.email) formData.append('email', memberData.email);
+      if (memberData.phone) formData.append('phone', memberData.phone);
+      
+      // Handle is_alive specially
+      formData.append('is_alive', memberData.is_alive === true || memberData.is_alive === 'true' ? 'true' : 'false');
+      
+      // Debug: Log what we're sending
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
+      
+      console.log('Sending PUT request...');
+      
+      const updateResponse = await axios.put(
+        `${process.env.REACT_APP_API}/api/members/${memberId}`, 
+        formData, 
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 30000,
+        }
+      );
+      
+      console.log('Update successful:', updateResponse.data);
+      alert('Profile photo updated successfully!');
+      onSelectMember(memberId);
+      onClose();
+      
+    } catch (error) {
+      console.error('Error saving cropped image:', error);
+      
+      if (error.response && error.response.data) {
+        console.error('Server error response:', error.response.data);
+        alert(`Server error: ${error.response.data.error || 'Unknown error'}`);
+      } else {
+        alert('Failed to save cropped image. Please try again.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+  
+  if (!isOpen) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-md w-full m-4 max-h-[80vh] overflow-y-auto">
+        <h2 className="text-xl font-bold mb-4">Select Family Member</h2>
+        <p className="text-gray-600 mb-4">Choose which family member to set this cropped photo as their profile picture:</p>
+        
+        {loading ? (
+          <div className="text-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+            Loading members...
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {members.map(member => (
+              <button
+                key={member.id}
+                onClick={() => handleSelectMember(member.id)}
+                disabled={saving}
+                className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                  saving 
+                    ? 'bg-gray-100 cursor-not-allowed' 
+                    : 'hover:bg-gray-100'
+                }`}
+              >
+                <div className="font-medium">
+                  {member.first_name} {member.last_name}
+                </div>
+                {member.location && (
+                  <div className="text-sm text-gray-500">{member.location}</div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+        
+        {saving && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+            <div className="flex items-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
+              <span className="text-blue-700">Saving cropped photo...</span>
+            </div>
+          </div>
+        )}
+        
+        <div className="mt-6 flex space-x-3">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className={`flex-1 px-4 py-2 rounded transition-colors ${
+              saving 
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+                : 'bg-gray-500 text-white hover:bg-gray-600'
+            }`}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const AlbumView = () => {
+  // Your existing state variables
   const { id } = useParams();
   const navigate = useNavigate();
   const [album, setAlbum] = useState(null);
@@ -15,10 +183,15 @@ const AlbumView = () => {
   const [deleting, setDeleting] = useState(false);
   const [showTagger, setShowTagger] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
-  
-  // New state for photo modal
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [enlargedPhoto, setEnlargedPhoto] = useState(null);
+  
+  // NEW: Add these state variables for cropping functionality
+  const [showCropper, setShowCropper] = useState(false);
+  const [selectedImageForCrop, setSelectedImageForCrop] = useState(null);
+  const [cropImageFile, setCropImageFile] = useState(null);
+  const [showMemberSelection, setShowMemberSelection] = useState(false);
+  const [pendingCroppedFile, setPendingCroppedFile] = useState(null);
 
   useEffect(() => {
     fetchAlbum();
@@ -35,6 +208,71 @@ const AlbumView = () => {
     }
   };
 
+  // NEW: Function to convert image URL to File object
+  const urlToFile = async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new File([blob], filename, { type: blob.type });
+    } catch (error) {
+      console.error('Error converting URL to file:', error);
+      return null;
+    }
+  };
+
+  // NEW: Function to handle cropping gallery images
+  const handleCropGalleryImage = async (photo) => {
+    try {
+      const imageUrl = `${process.env.REACT_APP_API}/${photo.file_path}`;
+      const filename = photo.filename || 'gallery-image.jpg';
+      
+      // Convert the URL to a File object
+      const file = await urlToFile(imageUrl, filename);
+      
+      if (file) {
+        setSelectedImageForCrop(photo);
+        setCropImageFile(file);
+        setShowCropper(true);
+      } else {
+        alert('Failed to load image for cropping');
+      }
+    } catch (error) {
+      console.error('Error preparing image for crop:', error);
+      alert('Failed to prepare image for cropping');
+    }
+  };
+
+  // NEW: Function to handle crop completion
+  const handleCropComplete = async (croppedFile) => {
+    setShowCropper(false);
+    setPendingCroppedFile(croppedFile);
+    setShowMemberSelection(true);
+  };
+
+  // NEW: Function to handle crop cancellation
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setSelectedImageForCrop(null);
+    setCropImageFile(null);
+  };
+
+  // NEW: Handler for when member is selected
+  const handleMemberSelected = (memberId) => {
+    setShowMemberSelection(false);
+    setPendingCroppedFile(null);
+    setSelectedImageForCrop(null);
+    setCropImageFile(null);
+  };
+
+  // NEW: Handler for closing member selection without selecting
+  const handleMemberSelectionClose = () => {
+    setShowMemberSelection(false);
+    setPendingCroppedFile(null);
+    setSelectedImageForCrop(null);
+    setCropImageFile(null);
+  };
+
+  // Your existing functions (unchanged)
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files);
     setSelectedFiles(files);
@@ -292,7 +530,7 @@ const AlbumView = () => {
         </div>
       )}
 
-      {/* Photos Grid */}
+      {/* Photos Grid - UPDATED with Crop Button */}
       {album.photos && album.photos.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {album.photos.map((photo) => (
@@ -304,10 +542,10 @@ const AlbumView = () => {
                 onClick={() => enlargePhoto(photo)}
               />
               
-              {/* Photo overlay with actions */}
+              {/* Photo overlay with actions - UPDATED */}
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity rounded-lg pointer-events-none">
                 <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
-                  <div className="flex space-x-2">
+                  <div className="flex flex-col space-y-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -317,6 +555,17 @@ const AlbumView = () => {
                       title="Set as cover photo"
                     >
                       Cover
+                    </button>
+                    {/* NEW: Crop Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCropGalleryImage(photo);
+                      }}
+                      className="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700 transition-colors"
+                      title="Crop image"
+                    >
+                      Crop
                     </button>
                     <button
                       onClick={(e) => {
@@ -432,7 +681,7 @@ const AlbumView = () => {
         </div>
       )}
 
-      {/* Photo Tagging Modal - Updated to use new PhotoTagging component */}
+      {/* Photo Tagging Modal */}
       {showTagger && selectedPhoto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="max-w-6xl w-full max-h-full overflow-auto">
@@ -448,6 +697,25 @@ const AlbumView = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* NEW: Photo Cropper Modal for Gallery Images */}
+      {showCropper && cropImageFile && selectedImageForCrop && (
+        <PhotoCropper
+          imageFile={cropImageFile}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
+
+      {/* NEW: Member Selection Modal */}
+      {showMemberSelection && pendingCroppedFile && (
+        <MemberSelectionModal
+          isOpen={showMemberSelection}
+          onClose={handleMemberSelectionClose}
+          onSelectMember={handleMemberSelected}
+          croppedFile={pendingCroppedFile}
+        />
       )}
     </div>
   );
