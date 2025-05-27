@@ -3,6 +3,7 @@ import { Download, Database, Shield, Bell, Palette, User, Save, Upload } from 'l
 import ExportFamilyData from '../components/ExportFamilyData';
 import CSVImport from './CSVImport'; // Import the CSVImport component
 import axios from 'axios';
+import HeroImageSelector from '../components/HeroImageSelector';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('general');
@@ -219,7 +220,7 @@ const Settings = () => {
           <option value="MMM DD, YYYY">MMM DD, YYYY (Long format)</option>
         </select>
       </div>
-
+  
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Theme
@@ -239,7 +240,7 @@ const Settings = () => {
             : `Currently using ${settings.theme} theme`}
         </p>
       </div>
-
+  
       <div>
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Language
@@ -254,6 +255,13 @@ const Settings = () => {
           <option value="fr">Français</option>
           <option value="de">Deutsch</option>
         </select>
+      </div>
+  
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+          Homepage Hero Images
+        </label>
+        <HeroImageSelector />
       </div>
     </div>
   );

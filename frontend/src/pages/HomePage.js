@@ -60,12 +60,28 @@ const HomePage = () => {
 
   const fetchRecentPhotos = async () => {
     try {
+      // First, try to load selected hero images
+      const savedHeroImages = localStorage.getItem('familyVine_heroImages');
+      
+      if (savedHeroImages) {
+        try {
+          const heroImages = JSON.parse(savedHeroImages);
+          if (heroImages && heroImages.length > 0) {
+            setRecentPhotos(heroImages);
+            return; // Use selected images and exit early
+          }
+        } catch (error) {
+          console.error('Error loading hero images:', error);
+        }
+      }
+      
+      // Fallback: If no hero images selected, use the original logic
       const response = await axios.get(`${process.env.REACT_APP_API}/api/albums`);
       const albums = response.data;
       
       if (albums.length > 0) {
         const allPhotos = [];
-        for (const album of albums.slice(0, 3)) { // Get photos from first 3 albums
+        for (const album of albums.slice(0, 3)) {
           try {
             const albumResponse = await axios.get(`${process.env.REACT_APP_API}/api/albums/${album.id}`);
             if (albumResponse.data.photos && albumResponse.data.photos.length > 0) {
@@ -78,7 +94,7 @@ const HomePage = () => {
             console.error(`Error fetching album ${album.id}:`, err);
           }
         }
-        setRecentPhotos(allPhotos.slice(0, 5)); // Limit to 5 photos total
+        setRecentPhotos(allPhotos.slice(0, 5));
       }
     } catch (err) {
       console.error("Error fetching photos:", err);
