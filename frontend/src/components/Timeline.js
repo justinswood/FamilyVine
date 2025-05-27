@@ -1,14 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import ProfileImage from '../components/ProfileImage'; // ADD THIS IMPORT
-import './Timeline.css'; // Import the CSS
+import ProfileImage from '../components/ProfileImage';
+import './Timeline.css';
 
 const Timeline = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all', 'births', 'deaths'
+  const [filter, setFilter] = useState('all');
+  const [viewOrientation, setViewOrientation] = useState('vertical');
+
+  useEffect(() => {
+    if (viewOrientation === 'horizontal') {
+      setTimeout(() => {
+        const container = document.querySelector('.timeline-container.horizontal');
+        if (container) {
+          container.scrollLeft = 0;
+        }
+      }, 100);
+    }
+  }, [viewOrientation, events]);
 
   useEffect(() => {
     fetchTimelineData();
@@ -17,17 +29,14 @@ const Timeline = () => {
   const fetchTimelineData = async () => {
     try {
       setLoading(true);
-      // Fetch all members to extract timeline events
       const response = await axios.get(`${process.env.REACT_APP_API}/api/members`);
       const members = response.data;
       
-      // Extract events from member data
       const timelineEvents = [];
       
       members.forEach(member => {
         const fullName = `${member.first_name} ${member.last_name}`;
         
-        // Add birth events
         if (member.birth_date) {
           timelineEvents.push({
             type: 'birth',
@@ -37,11 +46,10 @@ const Timeline = () => {
             location: member.birth_place || 'Unknown location',
             memberId: member.id,
             memberName: fullName,
-            member: member // ADD FULL MEMBER OBJECT FOR ProfileImage
+            member: member
           });
         }
         
-        // Add death events
         if (member.death_date) {
           timelineEvents.push({
             type: 'death',
@@ -51,14 +59,12 @@ const Timeline = () => {
             location: member.death_place || 'Unknown location',
             memberId: member.id,
             memberName: fullName,
-            member: member // ADD FULL MEMBER OBJECT FOR ProfileImage
+            member: member
           });
         }
       });
       
-      // Sort events chronologically
       timelineEvents.sort((a, b) => a.date - b.date);
-      
       setEvents(timelineEvents);
     } catch (error) {
       console.error('Error fetching timeline data:', error);
@@ -68,12 +74,10 @@ const Timeline = () => {
     }
   };
 
-  // Filter events based on user selection
   const filteredEvents = filter === 'all' 
     ? events 
     : events.filter(event => event.type === filter);
 
-  // Group events by decade for better organization
   const groupedByDecade = filteredEvents.reduce((groups, event) => {
     const decade = Math.floor(event.year / 10) * 10;
     if (!groups[decade]) {
@@ -83,7 +87,6 @@ const Timeline = () => {
     return groups;
   }, {});
 
-  // Convert to array and sort decades
   const decades = Object.keys(groupedByDecade)
     .map(Number)
     .sort((a, b) => a - b);
@@ -105,11 +108,10 @@ const Timeline = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6 text-center">Family Timeline</h1>
+    <div className="w-full">
+      <h1 className="text-3xl font-bold mb-4 text-center">Family Timeline</h1>
       
-      {/* Filter Controls */}
-      <div className="flex justify-center mb-8">
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-6">
         <div className="inline-flex rounded-md shadow-sm">
           <button
             onClick={() => setFilter('all')}
@@ -142,59 +144,67 @@ const Timeline = () => {
             Deaths
           </button>
         </div>
+
+        <div className="inline-flex rounded-md shadow-sm">
+          <button
+            onClick={() => setViewOrientation('vertical')}
+            className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
+              viewOrientation === 'vertical' 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            } border border-gray-300 flex items-center gap-2`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+            </svg>
+            Vertical
+          </button>
+          <button
+            onClick={() => setViewOrientation('horizontal')}
+            className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
+              viewOrientation === 'horizontal' 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+            } border border-gray-300 flex items-center gap-2`}
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 7l4-4M4 7l4 4m12 6H8m8 0l-4-4m4 4l-4 4" />
+            </svg>
+            Horizontal
+          </button>
+        </div>
       </div>
       
-      {/* Timeline Display */}
       {filteredEvents.length === 0 ? (
         <div className="text-center text-gray-500 mt-8">
           <p>No events to display.</p>
           <p className="text-sm mt-2">Try adding birth dates to family members.</p>
         </div>
       ) : (
-        <div className="relative">
-          {/* Vertical line */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-gray-200"></div>
-          
-          {/* Decades and events */}
-          <div className="space-y-8">
+        <div className={`timeline-container ${viewOrientation}`}>
+          <div className={`timeline-line ${viewOrientation}`}></div>
+          <div className={`timeline-content ${viewOrientation}`}>
             {decades.map(decade => (
-              <div key={decade} className="mb-12">
-                {/* Decade marker */}
-                <div className="flex justify-center mb-8">
-                  <div className="bg-blue-100 text-blue-800 font-bold py-2 px-6 rounded-full border-2 border-white shadow-md z-10">
+              <div key={decade} className={`decade-section ${viewOrientation}`}>
+                <div className={`decade-marker ${viewOrientation}`}>
+                  <div className="decade-label">
                     {decade}s
                   </div>
                 </div>
-                
-                {/* Events in this decade */}
-                <div className="space-y-8">
+                <div className={`events-container ${viewOrientation}`}>
                   {groupedByDecade[decade].map((event, index) => (
-                    <div key={index} className="relative">
-                      {/* Timeline dot */}
-                      <div className="absolute left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full z-10 border-2 border-white shadow-sm"
-                        style={{ 
-                          backgroundColor: event.type === 'birth' ? '#10b981' : '#6b7280',
-                          top: '50%',
-                          marginTop: '-8px'
-                        }}>
-                      </div>
-                      
-                      {/* Event card - alternate sides */}
-                      <div className={`w-5/12 ${
-                        index % 2 === 0 ? 'ml-auto pl-8' : 'mr-auto pr-8 text-right'
-                      }`}>
-                        <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+                    <div key={index} className={`event-item ${viewOrientation}`}>
+                      <div className={`timeline-dot ${event.type} ${viewOrientation}`}></div>
+                      <div className={`event-card ${viewOrientation} ${index % 2 === 0 ? 'even' : 'odd'}`}>
+                        <div className="event-content">
                           <div className="flex items-center mb-3">
-                            {/* REPLACED: Use ProfileImage component instead of img with onError */}
-                            <div className={`${index % 2 === 0 ? 'mr-4' : 'ml-4 order-last'}`}>
+                            <div className="mr-4">
                               <ProfileImage 
                                 member={event.member} 
                                 size="small" 
                                 className="border-2 border-gray-200" 
                               />
                             </div>
-                            
-                            {/* Year and type - Made bigger */}
                             <div>
                               <span className="text-lg font-semibold text-gray-700">{event.year}</span>
                               <div className={`text-sm px-3 py-1 rounded-full inline-block ml-2 font-medium ${
@@ -206,14 +216,8 @@ const Timeline = () => {
                               </div>
                             </div>
                           </div>
-                          
-                          {/* Description - Made bigger */}
                           <h3 className="font-semibold text-lg mb-2">{event.description}</h3>
-                          
-                          {/* Location - Made bigger */}
                           <p className="text-base text-gray-600 mb-3">{event.location}</p>
-                          
-                          {/* Link - Made bigger */}
                           <Link 
                             to={`/members/${event.memberId}`}
                             className="text-blue-600 hover:underline text-base font-medium inline-block"

@@ -1,10 +1,17 @@
-/* Timeline.css */
+/* Timeline.css - Updated with horizontal/vertical support */
+
+/* Base timeline container */
 .timeline-container {
   position: relative;
   padding: 2rem 0;
 }
 
-.timeline-line {
+/* VERTICAL LAYOUT (Original) */
+.timeline-container.vertical {
+  padding: 2rem 0;
+}
+
+.timeline-line.vertical {
   position: absolute;
   left: 50%;
   top: 0;
@@ -15,24 +22,49 @@
   z-index: 1;
 }
 
-.decade-marker {
+.timeline-content.vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.decade-section.vertical {
   position: relative;
-  z-index: 2;
   margin-bottom: 2rem;
 }
 
-.event-card-left {
-  margin-right: 50%;
-  padding-right: 2rem;
-  text-align: right;
+.decade-marker.vertical {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
 }
 
-.event-card-right {
-  margin-left: 50%;
-  padding-left: 2rem;
+.decade-marker.vertical .decade-label {
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-weight: bold;
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  border: 2px solid white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 10;
 }
 
-.timeline-dot {
+.events-container.vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.event-item.vertical {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.timeline-dot.vertical {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -44,6 +76,129 @@
   box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
 }
 
+.event-card.vertical {
+  width: 45%;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  transition: box-shadow 0.3s ease;
+}
+
+.event-card.vertical:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.event-card.vertical.even {
+  margin-right: auto;
+  margin-left: 55%;
+}
+
+.event-card.vertical.odd {
+  margin-left: auto;
+  margin-right: 55%;
+}
+
+/* HORIZONTAL LAYOUT (New) */
+.timeline-container.horizontal {
+  padding: 1rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-height: 80vh;
+  width: 100%; /* Changed from 100vw */
+  /* Removed the margin-left calc that was causing issues */
+}
+
+.timeline-line.horizontal {
+  position: absolute;
+  top: 40%; /* Changed from 50% to move it up */
+  left: 0;
+  right: 0;
+  height: 4px;
+  margin-top: -2px;
+  background-color: #e5e7eb;
+  z-index: 1;
+}
+
+.timeline-content.horizontal {
+  display: flex;
+  flex-direction: row;
+  gap: 4rem; /* Increased gap */
+  padding: 2rem 2rem;
+  width: max-content;
+  min-width: 100%;
+}
+
+.decade-section.horizontal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 350px; /* Increased minimum width */
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.decade-marker.horizontal {
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.decade-marker.horizontal .decade-label {
+  background-color: #dbeafe;
+  color: #1e40af;
+  font-weight: bold;
+  padding: 0.5rem 1.5rem;
+  border-radius: 9999px;
+  border: 2px solid white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.events-container.horizontal {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.event-item.horizontal {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.timeline-dot.horizontal {
+  position: absolute;
+  top: 40%; /* Match the timeline position */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  z-index: 2;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+}
+
+.event-card.horizontal {
+  width: 280px;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  transition: box-shadow 0.3s ease;
+  margin-top: 1rem;
+}
+
+.event-card.horizontal:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Dot colors for both layouts */
 .timeline-dot.birth {
   background-color: #10b981;
 }
@@ -52,19 +207,71 @@
   background-color: #6b7280;
 }
 
-/* For smaller screens */
+/* Event content styling (applies to both layouts) */
+.event-content {
+  width: 100%;
+}
+
+/* Mobile responsiveness for vertical layout */
 @media (max-width: 768px) {
-  .event-card-left, .event-card-right {
+  .event-card.vertical.even,
+  .event-card.vertical.odd {
+    width: 85%;
     margin: 0 0 1.5rem 4rem;
-    padding: 0;
-    text-align: left;
   }
   
-  .timeline-line {
+  .timeline-line.vertical {
     left: 2rem;
   }
   
-  .timeline-dot {
+  .timeline-dot.vertical {
     left: 2rem;
   }
+  
+  .decade-marker.vertical {
+    justify-content: flex-start;
+    padding-left: 4rem;
+  }
+}
+
+/* Mobile responsiveness for horizontal layout */
+@media (max-width: 768px) {
+  .timeline-container.horizontal {
+    padding: 1rem;
+  }
+  
+  .decade-section.horizontal {
+    min-width: 250px;
+  }
+  
+  .event-card.horizontal {
+    width: 220px;
+    padding: 1rem;
+  }
+}
+
+/* Smooth transitions */
+.timeline-container,
+.event-card,
+.timeline-dot {
+  transition: all 0.3s ease;
+}
+
+/* Custom scrollbar for horizontal view */
+.timeline-container.horizontal::-webkit-scrollbar {
+  height: 8px;
+}
+
+.timeline-container.horizontal::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.timeline-container.horizontal::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.timeline-container.horizontal::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
