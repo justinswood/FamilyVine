@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// Navigation Component
+// Navigation Component - UPDATED with thinner design
 const Navigation = () => {
   const location = useLocation();
   
@@ -46,82 +46,73 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow-lg mb-6 transition-colors duration-200 border-b-2 border-green-100 dark:border-green-800">
-      <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
-        {/* Logo with enhanced styling */}
+    <nav className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-200 border-b border-gray-100 dark:border-gray-700">
+      <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-8">
+        {/* Logo with blue-purple gradient styling */}
         <Link 
           to="/" 
-          className="text-2xl font-bold text-green-700 dark:text-green-400 hover:text-green-600 dark:hover:text-green-300 transition-all duration-300 transform hover:scale-105"
+          className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
         >
           FamilyVine
         </Link>
         
-        {/* Navigation Links with Enhanced Styling */}
-        <div className="flex items-center space-x-2">
+        {/* Navigation Links with smaller padding */}
+        <div className="flex items-center space-x-1">
           <Link 
             to="/members" 
-            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
+            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
           >
-            <span className="relative z-10">View Members</span>
-            {/* Subtle underline animation */}
-            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
+            Members
           </Link>
           
           <Link 
             to="/add" 
-            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
+            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
           >
-            <span className="relative z-10">Add Member</span>
-            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
+            Add
           </Link>
           
           <Link 
             to="/gallery" 
-            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
+            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
           >
-            <span className="relative z-10">Gallery</span>
-            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
+            Gallery
           </Link>
           
           <Link 
             to="/map" 
-            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
+            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
           >
-            <span className="relative z-10">Map</span>
-            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
+            Map
           </Link>
           
           <Link 
             to="/visual-tree" 
-            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
+            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
           >
-            <span className="relative z-10">Visual Tree</span>
-            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
+            Tree
           </Link>
           
           <Link 
             to="/timeline" 
-            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
+            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
           >
-            <span className="relative z-10">Timeline</span>
-            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
+            Timeline
           </Link>
           
           <Link 
             to="/settings"
-            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 hover:shadow-md transform hover:-translate-y-0.5 group"
+            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
           >
-            <span className="relative z-10">Settings</span>
-            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
+            Settings
           </Link>
           
           {/* Logout button with special styling */}
           <button
             onClick={handleLogout}
-            className="relative px-4 py-2 text-gray-700 dark:text-gray-300 font-medium rounded-lg transition-all duration-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:shadow-md transform hover:-translate-y-0.5 group ml-2"
+            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 ml-2"
           >
-            <span className="relative z-10">Logout</span>
-            <div className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-red-500 transition-all duration-300 group-hover:w-3/4 group-hover:left-1/8"></div>
+            Logout
           </button>
         </div>
       </div>
@@ -186,6 +177,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      {/* REMOVED: mb-6 class to eliminate gap between navbar and content */}
       <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
         {/* Navigation will automatically hide on login page */}
         <Navigation />
