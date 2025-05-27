@@ -1,4 +1,4 @@
-/* Timeline.css - Updated with horizontal/vertical support */
+/* Timeline.css - Simplified and Fixed */
 
 /* Base timeline container */
 .timeline-container {
@@ -6,7 +6,7 @@
   padding: 2rem 0;
 }
 
-/* VERTICAL LAYOUT (Original) */
+/* VERTICAL LAYOUT */
 .timeline-container.vertical {
   padding: 2rem 0;
 }
@@ -49,7 +49,6 @@
   border-radius: 9999px;
   border: 2px solid white;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  z-index: 10;
 }
 
 .events-container.vertical {
@@ -73,7 +72,7 @@
   border-radius: 50%;
   z-index: 2;
   border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
 }
 
 .event-card.vertical {
@@ -100,32 +99,31 @@
   margin-right: 55%;
 }
 
-/* HORIZONTAL LAYOUT (New) */
+/* HORIZONTAL LAYOUT */
 .timeline-container.horizontal {
-  padding: 1rem 0;
+  width: 100%;
+  height: 80vh;
   overflow-x: auto;
   overflow-y: hidden;
-  max-height: 80vh;
-  width: 100%; /* Changed from 100vw */
-  /* Removed the margin-left calc that was causing issues */
+  padding: 1rem 0;
 }
 
 .timeline-line.horizontal {
   position: absolute;
-  top: 40%; /* Changed from 50% to move it up */
+  top: 50%;
   left: 0;
-  right: 0;
   height: 4px;
   margin-top: -2px;
   background-color: #e5e7eb;
   z-index: 1;
+  width: 100%;
 }
 
 .timeline-content.horizontal {
   display: flex;
   flex-direction: row;
-  gap: 4rem; /* Increased gap */
-  padding: 2rem 2rem;
+  gap: 4rem;
+  padding: 2rem;
   width: max-content;
   min-width: 100%;
 }
@@ -134,8 +132,9 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 350px; /* Increased minimum width */
-  flex-shrink: 0; /* Prevent shrinking */
+  width: 350px;
+  min-width: 350px;
+  flex-shrink: 0;
 }
 
 .decade-marker.horizontal {
@@ -148,7 +147,7 @@
   background-color: #dbeafe;
   color: #1e40af;
   font-weight: bold;
-  padding: 0.5rem 1.5rem;
+  padding: 0.75rem 2rem;
   border-radius: 9999px;
   border: 2px solid white;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -160,6 +159,7 @@
   flex-direction: column;
   gap: 1.5rem;
   align-items: center;
+  width: 100%;
 }
 
 .event-item.horizontal {
@@ -172,33 +172,34 @@
 
 .timeline-dot.horizontal {
   position: absolute;
-  top: 40%; /* Match the timeline position */
+  top: -120px;
   left: 50%;
-  transform: translate(-50%, -50%);
-  width: 1rem;
-  height: 1rem;
+  transform: translateX(-50%);
+  width: 1.2rem;
+  height: 1.2rem;
   border-radius: 50%;
   z-index: 2;
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+  border: 3px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
 }
 
 .event-card.horizontal {
-  width: 280px;
+  width: 300px;
   padding: 1.5rem;
   background: white;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   border: 1px solid #e5e7eb;
-  transition: box-shadow 0.3s ease;
+  transition: all 0.3s ease;
   margin-top: 1rem;
 }
 
 .event-card.horizontal:hover {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
 }
 
-/* Dot colors for both layouts */
+/* Dot colors */
 .timeline-dot.birth {
   background-color: #10b981;
 }
@@ -207,12 +208,32 @@
   background-color: #6b7280;
 }
 
-/* Event content styling (applies to both layouts) */
+/* Event content */
 .event-content {
   width: 100%;
 }
 
-/* Mobile responsiveness for vertical layout */
+/* Scrollbar styling */
+.timeline-container.horizontal::-webkit-scrollbar {
+  height: 12px;
+}
+
+.timeline-container.horizontal::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 10px;
+}
+
+.timeline-container.horizontal::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  border-radius: 10px;
+  border: 2px solid #f8fafc;
+}
+
+.timeline-container.horizontal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(90deg, #2563eb, #7c3aed);
+}
+
+/* Mobile responsiveness */
 @media (max-width: 768px) {
   .event-card.vertical.even,
   .event-card.vertical.odd {
@@ -232,46 +253,17 @@
     justify-content: flex-start;
     padding-left: 4rem;
   }
-}
-
-/* Mobile responsiveness for horizontal layout */
-@media (max-width: 768px) {
+  
   .timeline-container.horizontal {
-    padding: 1rem;
+    height: 70vh;
   }
   
   .decade-section.horizontal {
-    min-width: 250px;
+    min-width: 280px;
   }
   
   .event-card.horizontal {
-    width: 220px;
-    padding: 1rem;
+    width: 260px;
+    padding: 1.25rem;
   }
-}
-
-/* Smooth transitions */
-.timeline-container,
-.event-card,
-.timeline-dot {
-  transition: all 0.3s ease;
-}
-
-/* Custom scrollbar for horizontal view */
-.timeline-container.horizontal::-webkit-scrollbar {
-  height: 8px;
-}
-
-.timeline-container.horizontal::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 10px;
-}
-
-.timeline-container.horizontal::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
-}
-
-.timeline-container.horizontal::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
 }

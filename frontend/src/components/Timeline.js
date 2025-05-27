@@ -11,20 +11,70 @@ const Timeline = () => {
   const [filter, setFilter] = useState('all');
   const [viewOrientation, setViewOrientation] = useState('vertical');
 
-  useEffect(() => {
-    if (viewOrientation === 'horizontal') {
-      setTimeout(() => {
-        const container = document.querySelector('.timeline-container.horizontal');
-        if (container) {
-          container.scrollLeft = 0;
-        }
-      }, 100);
-    }
-  }, [viewOrientation, events]);
-
+  // STEP 1: First, fetch the data when component loads
   useEffect(() => {
     fetchTimelineData();
   }, []);
+
+  // STEP 2: Calculate filtered events and decades
+  const filteredEvents = filter === 'all' 
+    ? events 
+    : events.filter(event => event.type === filter);
+
+  const groupedByDecade = filteredEvents.reduce((groups, event) => {
+    const decade = Math.floor(event.year / 10) * 10;
+    if (!groups[decade]) {
+      groups[decade] = [];
+    }
+    groups[decade].push(event);
+    return groups;
+  }, {});
+
+  const decades = Object.keys(groupedByDecade)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  // STEP 3: Now we can safely use filteredEvents and decades in useEffect
+  useEffect(() => {
+    if (viewOrientation === 'horizontal' && filteredEvents.length > 0) {
+      // Small delay to ensure DOM is rendered
+      setTimeout(() => {
+        const container = document.querySelector('.timeline-container.horizontal');
+        if (container) {
+          // Reset scroll position when switching to horizontal
+          container.scrollLeft = 0;
+          
+          // Calculate width based on actual decades
+          const numberOfDecades = decades.length;
+          const sectionWidth = 350; // Each decade section width
+          const gapWidth = 64; // Gap between sections (4rem = 64px)
+          const paddingWidth = 160; // Total padding (2rem on each side = 160px)
+          
+          const totalWidth = (numberOfDecades * sectionWidth) + 
+                           ((numberOfDecades - 1) * gapWidth) + 
+                           paddingWidth + 
+                           200; // Extra padding for scroll space
+          
+          console.log('Decades found:', numberOfDecades);
+          console.log('Total width calculated:', totalWidth);
+          
+          // Force single row layout
+          const content = container.querySelector('.timeline-content.horizontal');
+          if (content) {
+            content.style.width = `${totalWidth}px`;
+            content.style.minWidth = `${totalWidth}px`;
+            
+            // Also update the timeline line to span full width
+            const timelineLine = container.querySelector('.timeline-line.horizontal');
+            if (timelineLine) {
+              timelineLine.style.width = `${totalWidth}px`;
+              timelineLine.style.minWidth = `${totalWidth}px`;
+            }
+          }
+        }
+      }, 300);
+    }
+  }, [viewOrientation, filteredEvents.length, decades.length]); // Use .length to avoid dependency issues
 
   const fetchTimelineData = async () => {
     try {
@@ -74,23 +124,31 @@ const Timeline = () => {
     }
   };
 
-  const filteredEvents = filter === 'all' 
-    ? events 
-    : events.filter(event => event.type === filter);
-
-  const groupedByDecade = filteredEvents.reduce((groups, event) => {
-    const decade = Math.floor(event.year / 10) * 10;
-    if (!groups[decade]) {
-      groups[decade] = [];
+  // Scroll functions for horizontal view
+  const scrollToEnd = () => {
+    const container = document.querySelector('.timeline-container.horizontal');
+    if (container) {
+      const maxScrollLeft = container.scrollWidth - container.clientWidth;
+      console.log('Scrolling to:', maxScrollLeft, 'of total:', container.scrollWidth);
+      
+      container.scrollTo({
+        left: maxScrollLeft,
+        behavior: 'smooth'
+      });
     }
-    groups[decade].push(event);
-    return groups;
-  }, {});
+  };
 
-  const decades = Object.keys(groupedByDecade)
-    .map(Number)
-    .sort((a, b) => a - b);
+  const scrollToBeginning = () => {
+    const container = document.querySelector('.timeline-container.horizontal');
+    if (container) {
+      container.scrollTo({
+        left: 0,
+        behavior: 'smooth'
+      });
+    }
+  };
 
+  // STEP 4: Handle loading and error states
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -107,11 +165,13 @@ const Timeline = () => {
     );
   }
 
+  // STEP 5: Render the timeline
   return (
     <div className="w-full">
       <h1 className="text-3xl font-bold mb-4 text-center">Family Timeline</h1>
       
       <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-6">
+        {/* Filter buttons */}
         <div className="inline-flex rounded-md shadow-sm">
           <button
             onClick={() => setFilter('all')}
@@ -145,6 +205,7 @@ const Timeline = () => {
           </button>
         </div>
 
+        {/* View orientation buttons */}
         <div className="inline-flex rounded-md shadow-sm">
           <button
             onClick={() => setViewOrientation('vertical')}
@@ -173,8 +234,29 @@ const Timeline = () => {
             Horizontal
           </button>
         </div>
+
+        {/* Scroll controls for horizontal view */}
+        {viewOrientation === 'horizontal' && filteredEvents.length > 0 && (
+          <div className="inline-flex rounded-md shadow-sm">
+            <button
+              onClick={scrollToBeginning}
+              className="px-3 py-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-l-lg"
+              title="Scroll to beginning"
+            >
+              ⟪ Start
+            </button>
+            <button
+              onClick={scrollToEnd}
+              className="px-3 py-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-r-lg"
+              title="Scroll to end"
+            >
+              End ⟫
+            </button>
+          </div>
+        )}
       </div>
       
+      {/* Timeline content */}
       {filteredEvents.length === 0 ? (
         <div className="text-center text-gray-500 mt-8">
           <p>No events to display.</p>
@@ -232,6 +314,13 @@ const Timeline = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Help text for horizontal scrolling */}
+      {viewOrientation === 'horizontal' && filteredEvents.length > 0 && (
+        <div className="text-center mt-4 text-sm text-gray-500">
+          <p>💡 Tip: Use the scroll buttons above or drag the scrollbar to navigate through time</p>
         </div>
       )}
     </div>
