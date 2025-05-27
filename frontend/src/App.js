@@ -46,7 +46,7 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-white dark:bg-gray-800 shadow-sm transition-colors duration-200 border-b border-gray-100 dark:border-gray-700">
+    <nav className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-700 shadow-sm transition-colors duration-200 border-b border-gray-200 dark:border-gray-600">
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-8">
         {/* Logo with blue-purple gradient styling */}
         <Link 
