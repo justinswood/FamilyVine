@@ -5,6 +5,7 @@ const membersRoute = require('./routes/members');
 const albumsRoute = require('./routes/albums');
 const relationshipsRoute = require('./routes/relationships');
 const app = express();
+const heroImagesRoute = require('./routes/hero-images');
 
 // CORS configuration for production
 const corsOptions = {
@@ -46,6 +47,7 @@ app.get('/health', (req, res) => {
 app.use('/api/relationships', relationshipsRoute);
 app.use('/api/albums', albumsRoute);
 app.use('/api/members', membersRoute);
+app.use('/api/hero-images', heroImagesRoute);
 
 // Error handling middleware
 app.use((error, req, res, next) => {

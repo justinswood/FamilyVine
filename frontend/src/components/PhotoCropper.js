@@ -119,6 +119,7 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
           };
           setCrop(initialCrop);
           setCompletedCrop(initialCrop);
+          console.log('Initial crop set:', initialCrop);
         }
         return;
       }
@@ -239,7 +240,7 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[95vh] overflow-hidden shadow-2xl">
+      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[95vh] overflow-auto shadow-2xl">
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-800">Crop Profile Photo</h2>
           <p className="text-gray-600 mt-1">

@@ -118,28 +118,39 @@ const HeroImageSelector = () => {
     }
   };
 
-  // NEW: Handle crop completion
+  // Handle crop completion - save to server
   const handleCropComplete = async (croppedFile) => {
     try {
-      // Create a new photo object with the cropped image
-      const croppedPhotoUrl = URL.createObjectURL(croppedFile);
+      setSaving(true);
       
-      const croppedPhoto = {
-        ...selectedPhotoForCrop,
-        id: `cropped_${selectedPhotoForCrop.id}_${Date.now()}`, // Unique ID for cropped version
-        file_path: croppedPhotoUrl, // Use blob URL for display
-        isCropped: true, // Mark as cropped
-        originalPhoto: selectedPhotoForCrop // Keep reference to original
-      };
+      // Create FormData to send the cropped image to server
+      const formData = new FormData();
+      formData.append('heroImage', croppedFile);
+      formData.append('caption', `Hero image from ${selectedPhotoForCrop.albumTitle}`);
+      formData.append('albumTitle', selectedPhotoForCrop.albumTitle || 'gallery');
 
-      // Add to selected images
+      // Send to backend
+      const response = await axios.post(`${process.env.REACT_APP_API}/api/hero-images`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      // Add the saved image to selected images
+      const savedImage = response.data;
       setSelectedImages(prev => {
         if (prev.length >= 8) {
           alert('You can select a maximum of 8 images for the hero slideshow');
           return prev;
         }
-        return [...prev, croppedPhoto];
+        return [...prev, {
+          ...savedImage,
+          albumTitle: selectedPhotoForCrop.albumTitle,
+          isCropped: true
+        }];
       });
+
+      alert('Hero image saved successfully!');
 
       // Close cropper
       setShowCropper(false);
@@ -149,6 +160,8 @@ const HeroImageSelector = () => {
     } catch (error) {
       console.error('Error saving cropped image:', error);
       alert('Failed to save cropped image');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -240,7 +253,7 @@ const HeroImageSelector = () => {
             {selectedImages.map((photo, index) => (
               <div key={photo.id} className="relative border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
                 <img
-                  src={photo.isCropped ? photo.file_path : `${process.env.REACT_APP_API}/${photo.file_path}`}
+                  src={photo.isCropped ? `${process.env.REACT_APP_API}/${photo.file_path}` : `${process.env.REACT_APP_API}/${photo.file_path}`}
                   alt={photo.caption || 'Hero image'}
                   className="w-full h-32 object-cover"
                 />
@@ -326,6 +339,7 @@ const HeroImageSelector = () => {
                   src={`${process.env.REACT_APP_API}/${photo.file_path}`}
                   alt={photo.caption || 'Gallery photo'}
                   className="w-full h-24 object-cover"
+                  loading="lazy"
                 />
                 
                 {/* Selection indicator */}
@@ -335,7 +349,7 @@ const HeroImageSelector = () => {
                   </div>
                 )}
                 
-                {/* NEW: Action buttons */}
+                {/* Action buttons */}
                 <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-50 transition-opacity flex items-center justify-center opacity-0 hover:opacity-100">
                   <div className="flex flex-col space-y-1">
                     <button
@@ -363,7 +377,7 @@ const HeroImageSelector = () => {
         )}
       </div>
 
-      {/* NEW: Photo Cropper Modal */}
+      {/* Photo Cropper Modal */}
       {showCropper && cropImageFile && selectedPhotoForCrop && (
         <PhotoCropper
           imageFile={cropImageFile}
