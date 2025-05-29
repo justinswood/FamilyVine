@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-// This component goes in: frontend/src/components/HeroImageSelector.js
+import PhotoCropper from './PhotoCropper'; // We'll use your existing cropper
 
 const HeroImageSelector = () => {
   const [allPhotos, setAllPhotos] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // NEW: States for cropping
+  const [showCropper, setShowCropper] = useState(false);
+  const [selectedPhotoForCrop, setSelectedPhotoForCrop] = useState(null);
+  const [cropImageFile, setCropImageFile] = useState(null);
 
   useEffect(() => {
     fetchAllPhotos();
@@ -80,6 +84,81 @@ const HeroImageSelector = () => {
     }
   };
 
+  // NEW: Function to convert image URL to File object for cropping
+  const urlToFile = async (url, filename) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      return new File([blob], filename, { type: blob.type });
+    } catch (error) {
+      console.error('Error converting URL to file:', error);
+      return null;
+    }
+  };
+
+  // NEW: Handle crop button click
+  const handleCropPhoto = async (photo) => {
+    try {
+      const imageUrl = `${process.env.REACT_APP_API}/${photo.file_path}`;
+      const filename = photo.filename || 'hero-image.jpg';
+      
+      // Convert the URL to a File object for the cropper
+      const file = await urlToFile(imageUrl, filename);
+      
+      if (file) {
+        setSelectedPhotoForCrop(photo);
+        setCropImageFile(file);
+        setShowCropper(true);
+      } else {
+        alert('Failed to load image for cropping');
+      }
+    } catch (error) {
+      console.error('Error preparing image for crop:', error);
+      alert('Failed to prepare image for cropping');
+    }
+  };
+
+  // NEW: Handle crop completion
+  const handleCropComplete = async (croppedFile) => {
+    try {
+      // Create a new photo object with the cropped image
+      const croppedPhotoUrl = URL.createObjectURL(croppedFile);
+      
+      const croppedPhoto = {
+        ...selectedPhotoForCrop,
+        id: `cropped_${selectedPhotoForCrop.id}_${Date.now()}`, // Unique ID for cropped version
+        file_path: croppedPhotoUrl, // Use blob URL for display
+        isCropped: true, // Mark as cropped
+        originalPhoto: selectedPhotoForCrop // Keep reference to original
+      };
+
+      // Add to selected images
+      setSelectedImages(prev => {
+        if (prev.length >= 8) {
+          alert('You can select a maximum of 8 images for the hero slideshow');
+          return prev;
+        }
+        return [...prev, croppedPhoto];
+      });
+
+      // Close cropper
+      setShowCropper(false);
+      setSelectedPhotoForCrop(null);
+      setCropImageFile(null);
+      
+    } catch (error) {
+      console.error('Error saving cropped image:', error);
+      alert('Failed to save cropped image');
+    }
+  };
+
+  // NEW: Handle crop cancellation
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setSelectedPhotoForCrop(null);
+    setCropImageFile(null);
+  };
+
   const toggleImageSelection = (photo) => {
     setSelectedImages(prev => {
       const isSelected = prev.some(img => img.id === photo.id);
@@ -144,6 +223,7 @@ const HeroImageSelector = () => {
         <p className="text-blue-700 dark:text-blue-300 text-sm mb-4">
           Select 6-8 images to display in the rotating hero slideshow on your homepage. 
           Choose images that look good in landscape format and have good visual impact.
+          <strong className="text-green-700"> NEW: You can now crop images to fit perfectly!</strong>
         </p>
         <p className="text-blue-600 dark:text-blue-400 text-xs">
           Selected: {selectedImages.length}/8 images
@@ -160,13 +240,14 @@ const HeroImageSelector = () => {
             {selectedImages.map((photo, index) => (
               <div key={photo.id} className="relative border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
                 <img
-                  src={`${process.env.REACT_APP_API}/${photo.file_path}`}
+                  src={photo.isCropped ? photo.file_path : `${process.env.REACT_APP_API}/${photo.file_path}`}
                   alt={photo.caption || 'Hero image'}
                   className="w-full h-32 object-cover"
                 />
                 <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-opacity">
                   <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
                     #{index + 1}
+                    {photo.isCropped && <span className="ml-1">✂️</span>}
                   </div>
                   <div className="absolute top-2 right-2 flex space-x-1">
                     <button
@@ -197,6 +278,7 @@ const HeroImageSelector = () => {
                 <div className="p-2 bg-gray-50 dark:bg-gray-700">
                   <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
                     From: {photo.albumTitle}
+                    {photo.isCropped && <span className="text-green-600 ml-2">(Cropped)</span>}
                   </p>
                 </div>
               </div>
@@ -219,8 +301,7 @@ const HeroImageSelector = () => {
           Available Photos ({allPhotos.length} total)
         </h4>
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Click on photos to add them to your hero slideshow. Look for images that are wide (landscape) 
-          and have good visual impact.
+          Click "Add" to select photos as-is, or "Crop & Add" to crop them first for better hero display.
         </p>
         
         {allPhotos.length === 0 ? (
@@ -235,12 +316,11 @@ const HeroImageSelector = () => {
             {allPhotos.map((photo) => (
               <div
                 key={photo.id}
-                className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
+                className={`relative rounded-lg overflow-hidden border-2 transition-all ${
                   isImageSelected(photo)
                     ? 'border-green-500 ring-2 ring-green-200'
                     : 'border-gray-200 hover:border-blue-300'
                 }`}
-                onClick={() => toggleImageSelection(photo)}
               >
                 <img
                   src={`${process.env.REACT_APP_API}/${photo.file_path}`}
@@ -255,6 +335,24 @@ const HeroImageSelector = () => {
                   </div>
                 )}
                 
+                {/* NEW: Action buttons */}
+                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-50 transition-opacity flex items-center justify-center opacity-0 hover:opacity-100">
+                  <div className="flex flex-col space-y-1">
+                    <button
+                      onClick={() => toggleImageSelection(photo)}
+                      className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700"
+                    >
+                      {isImageSelected(photo) ? 'Remove' : 'Add'}
+                    </button>
+                    <button
+                      onClick={() => handleCropPhoto(photo)}
+                      className="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700"
+                    >
+                      Crop & Add
+                    </button>
+                  </div>
+                </div>
+                
                 {/* Photo info */}
                 <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-1">
                   <p className="text-xs truncate">{photo.albumTitle}</p>
@@ -264,6 +362,15 @@ const HeroImageSelector = () => {
           </div>
         )}
       </div>
+
+      {/* NEW: Photo Cropper Modal */}
+      {showCropper && cropImageFile && selectedPhotoForCrop && (
+        <PhotoCropper
+          imageFile={cropImageFile}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 };

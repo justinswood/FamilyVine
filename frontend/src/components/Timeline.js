@@ -9,14 +9,11 @@ const Timeline = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
-  const [viewOrientation, setViewOrientation] = useState('vertical');
 
-  // STEP 1: First, fetch the data when component loads
   useEffect(() => {
     fetchTimelineData();
   }, []);
 
-  // STEP 2: Calculate filtered events and decades
   const filteredEvents = filter === 'all' 
     ? events 
     : events.filter(event => event.type === filter);
@@ -33,48 +30,6 @@ const Timeline = () => {
   const decades = Object.keys(groupedByDecade)
     .map(Number)
     .sort((a, b) => a - b);
-
-  // STEP 3: Now we can safely use filteredEvents and decades in useEffect
-  useEffect(() => {
-    if (viewOrientation === 'horizontal' && filteredEvents.length > 0) {
-      // Small delay to ensure DOM is rendered
-      setTimeout(() => {
-        const container = document.querySelector('.timeline-container.horizontal');
-        if (container) {
-          // Reset scroll position when switching to horizontal
-          container.scrollLeft = 0;
-          
-          // Calculate width based on actual decades
-          const numberOfDecades = decades.length;
-          const sectionWidth = 350; // Each decade section width
-          const gapWidth = 64; // Gap between sections (4rem = 64px)
-          const paddingWidth = 160; // Total padding (2rem on each side = 160px)
-          
-          const totalWidth = (numberOfDecades * sectionWidth) + 
-                           ((numberOfDecades - 1) * gapWidth) + 
-                           paddingWidth + 
-                           200; // Extra padding for scroll space
-          
-          console.log('Decades found:', numberOfDecades);
-          console.log('Total width calculated:', totalWidth);
-          
-          // Force single row layout
-          const content = container.querySelector('.timeline-content.horizontal');
-          if (content) {
-            content.style.width = `${totalWidth}px`;
-            content.style.minWidth = `${totalWidth}px`;
-            
-            // Also update the timeline line to span full width
-            const timelineLine = container.querySelector('.timeline-line.horizontal');
-            if (timelineLine) {
-              timelineLine.style.width = `${totalWidth}px`;
-              timelineLine.style.minWidth = `${totalWidth}px`;
-            }
-          }
-        }
-      }, 300);
-    }
-  }, [viewOrientation, filteredEvents.length, decades.length]); // Use .length to avoid dependency issues
 
   const fetchTimelineData = async () => {
     try {
@@ -124,31 +79,6 @@ const Timeline = () => {
     }
   };
 
-  // Scroll functions for horizontal view
-  const scrollToEnd = () => {
-    const container = document.querySelector('.timeline-container.horizontal');
-    if (container) {
-      const maxScrollLeft = container.scrollWidth - container.clientWidth;
-      console.log('Scrolling to:', maxScrollLeft, 'of total:', container.scrollWidth);
-      
-      container.scrollTo({
-        left: maxScrollLeft,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  const scrollToBeginning = () => {
-    const container = document.querySelector('.timeline-container.horizontal');
-    if (container) {
-      container.scrollTo({
-        left: 0,
-        behavior: 'smooth'
-      });
-    }
-  };
-
-  // STEP 4: Handle loading and error states
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -165,12 +95,11 @@ const Timeline = () => {
     );
   }
 
-  // STEP 5: Render the timeline
   return (
     <div className="w-full">
       <h1 className="text-3xl font-bold mb-4 text-center">Family Timeline</h1>
       
-      <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-6">
+      <div className="flex justify-center items-center gap-4 mb-6">
         {/* Filter buttons */}
         <div className="inline-flex rounded-md shadow-sm">
           <button
@@ -204,80 +133,30 @@ const Timeline = () => {
             Deaths
           </button>
         </div>
-
-        {/* View orientation buttons */}
-        <div className="inline-flex rounded-md shadow-sm">
-          <button
-            onClick={() => setViewOrientation('vertical')}
-            className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
-              viewOrientation === 'vertical' 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            } border border-gray-300 flex items-center gap-2`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-            </svg>
-            Vertical
-          </button>
-          <button
-            onClick={() => setViewOrientation('horizontal')}
-            className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
-              viewOrientation === 'horizontal' 
-                ? 'bg-purple-600 text-white' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-            } border border-gray-300 flex items-center gap-2`}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7h16M4 7l4-4M4 7l4 4m12 6H8m8 0l-4-4m4 4l-4 4" />
-            </svg>
-            Horizontal
-          </button>
-        </div>
-
-        {/* Scroll controls for horizontal view */}
-        {viewOrientation === 'horizontal' && filteredEvents.length > 0 && (
-          <div className="inline-flex rounded-md shadow-sm">
-            <button
-              onClick={scrollToBeginning}
-              className="px-3 py-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-l-lg"
-              title="Scroll to beginning"
-            >
-              ⟪ Start
-            </button>
-            <button
-              onClick={scrollToEnd}
-              className="px-3 py-2 text-sm font-medium bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-r-lg"
-              title="Scroll to end"
-            >
-              End ⟫
-            </button>
-          </div>
-        )}
       </div>
       
-      {/* Timeline content */}
+      {/* Timeline content - always vertical */}
       {filteredEvents.length === 0 ? (
         <div className="text-center text-gray-500 mt-8">
           <p>No events to display.</p>
           <p className="text-sm mt-2">Try adding birth dates to family members.</p>
         </div>
       ) : (
-        <div className={`timeline-container ${viewOrientation}`}>
-          <div className={`timeline-line ${viewOrientation}`}></div>
-          <div className={`timeline-content ${viewOrientation}`}>
+        <div className="timeline-container vertical">
+          <div className="timeline-line vertical"></div>
+          <div className="timeline-content vertical">
             {decades.map(decade => (
-              <div key={decade} className={`decade-section ${viewOrientation}`}>
-                <div className={`decade-marker ${viewOrientation}`}>
+              <div key={decade} className="decade-section vertical">
+                <div className="decade-marker vertical">
                   <div className="decade-label">
                     {decade}s
                   </div>
                 </div>
-                <div className={`events-container ${viewOrientation}`}>
+                <div className="events-container vertical">
                   {groupedByDecade[decade].map((event, index) => (
-                    <div key={index} className={`event-item ${viewOrientation}`}>
-                      <div className={`timeline-dot ${event.type} ${viewOrientation}`}></div>
-                      <div className={`event-card ${viewOrientation} ${index % 2 === 0 ? 'even' : 'odd'}`}>
+                    <div key={index} className="event-item vertical">
+                      <div className={`timeline-dot ${event.type} vertical`}></div>
+                      <div className={`event-card vertical ${index % 2 === 0 ? 'even' : 'odd'}`}>
                         <div className="event-content">
                           <div className="flex items-center mb-3">
                             <div className="mr-4">
@@ -314,13 +193,6 @@ const Timeline = () => {
               </div>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Help text for horizontal scrolling */}
-      {viewOrientation === 'horizontal' && filteredEvents.length > 0 && (
-        <div className="text-center mt-4 text-sm text-gray-500">
-          <p>💡 Tip: Use the scroll buttons above or drag the scrollbar to navigate through time</p>
         </div>
       )}
     </div>

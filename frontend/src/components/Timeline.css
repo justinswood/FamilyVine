@@ -1,4 +1,4 @@
-/* Timeline.css - Simplified and Fixed */
+/* Timeline.css - Simplified Vertical Only */
 
 /* Base timeline container */
 .timeline-container {
@@ -6,7 +6,7 @@
   padding: 2rem 0;
 }
 
-/* VERTICAL LAYOUT */
+/* VERTICAL LAYOUT ONLY */
 .timeline-container.vertical {
   padding: 2rem 0;
 }
@@ -99,106 +99,6 @@
   margin-right: 55%;
 }
 
-/* HORIZONTAL LAYOUT */
-.timeline-container.horizontal {
-  width: 100%;
-  height: 80vh;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding: 1rem 0;
-}
-
-.timeline-line.horizontal {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  height: 4px;
-  margin-top: -2px;
-  background-color: #e5e7eb;
-  z-index: 1;
-  width: 100%;
-}
-
-.timeline-content.horizontal {
-  display: flex;
-  flex-direction: row;
-  gap: 4rem;
-  padding: 2rem;
-  width: max-content;
-  min-width: 100%;
-}
-
-.decade-section.horizontal {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 350px;
-  min-width: 350px;
-  flex-shrink: 0;
-}
-
-.decade-marker.horizontal {
-  margin-bottom: 2rem;
-  position: relative;
-  z-index: 2;
-}
-
-.decade-marker.horizontal .decade-label {
-  background-color: #dbeafe;
-  color: #1e40af;
-  font-weight: bold;
-  padding: 0.75rem 2rem;
-  border-radius: 9999px;
-  border: 2px solid white;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  white-space: nowrap;
-}
-
-.events-container.horizontal {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  align-items: center;
-  width: 100%;
-}
-
-.event-item.horizontal {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
-
-.timeline-dot.horizontal {
-  position: absolute;
-  top: -120px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 1.2rem;
-  height: 1.2rem;
-  border-radius: 50%;
-  z-index: 2;
-  border: 3px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-}
-
-.event-card.horizontal {
-  width: 300px;
-  padding: 1.5rem;
-  background: white;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-  transition: all 0.3s ease;
-  margin-top: 1rem;
-}
-
-.event-card.horizontal:hover {
-  box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
-}
-
 /* Dot colors */
 .timeline-dot.birth {
   background-color: #10b981;
@@ -211,26 +111,6 @@
 /* Event content */
 .event-content {
   width: 100%;
-}
-
-/* Scrollbar styling */
-.timeline-container.horizontal::-webkit-scrollbar {
-  height: 12px;
-}
-
-.timeline-container.horizontal::-webkit-scrollbar-track {
-  background: #f8fafc;
-  border-radius: 10px;
-}
-
-.timeline-container.horizontal::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
-  border-radius: 10px;
-  border: 2px solid #f8fafc;
-}
-
-.timeline-container.horizontal::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(90deg, #2563eb, #7c3aed);
 }
 
 /* Mobile responsiveness */
@@ -252,18 +132,5 @@
   .decade-marker.vertical {
     justify-content: flex-start;
     padding-left: 4rem;
-  }
-  
-  .timeline-container.horizontal {
-    height: 70vh;
-  }
-  
-  .decade-section.horizontal {
-    min-width: 280px;
-  }
-  
-  .event-card.horizontal {
-    width: 260px;
-    padding: 1.25rem;
   }
 }
