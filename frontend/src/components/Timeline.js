@@ -14,8 +14,8 @@ const Timeline = () => {
     fetchTimelineData();
   }, []);
 
-  const filteredEvents = filter === 'all' 
-    ? events 
+  const filteredEvents = filter === 'all'
+    ? events
     : events.filter(event => event.type === filter);
 
   const groupedByDecade = filteredEvents.reduce((groups, event) => {
@@ -36,12 +36,12 @@ const Timeline = () => {
       setLoading(true);
       const response = await axios.get(`${process.env.REACT_APP_API}/api/members`);
       const members = response.data;
-      
+
       const timelineEvents = [];
-      
+
       members.forEach(member => {
         const fullName = `${member.first_name} ${member.last_name}`;
-        
+
         if (member.birth_date) {
           timelineEvents.push({
             type: 'birth',
@@ -54,7 +54,7 @@ const Timeline = () => {
             member: member
           });
         }
-        
+
         if (member.death_date) {
           timelineEvents.push({
             type: 'death',
@@ -68,7 +68,7 @@ const Timeline = () => {
           });
         }
       });
-      
+
       timelineEvents.sort((a, b) => a.date - b.date);
       setEvents(timelineEvents);
     } catch (error) {
@@ -98,43 +98,40 @@ const Timeline = () => {
   return (
     <div className="w-full">
       <h1 className="text-3xl font-bold mb-4 text-center">Family Timeline</h1>
-      
+
       <div className="flex justify-center items-center gap-4 mb-6">
         {/* Filter buttons */}
         <div className="inline-flex rounded-md shadow-sm">
           <button
             onClick={() => setFilter('all')}
-            className={`px-4 py-2 text-sm font-medium rounded-l-lg ${
-              filter === 'all' 
-                ? 'bg-blue-600 text-white' 
+            className={`px-4 py-2 text-sm font-medium rounded-l-lg ${filter === 'all'
+                ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
-            } border border-gray-300`}
+              } border border-gray-300`}
           >
             All Events
           </button>
           <button
             onClick={() => setFilter('birth')}
-            className={`px-4 py-2 text-sm font-medium ${
-              filter === 'birth' 
-                ? 'bg-green-600 text-white' 
+            className={`px-4 py-2 text-sm font-medium ${filter === 'birth'
+                ? 'bg-green-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
-            } border-t border-b border-gray-300`}
+              } border-t border-b border-gray-300`}
           >
             Births
           </button>
           <button
             onClick={() => setFilter('death')}
-            className={`px-4 py-2 text-sm font-medium rounded-r-lg ${
-              filter === 'death' 
-                ? 'bg-gray-600 text-white' 
+            className={`px-4 py-2 text-sm font-medium rounded-r-lg ${filter === 'death'
+                ? 'bg-gray-600 text-white'
                 : 'bg-white text-gray-700 hover:bg-gray-50'
-            } border border-gray-300`}
+              } border border-gray-300`}
           >
             Deaths
           </button>
         </div>
       </div>
-      
+
       {/* Timeline content - always vertical */}
       {filteredEvents.length === 0 ? (
         <div className="text-center text-gray-500 mt-8">
@@ -160,26 +157,25 @@ const Timeline = () => {
                         <div className="event-content">
                           <div className="flex items-center mb-3">
                             <div className="mr-4">
-                              <ProfileImage 
-                                member={event.member} 
-                                size="small" 
-                                className="border-2 border-gray-200" 
+                              <ProfileImage
+                                member={event.member}
+                                size="small"
+                                className="border-2 border-gray-200"
                               />
                             </div>
                             <div>
                               <span className="text-lg font-semibold text-gray-700">{event.year}</span>
-                              <div className={`text-sm px-3 py-1 rounded-full inline-block ml-2 font-medium ${
-                                event.type === 'birth' 
-                                  ? 'bg-green-100 text-green-800' 
+                              <div className={`text-sm px-3 py-1 rounded-full inline-block ml-2 font-medium ${event.type === 'birth'
+                                  ? 'bg-green-100 text-green-800'
                                   : 'bg-gray-100 text-gray-800'
-                              }`}>
+                                }`}>
                                 {event.type === 'birth' ? 'Birth' : 'Death'}
                               </div>
                             </div>
                           </div>
                           <h3 className="font-semibold text-lg mb-2">{event.description}</h3>
                           <p className="text-base text-gray-600 mb-3">{event.location}</p>
-                          <Link 
+                          <Link
                             to={`/members/${event.memberId}`}
                             className="text-blue-600 hover:underline text-base font-medium inline-block"
                           >
