@@ -20,7 +20,18 @@ const MemberPage = () => {
     }
   }, [id]);
 
-  // ADD THIS NEW useEffect to fetch spouse information (around line 25):
+  // FIXED: Move fetchSpouseInfo to top level (outside of fetchMember)
+  const fetchSpouseInfo = async (spouseId) => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_API}/api/members/${spouseId}`);
+      setSpouseInfo(response.data);
+    } catch (error) {
+      console.error('Error fetching spouse info:', error);
+      setSpouseInfo(null);
+    }
+  };
+
+  // useEffect to fetch spouse information when member changes
   useEffect(() => {
     if (member && member.spouse_id) {
       fetchSpouseInfo(member.spouse_id);
@@ -33,17 +44,6 @@ const MemberPage = () => {
       setError(null);
       const response = await axios.get(`${process.env.REACT_APP_API}/api/members/${id}`);
 
-      // ADD THIS NEW FUNCTION to fetch spouse details (around line 35):
-      const fetchSpouseInfo = async (spouseId) => {
-        try {
-          const response = await axios.get(`${process.env.REACT_APP_API}/api/members/${spouseId}`);
-          setSpouseInfo(response.data);
-        } catch (error) {
-          console.error('Error fetching spouse info:', error);
-          setSpouseInfo(null);
-        }
-      };
-      
       // Safety check for response data
       if (response.data) {
         setMember(response.data);
@@ -70,7 +70,7 @@ const MemberPage = () => {
 
   const setAsProfilePhoto = async (photoId) => {
     if (!window.confirm('Set this photo as your profile picture?')) return;
-    
+
     try {
       await axios.put(`${process.env.REACT_APP_API}/api/members/${id}/profile-photo/${photoId}`);
       fetchMember();
@@ -88,12 +88,12 @@ const MemberPage = () => {
   // Helper function to format dates correctly
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    
+
     try {
       const dateOnly = dateString.split('T')[0];
       const [year, month, day] = dateOnly.split('-');
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      
+
       return date.toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'long',
@@ -108,12 +108,12 @@ const MemberPage = () => {
   // Helper function to calculate age
   const calculateAge = (birthDateString, deathDateString = null) => {
     if (!birthDateString) return null;
-    
+
     try {
       const birthOnly = birthDateString.split('T')[0];
       const [birthYear, birthMonth, birthDay] = birthOnly.split('-').map(Number);
       const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
-      
+
       let endDate;
       if (deathDateString) {
         const deathOnly = deathDateString.split('T')[0];
@@ -122,14 +122,14 @@ const MemberPage = () => {
       } else {
         endDate = new Date();
       }
-      
+
       let age = endDate.getFullYear() - birthDate.getFullYear();
       const monthDiff = endDate.getMonth() - birthDate.getMonth();
-      
+
       if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
         age--;
       }
-      
+
       return age;
     } catch (error) {
       console.error('Error calculating age:', error);
@@ -170,14 +170,14 @@ const MemberPage = () => {
             <p>{error}</p>
           </div>
           <div className="space-x-4">
-            <button 
+            <button
               onClick={fetchMember}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
             >
               Try Again
             </button>
-            <Link 
-              to="/members" 
+            <Link
+              to="/members"
               className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
             >
               Back to Members
@@ -228,7 +228,7 @@ const MemberPage = () => {
           {firstName} {middleName && `${middleName} `}{lastName}
         </h1>
         {member.pronouns && <p className="text-gray-500 italic">{member.pronouns}</p>}
-        
+
         {member.birth_date && (
           <div className="text-gray-600 mt-2 text-center">
             <p>
@@ -262,9 +262,7 @@ const MemberPage = () => {
           </Link>
         </div>
 
-        // ADD THIS NEW SECTION in your JSX (after the existing member details, around line 220):
-
-        {/* NEW: Marriage Information Section */}
+        {/* FIXED: Marriage Information Section */}
         {member && (
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-semibold mb-3 text-gray-800">Marriage Information</h3>
@@ -338,7 +336,7 @@ const MemberPage = () => {
               Add Relationship
             </button>
           </div>
-          
+
           <RelationshipsList memberId={parseInt(id)} key={showAddRelationship ? 'refresh' : 'normal'} />
         </div>
 
