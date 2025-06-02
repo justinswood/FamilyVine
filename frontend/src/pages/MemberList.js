@@ -12,7 +12,7 @@ const MemberList = () => {
   const [loading, setLoading] = useState(true); // Add loading state
   
   // New state for enhanced features
-  const [viewMode, setViewMode] = useState('list');
+  const [viewMode, setViewMode] = useState('grid');
   const [sortBy, setSortBy] = useState('name');
   const [sortOrder, setSortOrder] = useState('asc');
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,10 +23,17 @@ const MemberList = () => {
     axios.get(`${process.env.REACT_APP_API}/api/members`)
       .then(res => {
         console.log('Members loaded:', res.data);
-        // Add safety check for the response
         const membersData = res.data || [];
+
+        // Sort alphabetically descending by default
+        const sortedMembers = [...membersData].sort((a, b) => {
+          const nameA = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase();
+          const nameB = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
+          return nameB > nameA ? 1 : -1; // Descending order (Z to A)
+        });
+
         setAllMembers(membersData);
-        setFilteredMembers(membersData);
+        setFilteredMembers(sortedMembers); // ← Now properly sorted
       })
       .catch(err => {
         console.error('Error fetching members:', err);
@@ -44,7 +51,7 @@ const MemberList = () => {
     if (filteredMembers && filteredMembers.length > 0) {
       sortMembers();
     }
-  }, [sortBy, sortOrder]);
+}, [sortBy, sortOrder, allMembers]);
 
   const sortMembers = () => {
     if (!filteredMembers || filteredMembers.length === 0) return;

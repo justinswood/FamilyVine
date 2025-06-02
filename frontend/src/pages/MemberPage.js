@@ -11,6 +11,7 @@ const MemberPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showAddRelationship, setShowAddRelationship] = useState(false);
+  const [spouseInfo, setSpouseInfo] = useState(null);
 
   useEffect(() => {
     if (id) {
@@ -19,11 +20,29 @@ const MemberPage = () => {
     }
   }, [id]);
 
+  // ADD THIS NEW useEffect to fetch spouse information (around line 25):
+  useEffect(() => {
+    if (member && member.spouse_id) {
+      fetchSpouseInfo(member.spouse_id);
+    }
+  }, [member]);
+
   const fetchMember = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await axios.get(`${process.env.REACT_APP_API}/api/members/${id}`);
+
+      // ADD THIS NEW FUNCTION to fetch spouse details (around line 35):
+      const fetchSpouseInfo = async (spouseId) => {
+        try {
+          const response = await axios.get(`${process.env.REACT_APP_API}/api/members/${spouseId}`);
+          setSpouseInfo(response.data);
+        } catch (error) {
+          console.error('Error fetching spouse info:', error);
+          setSpouseInfo(null);
+        }
+      };
       
       // Safety check for response data
       if (response.data) {
@@ -242,6 +261,71 @@ const MemberPage = () => {
             View Family Tree
           </Link>
         </div>
+
+        // ADD THIS NEW SECTION in your JSX (after the existing member details, around line 220):
+
+        {/* NEW: Marriage Information Section */}
+        {member && (
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h3 className="text-lg font-semibold mb-3 text-gray-800">Marriage Information</h3>
+
+            {member.is_married ? (
+              <div className="space-y-2">
+                <div className="flex items-center">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Married
+                  </span>
+                </div>
+
+                {member.marriage_date && (
+                  <p><strong>Marriage Date:</strong> {formatDate(member.marriage_date)}</p>
+                )}
+
+                {spouseInfo ? (
+                  <div className="flex items-center space-x-3 mt-3 p-3 bg-white rounded border">
+                    {spouseInfo.photo_url && (
+                      <img
+                        src={`${process.env.REACT_APP_API}/${spouseInfo.photo_url}`}
+                        alt={`${spouseInfo.first_name} ${spouseInfo.last_name}`}
+                        className="w-12 h-12 rounded-full object-cover border"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <div>
+                      <p><strong>Spouse:</strong>
+                        <Link
+                          to={`/members/${spouseInfo.id}`}
+                          className="text-blue-600 hover:underline ml-1"
+                        >
+                          {spouseInfo.first_name} {spouseInfo.last_name}
+                        </Link>
+                      </p>
+                      {spouseInfo.birth_date && (
+                        <p className="text-sm text-gray-600">
+                          Born: {formatDate(spouseInfo.birth_date)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : member.spouse_id ? (
+                  <p className="text-gray-600">
+                    <strong>Spouse:</strong> (Member #{member.spouse_id} - details not available)
+                  </p>
+                ) : (
+                  <p className="text-gray-600">No spouse selected</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                  Not Married
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Relationships Section */}
         <div className="mt-8 text-left">

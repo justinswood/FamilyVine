@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
     // Only allow image files
@@ -49,26 +49,26 @@ const upload = multer({
 // Helper function to parse dates properly (fixes timezone issues)
 const parseDate = (dateStr) => {
   if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return null;
-  
+
   // Handle various input formats
   let dateInput = dateStr.toString();
-  
+
   // If the input contains 'T' (ISO format), strip the time part
   if (dateInput.includes('T')) {
     dateInput = dateInput.split('T')[0];
   }
-  
+
   // If the input contains 'Z' or timezone info, handle it
   if (dateInput.includes('Z') || dateInput.match(/[+-]\d{2}:\d{2}$/)) {
     const date = new Date(dateStr);
     return date.toISOString().split('T')[0];
   }
-  
+
   // Check if it's already in YYYY-MM-DD format
   if (dateInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
     return dateInput;
   }
-  
+
   // Try to parse as date and format
   try {
     const date = new Date(dateStr);
@@ -78,7 +78,7 @@ const parseDate = (dateStr) => {
   } catch (e) {
     console.warn(`Could not parse date: ${dateStr}`);
   }
-  
+
   return null;
 };
 
@@ -92,12 +92,14 @@ router.get('/:id', async (req, res) => {
   res.json(result.rows[0]);
 });
 
+// UPDATED POST route with marriage fields
 router.post('/', upload.single('photo'), async (req, res) => {
   const {
     first_name, middle_name, last_name, relationship,
     gender, is_alive, birth_date, death_date,
     birth_place, death_place, location,
-    occupation, pronouns, email, phone
+    occupation, pronouns, email, phone,
+    is_married, marriage_date, spouse_id  // NEW: Add marriage fields
   } = req.body;
 
   // Fix: Store path without leading slash
@@ -105,12 +107,15 @@ router.post('/', upload.single('photo'), async (req, res) => {
 
   try {
     const result = await pool.query(
-      'INSERT INTO members (first_name, middle_name, last_name, relationship, gender, is_alive, birth_date, death_date, birth_place, death_place, location, occupation, pronouns, email, phone, photo_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *',
+      'INSERT INTO members (first_name, middle_name, last_name, relationship, gender, is_alive, birth_date, death_date, birth_place, death_place, location, occupation, pronouns, email, phone, photo_url, is_married, marriage_date, spouse_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *',
       [
         first_name, middle_name, last_name, relationship, gender, is_alive === 'true',
         parseDate(birth_date), parseDate(death_date), // Fix: Use parseDate function
         birth_place || null, death_place || null,
-        location || null, occupation || null, pronouns || null, email || null, phone || null, photo_url
+        location || null, occupation || null, pronouns || null, email || null, phone || null, photo_url,
+        is_married === 'true',  // NEW: Convert to boolean
+        parseDate(marriage_date),  // NEW: Parse marriage date
+        spouse_id ? parseInt(spouse_id) : null  // NEW: Convert to integer or null
       ]
     );
     res.status(201).json(result.rows[0]);
@@ -120,7 +125,7 @@ router.post('/', upload.single('photo'), async (req, res) => {
   }
 });
 
-// UPDATED PUT ROUTE - Add better debugging for crop functionality
+// UPDATED PUT route with marriage fields
 router.put('/:id', upload.single('photo'), async (req, res) => {
   console.log('=== MEMBER UPDATE DEBUG ===');
   console.log('Request body:', req.body);
@@ -134,7 +139,8 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
     first_name, middle_name, last_name, relationship,
     gender, is_alive, birth_date, death_date,
     birth_place, death_place, location,
-    occupation, pronouns, email, phone, photo_url
+    occupation, pronouns, email, phone, photo_url,
+    is_married, marriage_date, spouse_id  // NEW: Add marriage fields
   } = req.body;
 
   console.log('Extracted first_name:', first_name);
@@ -164,7 +170,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
   try {
     console.log('Attempting database update...');
     const result = await pool.query(
-      'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, relationship = $4, gender = $5, is_alive = $6, birth_date = $7, death_date = $8, birth_place = $9, death_place = $10, location = $11, occupation = $12, pronouns = $13, email = $14, phone = $15, photo_url = $16 WHERE id = $17 RETURNING *',
+      'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, relationship = $4, gender = $5, is_alive = $6, birth_date = $7, death_date = $8, birth_place = $9, death_place = $10, location = $11, occupation = $12, pronouns = $13, email = $14, phone = $15, photo_url = $16, is_married = $17, marriage_date = $18, spouse_id = $19 WHERE id = $20 RETURNING *',
       [
         first_name, middle_name, last_name,
         relationship, gender, is_alive === 'true',
@@ -172,10 +178,13 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
         birth_place || null, death_place || null,
         location || null, occupation || null, pronouns || null,
         email || null, phone || null, finalPhotoUrl,
+        is_married === 'true',  // NEW: Convert to boolean
+        parseDate(marriage_date),  // NEW: Parse marriage date
+        spouse_id ? parseInt(spouse_id) : null,  // NEW: Convert to integer or null
         req.params.id
       ]
     );
-    
+
     console.log('Database update successful');
     console.log('Updated member:', result.rows[0]);
     res.json(result.rows[0]);
@@ -209,12 +218,13 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
     const errors = [];
     let rowNumber = 1;
 
-    // Define expected CSV columns
+    // Define expected CSV columns (UPDATED to include marriage fields)
     const requiredColumns = ['first_name', 'last_name'];
     const allowedColumns = [
-      'first_name', 'middle_name', 'last_name', 'gender', 'birth_date', 
-      'birth_place', 'death_date', 'death_place', 'location', 'occupation', 
-      'email', 'phone', 'is_alive', 'relationship', 'pronouns'
+      'first_name', 'middle_name', 'last_name', 'gender', 'birth_date',
+      'birth_place', 'death_date', 'death_place', 'location', 'occupation',
+      'email', 'phone', 'is_alive', 'relationship', 'pronouns',
+      'is_married', 'marriage_date'  // NEW: Add marriage fields (note: spouse_id would need special handling)
     ];
 
     // Read and parse CSV
@@ -223,7 +233,7 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
         .pipe(csv())
         .on('data', (row) => {
           rowNumber++;
-          
+
           // Validate required fields
           const missingFields = requiredColumns.filter(field => !row[field] || row[field].trim() === '');
           if (missingFields.length > 0) {
@@ -237,7 +247,7 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
 
           // Process the row data
           const memberData = {};
-          
+
           // Copy allowed fields
           allowedColumns.forEach(col => {
             if (row[col] !== undefined) {
@@ -250,6 +260,13 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
             memberData.is_alive = ['true', 'yes', '1', 'y'].includes(memberData.is_alive.toLowerCase());
           } else {
             memberData.is_alive = true; // Default to true if not specified
+          }
+
+          // NEW: Convert is_married to boolean
+          if (memberData.is_married) {
+            memberData.is_married = ['true', 'yes', '1', 'y'].includes(memberData.is_married.toLowerCase());
+          } else {
+            memberData.is_married = false; // Default to false if not specified
           }
 
           // Validate dates
@@ -266,6 +283,16 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
             errors.push({
               row: rowNumber,
               error: 'Invalid death_date format (use YYYY-MM-DD)',
+              data: row
+            });
+            return;
+          }
+
+          // NEW: Validate marriage_date
+          if (memberData.marriage_date && !isValidDate(memberData.marriage_date)) {
+            errors.push({
+              row: rowNumber,
+              error: 'Invalid marriage_date format (use YYYY-MM-DD)',
               data: row
             });
             return;
@@ -301,12 +328,12 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
           INSERT INTO members (
             first_name, middle_name, last_name, gender, birth_date, birth_place,
             death_date, death_place, location, occupation, email, phone, 
-            is_alive, relationship, pronouns
+            is_alive, relationship, pronouns, is_married, marriage_date
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17
           ) RETURNING id
         `;
-        
+
         const values = [
           member.first_name,
           member.middle_name || null,
@@ -322,7 +349,9 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
           member.phone || null,
           member.is_alive,
           member.relationship || null,
-          member.pronouns || null
+          member.pronouns || null,
+          member.is_married,  // NEW: Include is_married
+          parseDate(member.marriage_date)  // NEW: Include marriage_date
         ];
 
         const result = await pool.query(insertQuery, values);
@@ -364,39 +393,39 @@ function isValidDate(dateString) {
 router.put('/:id/profile-photo/:photoId', async (req, res) => {
   try {
     const { id, photoId } = req.params;
-    
+
     // Verify that the member is tagged in this photo
     const tagCheck = await pool.query(
       'SELECT id FROM photo_tags WHERE photo_id = $1 AND member_id = $2',
       [photoId, id]
     );
-    
+
     if (tagCheck.rows.length === 0) {
       return res.status(400).json({ error: 'Member is not tagged in this photo' });
     }
-    
+
     // Get the photo path
     const photoResult = await pool.query(
       'SELECT file_path FROM photos WHERE id = $1',
       [photoId]
     );
-    
+
     if (photoResult.rows.length === 0) {
       return res.status(404).json({ error: 'Photo not found' });
     }
-    
+
     const photoPath = photoResult.rows[0].file_path;
-    
+
     // Update the member's profile photo
     const result = await pool.query(
       'UPDATE members SET photo_url = $1 WHERE id = $2 RETURNING *',
       [photoPath, id]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Member not found' });
     }
-    
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error setting profile photo:', error);
