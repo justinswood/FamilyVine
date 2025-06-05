@@ -9,7 +9,7 @@ const MemberList = () => {
   // Your existing state
   const [allMembers, setAllMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]);
-  const [loading, setLoading] = useState(true); // Add loading state
+  const [loading, setLoading] = useState(true);
 
   // New state for enhanced features
   const [viewMode, setViewMode] = useState('grid');
@@ -17,27 +17,23 @@ const MemberList = () => {
   const [sortOrder, setSortOrder] = useState('asc');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Your existing useEffect, with loading state
+  // Your existing useEffect and functions remain the same
   useEffect(() => {
     setLoading(true);
     axios.get(`${process.env.REACT_APP_API}/api/members`)
       .then(res => {
         console.log('Members loaded:', res.data);
         const membersData = res.data || [];
-
-        // Sort alphabetically descending by default
         const sortedMembers = [...membersData].sort((a, b) => {
           const nameA = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase();
           const nameB = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
-          return nameB > nameA ? 1 : -1; // Descending order (Z to A)
+          return nameB > nameA ? 1 : -1;
         });
-
         setAllMembers(membersData);
-        setFilteredMembers(sortedMembers); // ← Now properly sorted
+        setFilteredMembers(sortedMembers);
       })
       .catch(err => {
         console.error('Error fetching members:', err);
-        // Set empty arrays on error to prevent crashes
         setAllMembers([]);
         setFilteredMembers([]);
       })
@@ -46,7 +42,6 @@ const MemberList = () => {
       });
   }, []);
 
-  // Sort functionality - only sort when user changes sort options
   useEffect(() => {
     if (filteredMembers && filteredMembers.length > 0) {
       sortMembers();
@@ -81,21 +76,12 @@ const MemberList = () => {
     setFilteredMembers(sorted);
   };
 
-  // FIXED: Function to check if member is deceased with better logic
   const isDeceased = (member) => {
-    if (!member) return false; // Safety check
-
-    console.log(`Checking if ${member.first_name || 'Unknown'} is deceased:`, {
-      is_alive: member.is_alive,
-      death_date: member.death_date
-    });
-
-    // Check multiple conditions for deceased status
+    if (!member) return false;
     return member.is_alive === false ||
       (member.death_date !== null && member.death_date !== undefined && member.death_date !== '');
   };
 
-  // Show loading spinner while data is being fetched
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
@@ -110,12 +96,11 @@ const MemberList = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      {/* ADDED: Same animated background pattern from member page */}
+      {/* Background pattern */}
       <div className="absolute inset-0 opacity-3">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="family-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-              {/* Family tree branches */}
               <path d="M20,5 L20,35 M5,20 L35,20 M12,12 L28,28 M28,12 L12,28"
                 stroke="currentColor" strokeWidth="0.5" className="text-blue-200" />
             </pattern>
@@ -124,120 +109,155 @@ const MemberList = () => {
         </svg>
       </div>
 
-      {/* ADDED: Floating decorative elements */}
+      {/* Floating decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-5 -left-5 w-20 h-20 bg-gradient-to-br from-pink-200/20 to-purple-200/20 rounded-full blur-lg"></div>
         <div className="absolute -top-10 -right-10 w-30 h-30 bg-gradient-to-bl from-blue-200/20 to-cyan-200/20 rounded-full blur-lg"></div>
         <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 w-40 h-20 bg-gradient-to-t from-purple-200/20 to-pink-200/20 rounded-full blur-lg"></div>
       </div>
 
-      {/* COMPACTED: Main content with smaller padding */}
+      {/* Main content */}
       <div className="relative z-10 max-w-7xl mx-auto p-3">
-        {/* COMPACTED: Enhanced header with smaller spacing */}
-        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-4 mb-3 border border-white/50">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <svg className="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+
+        {/* 🎯 CONSOLIDATED HEADER - This replaces all 3 toolbars */}
+        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-6 mb-6 border border-white/50">
+
+          {/* Top Row: Title + Action Buttons */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                   All Family Members
                 </h1>
+                <p className="text-gray-600">Explore and manage your family tree</p>
               </div>
-              <p className="text-gray-600 text-sm">Explore and manage your family tree</p>
             </div>
-            <div className="flex gap-2">
+
+            <div className="flex gap-3">
               <Link
                 to="/add"
-                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full hover:from-green-600 hover:to-emerald-600 transform hover:scale-105 transition-all shadow-md text-sm font-medium"
+                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-full hover:from-green-600 hover:to-emerald-600 transform hover:scale-105 transition-all shadow-lg font-medium"
               >
-                ➕ Add Member
+                <span className="text-lg">➕</span>
+                Add Member
               </Link>
               <Link
                 to="/settings?tab=import"
-                className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all shadow-md text-sm font-medium"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-full hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all shadow-lg font-medium"
               >
-                📁 Import CSV
+                <span className="text-lg">📁</span>
+                Import CSV
               </Link>
             </div>
           </div>
-        </div>
 
-        {/* COMPACTED: Search and Filter Component with smaller spacing */}
-        {allMembers && allMembers.length > 0 && (
-          <div className="mb-3">
-            <SearchFilter
-              members={allMembers}
-              onFilteredMembers={setFilteredMembers}
-              onSearchTerm={setSearchTerm}
-            />
+          {/* Middle Row: Search Bar */}
+          <div className="mb-6">
+            <div className="relative max-w-2xl mx-auto">
+              <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search by name, location, occupation..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm text-lg"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
-        )}
 
-        {/* COMPACTED: View Controls with better styling and smaller spacing */}
-        {allMembers && allMembers.length > 0 && (
-          <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-3 mb-3 border border-white/50">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-              <div className="flex gap-3 items-center">
-                <span className="text-sm font-medium text-gray-700">👁️ View:</span>
+          {/* Bottom Row: View Controls + Count */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+
+            {/* Left Side: View Toggle + Sort Controls */}
+            <div className="flex flex-wrap items-center gap-4">
+              {/* View Mode Toggle */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                  <span className="text-lg">👁️</span>
+                  View:
+                </span>
                 <div className="flex bg-gray-100 rounded-lg p-1">
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'list'
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'list'
                         ? 'bg-white shadow-sm text-purple-600'
                         : 'text-gray-600 hover:text-gray-800'
                       }`}
                   >
-                    📋 List
+                    <span className="text-base">📋</span>
+                    List
                   </button>
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'grid'
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'grid'
                         ? 'bg-white shadow-sm text-purple-600'
                         : 'text-gray-600 hover:text-gray-800'
                       }`}
                   >
-                    ⊞ Grid
+                    <span className="text-base">⊞</span>
+                    Grid
                   </button>
                 </div>
               </div>
 
-              <div className="flex gap-3 items-center">
-                <span className="text-sm font-medium text-gray-700">🔤 Sort by:</span>
+              {/* Sort Controls */}
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                  <span className="text-lg">🔤</span>
+                  Sort:
+                </span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white shadow-sm"
+                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white shadow-sm"
                 >
                   <option value="name">Name</option>
                   <option value="location">Location</option>
                 </select>
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 bg-white shadow-sm font-medium"
+                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 bg-white shadow-sm font-medium"
                 >
-                  {sortOrder === 'asc' ? '⬆️ A-Z' : '⬇️ Z-A'}
+                  <span className="text-base">{sortOrder === 'asc' ? '⬆️' : '⬇️'}</span>
+                  {sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
                 </button>
               </div>
             </div>
 
-            {/* ADDED: Member count with better styling */}
-            <div className="mt-2 pt-2 border-t border-gray-200">
-              <p className="text-sm text-gray-600">
-                📊 Showing <span className="font-semibold text-purple-600">{filteredMembers.length}</span> of{' '}
+            {/* Right Side: Member Count */}
+            <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 rounded-lg border border-blue-100">
+              <span className="text-lg">📊</span>
+              <span className="text-sm text-gray-600">
+                Showing <span className="font-semibold text-purple-600">{filteredMembers.length}</span> of{' '}
                 <span className="font-semibold">{allMembers.length}</span> family members
                 {searchTerm && (
                   <span className="ml-2">
                     for "<span className="font-semibold text-blue-600">{searchTerm}</span>"
                   </span>
                 )}
-              </p>
+              </span>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Enhanced Members Display with backdrop */}
+        {/* Members Display */}
         <div className="bg-white/60 backdrop-blur-sm shadow-lg rounded-xl p-4 border border-white/50">
           {!filteredMembers || filteredMembers.length === 0 ? (
             <div className="text-center py-12">
@@ -274,13 +294,9 @@ const MemberList = () => {
           ) : (
             <>
               {viewMode === 'list' ? (
-                // COMPACTED: List view with smaller spacing
                 <div className="space-y-3">
                   {filteredMembers.map(member => {
-                    // Safety check for each member
-                    if (!member || !member.id) {
-                      return null;
-                    }
+                    if (!member || !member.id) return null;
 
                     return (
                       <div key={member.id} className="bg-white/80 backdrop-blur-sm p-3 rounded-lg shadow-sm border border-white/50 flex items-center space-x-3 hover:shadow-md transition-all">
@@ -296,7 +312,6 @@ const MemberList = () => {
                             <span className="truncate">
                               {member.first_name || 'Unknown'} {member.middle_name && `${member.middle_name} `}{member.last_name || ''}
                             </span>
-                            {/* Deceased icon moved to after the name */}
                             {isDeceased(member) && (
                               <span
                                 className="text-gray-600 ml-1 flex-shrink-0"
@@ -333,14 +348,9 @@ const MemberList = () => {
                   })}
                 </div>
               ) : (
-                // COMPACTED: Grid view with better spacing and more items per row
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                   {filteredMembers.map(member => {
-                    // Safety check for each member
-                    if (!member || !member.id) {
-                      return null;
-                    }
-
+                    if (!member || !member.id) return null;
                     return (
                       <MemberCard key={member.id} member={member} />
                     );

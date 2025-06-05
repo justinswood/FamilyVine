@@ -1,8 +1,9 @@
-import React from 'react';
-import Timeline from '../components/Timeline';
-import '../components/Timeline.css';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import axios from 'axios';
+import ProfileImage from '../components/ProfileImage';
 
-const TimelineComponent = () => {
+const TimelinePage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -81,7 +82,7 @@ const TimelineComponent = () => {
     return (
       <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
         {/* Animated background pattern */}
-        <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0 opacity-3">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="timeline-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
@@ -114,7 +115,7 @@ const TimelineComponent = () => {
   if (error) {
     return (
       <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-        <div className="absolute inset-0 opacity-5">
+        <div className="absolute inset-0 opacity-3">
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="error-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
@@ -145,7 +146,7 @@ const TimelineComponent = () => {
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
       {/* Animated background pattern */}
-      <div className="absolute inset-0 opacity-5">
+      <div className="absolute inset-0 opacity-3">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="family-timeline-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
@@ -193,8 +194,8 @@ const TimelineComponent = () => {
               <button
                 onClick={() => setFilter('all')}
                 className={`px-6 py-3 text-sm font-medium rounded-l-xl transition-all ${filter === 'all'
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105'
-                    : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50'
+                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105'
+                  : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50'
                   } border border-white/50`}
               >
                 🌟 All Events
@@ -202,8 +203,8 @@ const TimelineComponent = () => {
               <button
                 onClick={() => setFilter('birth')}
                 className={`px-6 py-3 text-sm font-medium transition-all ${filter === 'birth'
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg transform scale-105'
-                    : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50'
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg transform scale-105'
+                  : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50'
                   } border-t border-b border-white/50`}
               >
                 🎂 Births
@@ -211,8 +212,8 @@ const TimelineComponent = () => {
               <button
                 onClick={() => setFilter('death')}
                 className={`px-6 py-3 text-sm font-medium rounded-r-xl transition-all ${filter === 'death'
-                    ? 'bg-gradient-to-r from-gray-500 to-slate-500 text-white shadow-lg transform scale-105'
-                    : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50'
+                  ? 'bg-gradient-to-r from-gray-500 to-slate-500 text-white shadow-lg transform scale-105'
+                  : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50'
                   } border border-white/50`}
               >
                 🕊️ Deaths
@@ -243,22 +244,32 @@ const TimelineComponent = () => {
             </div>
           </div>
         ) : (
-          <div className="timeline-container vertical">
-            <div className="timeline-line vertical bg-gradient-to-b from-blue-200 via-purple-200 to-pink-200"></div>
-            <div className="timeline-content vertical">
+          <div className="relative max-w-4xl mx-auto">
+            {/* Central timeline line */}
+            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-200 via-purple-200 to-pink-200 transform -translate-x-1/2"></div>
+
+            {/* Timeline content */}
+            <div className="space-y-16">
               {decades.map(decade => (
-                <div key={decade} className="decade-section vertical">
-                  <div className="decade-marker vertical">
-                    <div className="decade-label bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-xl border-4 border-white">
+                <div key={decade} className="relative">
+                  {/* Decade marker */}
+                  <div className="flex justify-center mb-8">
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-full shadow-xl border-4 border-white text-lg font-bold z-10 relative">
                       {decade}s
                     </div>
                   </div>
-                  <div className="events-container vertical">
+
+                  {/* Events in this decade */}
+                  <div className="space-y-8">
                     {groupedByDecade[decade].map((event, index) => (
-                      <div key={index} className="event-item vertical">
-                        <div className={`timeline-dot ${event.type} vertical shadow-lg border-4 border-white`}></div>
-                        <div className={`event-card vertical ${index % 2 === 0 ? 'even' : 'odd'} bg-white/80 backdrop-blur-sm border border-white/50 shadow-xl hover:shadow-2xl transition-all hover:scale-105`}>
-                          <div className="event-content">
+                      <div key={index} className="relative flex items-center">
+                        {/* Timeline dot */}
+                        <div className={`absolute left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full border-4 border-white shadow-lg z-10 ${event.type === 'birth' ? 'bg-green-500' : 'bg-gray-500'
+                          }`}></div>
+
+                        {/* Event card */}
+                        <div className={`w-5/12 ${index % 2 === 0 ? 'mr-auto pr-8' : 'ml-auto pl-8'}`}>
+                          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/50 hover:shadow-2xl transition-all hover:scale-105">
                             <div className="flex items-center mb-4">
                               <div className="mr-4">
                                 <div className="relative">
@@ -307,14 +318,6 @@ const TimelineComponent = () => {
           </div>
         )}
       </div>
-    </div>
-  );
-};
-
-const TimelinePage = () => {
-  return (
-    <div className="w-full">
-      <Timeline />
     </div>
   );
 };
