@@ -41,6 +41,7 @@ const TimelinePage = () => {
       members.forEach(member => {
         const fullName = `${member.first_name} ${member.last_name}`;
 
+        // Birth events
         if (member.birth_date) {
           timelineEvents.push({
             type: 'birth',
@@ -54,6 +55,7 @@ const TimelinePage = () => {
           });
         }
 
+        // Death events
         if (member.death_date) {
           timelineEvents.push({
             type: 'death',
@@ -66,8 +68,29 @@ const TimelinePage = () => {
             member: member
           });
         }
+
+        // NEW: Marriage events
+        if (member.is_married && member.marriage_date && member.spouse_id) {
+          // Find the spouse's information
+          const spouse = members.find(m => m.id === member.spouse_id);
+          const spouseName = spouse ? `${spouse.first_name} ${spouse.last_name}` : 'Unknown spouse';
+
+          timelineEvents.push({
+            type: 'marriage',
+            date: new Date(member.marriage_date),
+            year: new Date(member.marriage_date).getFullYear(),
+            description: `${fullName} married ${spouseName}`,
+            location: 'Unknown location', // We could add a marriage_place field later
+            memberId: member.id,
+            memberName: fullName,
+            member: member,
+            spouse: spouse, // Store spouse info for display
+            spouseName: spouseName
+          });
+        }
       });
 
+      // Sort all events by date
       timelineEvents.sort((a, b) => a.date - b.date);
       setEvents(timelineEvents);
     } catch (error) {
@@ -187,7 +210,7 @@ const TimelinePage = () => {
           </div>
         </div>
 
-        {/* Filter buttons with enhanced styling */}
+        {/* UPDATED: Filter buttons with marriage option */}
         <div className="flex justify-center items-center gap-4 mb-8">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-2 border border-white/50 shadow-xl">
             <div className="inline-flex rounded-xl shadow-sm">
@@ -208,6 +231,15 @@ const TimelinePage = () => {
                   } border-t border-b border-white/50`}
               >
                 🎂 Births
+              </button>
+              <button
+                onClick={() => setFilter('marriage')}
+                className={`px-6 py-3 text-sm font-medium transition-all ${filter === 'marriage'
+                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg transform scale-105'
+                  : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50'
+                  } border-t border-b border-white/50`}
+              >
+                💍 Marriages
               </button>
               <button
                 onClick={() => setFilter('death')}
@@ -234,7 +266,7 @@ const TimelinePage = () => {
               <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-gray-700 to-slate-700 bg-clip-text text-transparent">
                 No events to display
               </h3>
-              <p className="text-gray-600 mb-4">Try adding birth dates to family members.</p>
+              <p className="text-gray-600 mb-4">Try adding birth dates and marriage information to family members.</p>
               <Link
                 to="/members"
                 className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-full hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all shadow-lg font-medium"
@@ -263,8 +295,10 @@ const TimelinePage = () => {
                   <div className="space-y-8">
                     {groupedByDecade[decade].map((event, index) => (
                       <div key={index} className="relative flex items-center">
-                        {/* Timeline dot */}
-                        <div className={`absolute left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full border-4 border-white shadow-lg z-10 ${event.type === 'birth' ? 'bg-green-500' : 'bg-gray-500'
+                        {/* UPDATED: Timeline dot with different colors for different event types */}
+                        <div className={`absolute left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full border-4 border-white shadow-lg z-10 ${event.type === 'birth' ? 'bg-green-500' :
+                            event.type === 'marriage' ? 'bg-pink-500' :
+                              'bg-gray-500'
                           }`}></div>
 
                         {/* Event card */}
@@ -287,17 +321,48 @@ const TimelinePage = () => {
                                 <span className="text-xl font-bold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent">
                                   {event.year}
                                 </span>
+                                {/* UPDATED: Event type badge with different colors */}
                                 <div className={`text-sm px-4 py-2 rounded-full inline-block ml-3 font-medium shadow-lg ${event.type === 'birth'
                                     ? 'bg-gradient-to-r from-green-400 to-emerald-400 text-white'
-                                    : 'bg-gradient-to-r from-gray-400 to-slate-400 text-white'
+                                    : event.type === 'marriage'
+                                      ? 'bg-gradient-to-r from-pink-400 to-rose-400 text-white'
+                                      : 'bg-gradient-to-r from-gray-400 to-slate-400 text-white'
                                   }`}>
-                                  {event.type === 'birth' ? '🎂 Birth' : '🕊️ Passing'}
+                                  {event.type === 'birth' ? '🎂 Birth' :
+                                    event.type === 'marriage' ? '💍 Marriage' :
+                                      '🕊️ Passing'}
                                 </div>
                               </div>
                             </div>
                             <h3 className="font-bold text-xl mb-3 bg-gradient-to-r from-gray-800 to-slate-700 bg-clip-text text-transparent">
                               {event.description}
                             </h3>
+
+                            {/* UPDATED: Special handling for marriage events to show both spouses */}
+                            {event.type === 'marriage' && event.spouse && (
+                              <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg p-3 mb-4 border border-pink-100">
+                                <div className="flex items-center space-x-3">
+                                  {event.spouse.photo_url && (
+                                    <ProfileImage
+                                      member={event.spouse}
+                                      size="w-8 h-8"
+                                      className="border border-pink-200"
+                                    />
+                                  )}
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-700">
+                                      Spouse: <Link
+                                        to={`/members/${event.spouse.id}`}
+                                        className="text-pink-600 hover:text-pink-800 hover:underline font-semibold"
+                                      >
+                                        {event.spouseName}
+                                      </Link>
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
                             <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 mb-4 border border-blue-100">
                               <p className="text-base text-gray-700 font-medium">📍 {event.location}</p>
                             </div>
