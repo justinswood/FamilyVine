@@ -117,21 +117,21 @@ const MemberList = () => {
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 max-w-7xl mx-auto p-3">
+      <div className="relative z-10 max-w-7xl mx-auto p-2">
 
         {/* 🎯 CONSOLIDATED HEADER - This replaces all 3 toolbars */}
-        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-6 mb-6 border border-white/50">
+        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-3 mb-4 border border-white/50">
 
           {/* Top Row: Title + Action Buttons */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 mb-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
-                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                   All Family Members
                 </h1>
                 <p className="text-gray-600">Explore and manage your family tree</p>
@@ -196,7 +196,7 @@ const MemberList = () => {
                 <div className="flex bg-gray-100 rounded-lg p-1">
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'list'
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'list'
                         ? 'bg-white shadow-sm text-purple-600'
                         : 'text-gray-600 hover:text-gray-800'
                       }`}
@@ -258,7 +258,7 @@ const MemberList = () => {
         </div>
 
         {/* Members Display */}
-        <div className="bg-white/60 backdrop-blur-sm shadow-lg rounded-xl p-4 border border-white/50">
+        <div className="bg-white/60 backdrop-blur-sm shadow-lg rounded-xl p-3 border border-white/50">
           {!filteredMembers || filteredMembers.length === 0 ? (
             <div className="text-center py-12">
               <div className="mb-4">
@@ -348,7 +348,7 @@ const MemberList = () => {
                   })}
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                   {filteredMembers.map(member => {
                     if (!member || !member.id) return null;
                     return (
