@@ -119,47 +119,40 @@ const MemberList = () => {
       {/* Main content */}
       <div className="relative z-10 max-w-7xl mx-auto p-2">
 
-        {/* 🎯 CONSOLIDATED HEADER - This replaces all 3 toolbars */}
-        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-3 mb-4 border border-white/50">
+        {/* 🎯 COMPACT HEADER - Reduced size and removed Import CSV */}
+        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-2 mb-4 border border-white/50">
 
-          {/* Top Row: Title + Action Buttons */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+          {/* Top Row: Title + Add Member Button (Import CSV removed) */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
+                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                   All Family Members
                 </h1>
-                <p className="text-gray-600">Explore and manage your family tree</p>
+                <p className="text-sm text-gray-600">Explore and manage your family tree</p>
               </div>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
               <Link
                 to="/add"
-                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-full hover:from-green-600 hover:to-emerald-600 transform hover:scale-105 transition-all shadow-lg font-medium"
+                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full hover:from-green-600 hover:to-emerald-600 transform hover:scale-105 transition-all shadow-lg font-medium text-sm"
               >
-                <span className="text-lg">➕</span>
+                <span className="text-base">➕</span>
                 Add Member
-              </Link>
-              <Link
-                to="/settings?tab=import"
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-full hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all shadow-lg font-medium"
-              >
-                <span className="text-lg">📁</span>
-                Import CSV
               </Link>
             </div>
           </div>
 
-          {/* Middle Row: Search Bar */}
-          <div className="mb-6">
+          {/* Middle Row: Search Bar (made more compact) */}
+          <div className="mb-3">
             <div className="relative max-w-2xl mx-auto">
-              <svg className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -167,14 +160,14 @@ const MemberList = () => {
                 placeholder="Search by name, location, occupation..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm text-lg"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -182,69 +175,69 @@ const MemberList = () => {
             </div>
           </div>
 
-          {/* Bottom Row: View Controls + Count */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          {/* Bottom Row: View Controls + Count (made more compact) */}
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
 
             {/* Left Side: View Toggle + Sort Controls */}
-            <div className="flex flex-wrap items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3">
               {/* View Mode Toggle */}
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                  <span className="text-lg">👁️</span>
+                <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                  <span className="text-sm">👁️</span>
                   View:
                 </span>
-                <div className="flex bg-gray-100 rounded-lg p-1">
+                <div className="flex bg-gray-100 rounded-lg p-0.5">
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === 'list'
-                        ? 'bg-white shadow-sm text-purple-600'
-                        : 'text-gray-600 hover:text-gray-800'
+                    className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${viewMode === 'list'
+                      ? 'bg-white shadow-sm text-purple-600'
+                      : 'text-gray-600 hover:text-gray-800'
                       }`}
                   >
-                    <span className="text-base">📋</span>
+                    <span className="text-sm">📋</span>
                     List
                   </button>
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${viewMode === 'grid'
-                        ? 'bg-white shadow-sm text-purple-600'
-                        : 'text-gray-600 hover:text-gray-800'
+                    className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${viewMode === 'grid'
+                      ? 'bg-white shadow-sm text-purple-600'
+                      : 'text-gray-600 hover:text-gray-800'
                       }`}
                   >
-                    <span className="text-base">⊞</span>
+                    <span className="text-sm">⊞</span>
                     Grid
                   </button>
                 </div>
               </div>
 
               {/* Sort Controls */}
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                  <span className="text-lg">🔤</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                  <span className="text-sm">🔤</span>
                   Sort:
                 </span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white shadow-sm"
+                  className="border border-gray-300 rounded-lg px-2 py-1 text-xs bg-white shadow-sm"
                 >
                   <option value="name">Name</option>
                   <option value="location">Location</option>
                 </select>
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 bg-white shadow-sm font-medium"
+                  className="flex items-center gap-1 px-2 py-1 border border-gray-300 rounded-lg text-xs hover:bg-gray-50 bg-white shadow-sm font-medium"
                 >
-                  <span className="text-base">{sortOrder === 'asc' ? '⬆️' : '⬇️'}</span>
+                  <span className="text-sm">{sortOrder === 'asc' ? '⬆️' : '⬇️'}</span>
                   {sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
                 </button>
               </div>
             </div>
 
             {/* Right Side: Member Count */}
-            <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-2 rounded-lg border border-blue-100">
-              <span className="text-lg">📊</span>
-              <span className="text-sm text-gray-600">
+            <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 px-3 py-1.5 rounded-lg border border-blue-100">
+              <span className="text-sm">📊</span>
+              <span className="text-xs text-gray-600">
                 Showing <span className="font-semibold text-purple-600">{filteredMembers.length}</span> of{' '}
                 <span className="font-semibold">{allMembers.length}</span> family members
                 {searchTerm && (

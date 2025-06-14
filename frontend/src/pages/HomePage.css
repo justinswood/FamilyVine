@@ -108,3 +108,86 @@
   background-size: 200% 200%;
   animation: gradient-shift 5s ease infinite;
 }
+
+/* Add these styles to your HomePage.css file */
+
+/* Vine Animation Styles */
+.vine-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Main vine drawing animation */
+@keyframes drawVine {
+  from {
+    stroke-dashoffset: 200;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Gentle swaying animation for leaves */
+@keyframes sway {
+
+  0%,
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+
+  25% {
+    transform: rotate(2deg) scale(1.02);
+  }
+
+  75% {
+    transform: rotate(-2deg) scale(0.98);
+  }
+}
+
+/* Fade in animation for leaves */
+@keyframes fadeInSway {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Vine container positioning */
+.vine-left {
+  position: absolute;
+  left: -120px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.vine-right {
+  position: absolute;
+  right: -120px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+
+  .vine-left,
+  .vine-right {
+    display: none;
+    /* Hide on mobile to avoid clutter */
+  }
+}
+
+/* Optional: Add a subtle glow effect */
+.vine-glow {
+  filter: drop-shadow(0 0 3px rgba(34, 197, 94, 0.3));
+}
