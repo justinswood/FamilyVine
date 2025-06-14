@@ -198,25 +198,60 @@ const TimelinePage = () => {
 
       {/* Main content */}
       <div className="relative z-10 w-full px-4 py-8">
-        {/* Header with enhanced styling */}
-        <div className="text-center mb-8">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-white/50 shadow-xl max-w-2xl mx-auto">
-            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-purple-700 via-blue-700 to-cyan-700 bg-clip-text text-transparent">
-              📅 Family Timeline
-            </h1>
-            <p className="text-gray-600 text-lg">
+        {/* UPDATED: Enhanced header with timeline icon and text effects */}
+        <div className="text-center mb-6">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-xl max-w-xl mx-auto relative overflow-hidden">
+            {/* Background text effect */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+              <span className="text-6xl font-black text-gray-400 transform rotate-12">TIMELINE</span>
+            </div>
+
+            <div className="relative z-10 flex items-center justify-center mb-2">
+              {/* Custom timeline icon */}
+              <div className="mr-3">
+                <svg width="32" height="32" viewBox="0 0 32 32" className="text-purple-600">
+                  <defs>
+                    <linearGradient id="timelineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#8b5cf6" />
+                      <stop offset="50%" stopColor="#3b82f6" />
+                      <stop offset="100%" stopColor="#06b6d4" />
+                    </linearGradient>
+                  </defs>
+                  {/* Timeline line */}
+                  <line x1="16" y1="4" x2="16" y2="28" stroke="url(#timelineGradient)" strokeWidth="3" strokeLinecap="round" />
+                  {/* Timeline dots */}
+                  <circle cx="16" cy="8" r="3" fill="url(#timelineGradient)" />
+                  <circle cx="16" cy="16" r="4" fill="url(#timelineGradient)" />
+                  <circle cx="16" cy="24" r="3" fill="url(#timelineGradient)" />
+                  {/* Side branches */}
+                  <line x1="8" y1="8" x2="13" y2="8" stroke="url(#timelineGradient)" strokeWidth="2" strokeLinecap="round" />
+                  <line x1="19" y1="16" x2="24" y2="16" stroke="url(#timelineGradient)" strokeWidth="2" strokeLinecap="round" />
+                  <line x1="8" y1="24" x2="13" y2="24" stroke="url(#timelineGradient)" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </div>
+
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-700 via-blue-700 to-cyan-700 bg-clip-text text-transparent drop-shadow-sm"
+                style={{
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+                  WebkitTextStroke: '0.5px rgba(147, 51, 234, 0.1)'
+                }}>
+                Family Timeline
+              </h1>
+            </div>
+
+            <p className="text-gray-600 text-base font-medium relative z-10">
               Journey through your family's most important moments
             </p>
           </div>
         </div>
 
-        {/* UPDATED: Filter buttons with marriage option */}
-        <div className="flex justify-center items-center gap-4 mb-8">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-2 border border-white/50 shadow-xl">
-            <div className="inline-flex rounded-xl shadow-sm">
+        {/* UPDATED: Smaller filter buttons with marriage option */}
+        <div className="flex justify-center items-center gap-3 mb-6">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-1 border border-white/50 shadow-xl">
+            <div className="inline-flex rounded-lg shadow-sm">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-6 py-3 text-sm font-medium rounded-l-xl transition-all ${filter === 'all'
+                className={`px-4 py-2 text-xs font-medium rounded-l-lg transition-all ${filter === 'all'
                   ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105'
                   : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50'
                   } border border-white/50`}
@@ -225,7 +260,7 @@ const TimelinePage = () => {
               </button>
               <button
                 onClick={() => setFilter('birth')}
-                className={`px-6 py-3 text-sm font-medium transition-all ${filter === 'birth'
+                className={`px-4 py-2 text-xs font-medium transition-all ${filter === 'birth'
                   ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg transform scale-105'
                   : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50'
                   } border-t border-b border-white/50`}
@@ -234,7 +269,7 @@ const TimelinePage = () => {
               </button>
               <button
                 onClick={() => setFilter('marriage')}
-                className={`px-6 py-3 text-sm font-medium transition-all ${filter === 'marriage'
+                className={`px-4 py-2 text-xs font-medium transition-all ${filter === 'marriage'
                   ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg transform scale-105'
                   : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50'
                   } border-t border-b border-white/50`}
@@ -243,7 +278,7 @@ const TimelinePage = () => {
               </button>
               <button
                 onClick={() => setFilter('death')}
-                className={`px-6 py-3 text-sm font-medium rounded-r-xl transition-all ${filter === 'death'
+                className={`px-4 py-2 text-xs font-medium rounded-r-lg transition-all ${filter === 'death'
                   ? 'bg-gradient-to-r from-gray-500 to-slate-500 text-white shadow-lg transform scale-105'
                   : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50'
                   } border border-white/50`}
@@ -297,8 +332,8 @@ const TimelinePage = () => {
                       <div key={index} className="relative flex items-center">
                         {/* UPDATED: Timeline dot with different colors for different event types */}
                         <div className={`absolute left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full border-4 border-white shadow-lg z-10 ${event.type === 'birth' ? 'bg-green-500' :
-                            event.type === 'marriage' ? 'bg-pink-500' :
-                              'bg-gray-500'
+                          event.type === 'marriage' ? 'bg-pink-500' :
+                            'bg-gray-500'
                           }`}></div>
 
                         {/* Event card */}
@@ -323,10 +358,10 @@ const TimelinePage = () => {
                                 </span>
                                 {/* UPDATED: Event type badge with different colors */}
                                 <div className={`text-sm px-4 py-2 rounded-full inline-block ml-3 font-medium shadow-lg ${event.type === 'birth'
-                                    ? 'bg-gradient-to-r from-green-400 to-emerald-400 text-white'
-                                    : event.type === 'marriage'
-                                      ? 'bg-gradient-to-r from-pink-400 to-rose-400 text-white'
-                                      : 'bg-gradient-to-r from-gray-400 to-slate-400 text-white'
+                                  ? 'bg-gradient-to-r from-green-400 to-emerald-400 text-white'
+                                  : event.type === 'marriage'
+                                    ? 'bg-gradient-to-r from-pink-400 to-rose-400 text-white'
+                                    : 'bg-gradient-to-r from-gray-400 to-slate-400 text-white'
                                   }`}>
                                   {event.type === 'birth' ? '🎂 Birth' :
                                     event.type === 'marriage' ? '💍 Marriage' :
