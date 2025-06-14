@@ -157,7 +157,7 @@ const MemberList = () => {
               </svg>
               <input
                 type="text"
-                placeholder="Search by name, location, occupation..."
+                placeholder="Search by name, location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
@@ -317,9 +317,6 @@ const MemberList = () => {
                           </h2>
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                             <p className="text-gray-600 text-sm">📍 {member.location || '—'}</p>
-                            {member.occupation && (
-                              <p className="text-gray-500 text-sm">💼 {member.occupation}</p>
-                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -327,7 +324,7 @@ const MemberList = () => {
                             to={`/members/${member.id}`}
                             className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1.5 rounded-lg hover:from-blue-600 hover:to-purple-600 transition-all text-sm font-medium"
                           >
-                            👁️ View
+                            View
                           </Link>
                           <Link
                             to={`/members/${member.id}/edit`}

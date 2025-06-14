@@ -103,11 +103,6 @@ const MemberCard = ({ member }) => {
         <span>{member.location || 'Location not specified'}</span>
       </div>
       
-      {/* Occupation */}
-      {member.occupation && (
-        <p className="text-gray-500 text-sm italic mb-3">{member.occupation}</p>
-      )}
-      
       <div className="flex justify-center space-x-3">
         <Link 
           to={`/members/${member.id || ''}`} 
