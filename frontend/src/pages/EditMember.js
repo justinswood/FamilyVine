@@ -197,6 +197,45 @@ const EditMember = () => {
     }
   };
 
+  // Helper function to calculate age (copied from MemberPage.js)
+  const calculateAge = (birthDateString, deathDateString = null) => {
+    if (!birthDateString) return null;
+
+    try {
+      const birthOnly = birthDateString.split('T')[0];
+      const [birthYear, birthMonth, birthDay] = birthOnly.split('-').map(Number);
+      const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
+
+      let endDate;
+      if (deathDateString) {
+        const deathOnly = deathDateString.split('T')[0];
+        const [deathYear, deathMonth, deathDay] = deathOnly.split('-').map(Number);
+        endDate = new Date(deathYear, deathMonth - 1, deathDay);
+      } else {
+        endDate = new Date();
+      }
+
+      let age = endDate.getFullYear() - birthDate.getFullYear();
+      const monthDiff = endDate.getMonth() - birthDate.getMonth();
+
+      if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      return age;
+    } catch (error) {
+      console.error('Error calculating age:', error);
+      return null;
+    }
+  };
+
+  // Helper function to determine if member is under 18
+  const isMinor = () => {
+    const age = calculateAge(formData.birth_date, formData.death_date);
+    if (age === null) return false; // If no age available, show marriage section
+    return age < 18;
+  };
+
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Edit Family Member</h1>
@@ -277,64 +316,66 @@ const EditMember = () => {
           </>
         )}
 
-        {/* NEW: Marriage Section */}
-        <div className="border-t pt-4">
-          <h3 className="text-lg font-medium text-gray-800 mb-3">Marriage Information</h3>
+        {/* Marriage Section - Hidden for minors */}
+        {!isMinor() && (
+          <div className="border-t pt-4">
+            <h3 className="text-lg font-medium text-gray-800 mb-3">Marriage Information</h3>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Married?</label>
-            <select
-              name="is_married"
-              value={formData.is_married}
-              onChange={handleChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-            >
-              <option value="false">No</option>
-              <option value="true">Yes</option>
-            </select>
-          </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Married?</label>
+              <select
+                name="is_married"
+                value={formData.is_married}
+                onChange={handleChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+              >
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+              </select>
+            </div>
 
-          {/* Show marriage fields only if married is Yes */}
-          {formData.is_married === 'true' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Marriage Date</label>
-                <input
-                  type="date"
-                  name="marriage_date"
-                  value={formData.marriage_date || ''}
-                  onChange={handleChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Spouse</label>
-                {loadingMembers ? (
-                  <div className="mt-1 text-sm text-gray-500">Loading family members...</div>
-                ) : (
-                  <select
-                    name="spouse_id"
-                    value={formData.spouse_id || ''}
+            {/* Show marriage fields only if married is Yes */}
+            {formData.is_married === 'true' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Marriage Date</label>
+                  <input
+                    type="date"
+                    name="marriage_date"
+                    value={formData.marriage_date || ''}
                     onChange={handleChange}
                     className="mt-1 block w-full border border-gray-300 rounded-md p-2"
-                  >
-                    <option value="">Select Spouse</option>
-                    {familyMembers.map(member => (
-                      <option key={member.id} value={member.id}>
-                        {member.first_name} {member.last_name}
-                        {member.birth_date && ` (b. ${new Date(member.birth_date).getFullYear()})`}
-                      </option>
-                    ))}
-                  </select>
-                )}
-                <p className="text-xs text-gray-500 mt-1">
-                  Select the spouse from existing family members. If the spouse is not in the system yet, add them first.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Spouse</label>
+                  {loadingMembers ? (
+                    <div className="mt-1 text-sm text-gray-500">Loading family members...</div>
+                  ) : (
+                    <select
+                      name="spouse_id"
+                      value={formData.spouse_id || ''}
+                      onChange={handleChange}
+                      className="mt-1 block w-full border border-gray-300 rounded-md p-2"
+                    >
+                      <option value="">Select Spouse</option>
+                      {familyMembers.map(member => (
+                        <option key={member.id} value={member.id}>
+                          {member.first_name} {member.last_name}
+                          {member.birth_date && ` (b. ${new Date(member.birth_date).getFullYear()})`}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select the spouse from existing family members. If the spouse is not in the system yet, add them first.
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Photo Section */}
         <div>

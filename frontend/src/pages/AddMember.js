@@ -152,6 +152,45 @@ const AddMember = () => {
     };
   }, [previewUrl]);
 
+  // Helper function to calculate age
+  const calculateAge = (birthDateString, deathDateString = null) => {
+    if (!birthDateString) return null;
+
+    try {
+      const birthOnly = birthDateString.split('T')[0];
+      const [birthYear, birthMonth, birthDay] = birthOnly.split('-').map(Number);
+      const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
+
+      let endDate;
+      if (deathDateString) {
+        const deathOnly = deathDateString.split('T')[0];
+        const [deathYear, deathMonth, deathDay] = deathOnly.split('-').map(Number);
+        endDate = new Date(deathYear, deathMonth - 1, deathDay);
+      } else {
+        endDate = new Date();
+      }
+
+      let age = endDate.getFullYear() - birthDate.getFullYear();
+      const monthDiff = endDate.getMonth() - birthDate.getMonth();
+
+      if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      return age;
+    } catch (error) {
+      console.error('Error calculating age:', error);
+      return null;
+    }
+  };
+
+  // Helper function to determine if member is under 18
+  const isMinor = () => {
+    const age = calculateAge(formData.birth_date, formData.death_date);
+    if (age === null) return false; // If no age available, show marriage section
+    return age < 18;
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
       {/* Background pattern */}
@@ -315,68 +354,70 @@ const AddMember = () => {
               )}
             </div>
 
-            {/* Marriage Information Section */}
-            <div className="border-t border-purple-200 pt-6">
-              <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent border-b border-purple-200 pb-2 mb-4">
-                Marriage Information
-              </h3>
+            {/* Marriage Information Section - Hidden for minors */}
+            {!isMinor() && (
+              <div className="border-t border-purple-200 pt-6">
+                <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent border-b border-purple-200 pb-2 mb-4">
+                  Marriage Information
+                </h3>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Married?</label>
-                  <select
-                    name="is_married"
-                    value={formData.is_married}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
-                  >
-                    <option value="false">No</option>
-                    <option value="true">Yes</option>
-                  </select>
-                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Married?</label>
+                    <select
+                      name="is_married"
+                      value={formData.is_married}
+                      onChange={handleChange}
+                      className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
+                    >
+                      <option value="false">No</option>
+                      <option value="true">Yes</option>
+                    </select>
+                  </div>
 
-                {/* Show marriage fields only if married is Yes */}
-                {formData.is_married === 'true' && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Marriage Date</label>
-                      <input
-                        type="date"
-                        name="marriage_date"
-                        value={formData.marriage_date || ''}
-                        onChange={handleChange}
-                        className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Spouse</label>
-                      {loadingMembers ? (
-                        <div className="text-sm text-gray-500 bg-white rounded-lg p-3 border">Loading family members...</div>
-                      ) : (
-                        <select
-                          name="spouse_id"
-                          value={formData.spouse_id || ''}
+                  {/* Show marriage fields only if married is Yes */}
+                  {formData.is_married === 'true' && (
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Marriage Date</label>
+                        <input
+                          type="date"
+                          name="marriage_date"
+                          value={formData.marriage_date || ''}
                           onChange={handleChange}
                           className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
-                        >
-                          <option value="">Select Spouse</option>
-                          {familyMembers.map(member => (
-                            <option key={member.id} value={member.id}>
-                              {member.first_name} {member.last_name}
-                              {member.birth_date && ` (b. ${new Date(member.birth_date).getFullYear()})`}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-                      <p className="text-xs text-gray-500 mt-2">
-                        Select the spouse from existing family members. If the spouse is not in the system yet, add them first.
-                      </p>
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Spouse</label>
+                        {loadingMembers ? (
+                          <div className="text-sm text-gray-500 bg-white rounded-lg p-3 border">Loading family members...</div>
+                        ) : (
+                          <select
+                            name="spouse_id"
+                            value={formData.spouse_id || ''}
+                            onChange={handleChange}
+                            className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
+                          >
+                            <option value="">Select Spouse</option>
+                            {familyMembers.map(member => (
+                              <option key={member.id} value={member.id}>
+                                {member.first_name} {member.last_name}
+                                {member.birth_date && ` (b. ${new Date(member.birth_date).getFullYear()})`}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                        <p className="text-xs text-gray-500 mt-2">
+                          Select the spouse from existing family members. If the spouse is not in the system yet, add them first.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Photo Section */}
             <div className="border-t border-purple-200 pt-6">

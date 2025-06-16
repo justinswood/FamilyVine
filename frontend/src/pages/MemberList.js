@@ -42,16 +42,29 @@ const MemberList = () => {
       });
   }, []);
 
-  useEffect(() => {
-    if (filteredMembers && filteredMembers.length > 0) {
-      sortMembers();
+  // Function to filter members based on search term and then sort them
+  const filterAndSortMembers = () => {
+    if (!allMembers || allMembers.length === 0) return;
+
+    let filtered = [...allMembers];
+
+    // Apply search filter if there's a search term
+    if (searchTerm && searchTerm.trim()) {
+      filtered = filtered.filter(member => {
+        const fullName = `${member.first_name || ''} ${member.middle_name || ''} ${member.last_name || ''}`.toLowerCase();
+        const location = (member.location || '').toLowerCase();
+        const occupation = (member.occupation || '').toLowerCase();
+        const email = (member.email || '').toLowerCase();
+        
+        return fullName.includes(searchTerm.toLowerCase()) ||
+               location.includes(searchTerm.toLowerCase()) ||
+               occupation.includes(searchTerm.toLowerCase()) ||
+               email.includes(searchTerm.toLowerCase());
+      });
     }
-  }, [sortBy, sortOrder, allMembers]);
 
-  const sortMembers = () => {
-    if (!filteredMembers || filteredMembers.length === 0) return;
-
-    const sorted = [...filteredMembers].sort((a, b) => {
+    // Apply sorting
+    const sorted = [...filtered].sort((a, b) => {
       let valueA, valueB;
 
       switch (sortBy) {
@@ -62,6 +75,26 @@ const MemberList = () => {
         case 'location':
           valueA = (a.location || '').toLowerCase();
           valueB = (b.location || '').toLowerCase();
+          break;
+        case 'age':
+          // Calculate age from birth_date or birth_year
+          const getAge = (member) => {
+            if (member.birth_date) {
+              const birthDate = new Date(member.birth_date);
+              const today = new Date();
+              let age = today.getFullYear() - birthDate.getFullYear();
+              const monthDiff = today.getMonth() - birthDate.getMonth();
+              if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+              }
+              return age;
+            } else if (member.birth_year) {
+              return new Date().getFullYear() - parseInt(member.birth_year);
+            }
+            return 0; // Unknown age goes to end
+          };
+          valueA = getAge(a);
+          valueB = getAge(b);
           break;
         default:
           return 0;
@@ -75,6 +108,13 @@ const MemberList = () => {
 
     setFilteredMembers(sorted);
   };
+
+  // Add useEffect to handle search filtering and sorting
+  useEffect(() => {
+    if (allMembers && allMembers.length > 0) {
+      filterAndSortMembers();
+    }
+  }, [searchTerm, allMembers, sortBy, sortOrder]);
 
   const isDeceased = (member) => {
     if (!member) return false;
@@ -223,13 +263,17 @@ const MemberList = () => {
                 >
                   <option value="name">Name</option>
                   <option value="location">Location</option>
+                  <option value="age">Age</option>
                 </select>
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   className="flex items-center gap-1 px-2 py-1 border border-gray-300 rounded-lg text-xs hover:bg-gray-50 bg-white shadow-sm font-medium"
                 >
                   <span className="text-sm">{sortOrder === 'asc' ? '⬆️' : '⬇️'}</span>
-                  {sortOrder === 'asc' ? 'A-Z' : 'Z-A'}
+                  {sortBy === 'age' 
+                    ? (sortOrder === 'asc' ? 'Young→Old' : 'Old→Young')
+                    : (sortOrder === 'asc' ? 'A-Z' : 'Z-A')
+                  }
                 </button>
               </div>
             </div>

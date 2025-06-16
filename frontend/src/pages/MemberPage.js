@@ -211,6 +211,12 @@ const MemberPage = () => {
   // Calculate age once for reuse
   const age = calculateAge(member.birth_date, member.death_date);
 
+  // Helper function to determine if member is under 18
+  const isMinor = () => {
+    if (age === null) return false; // If no age available, show marriage section
+    return age < 18;
+  };
+
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
       {/* Animated background pattern - REDUCED opacity and size */}
@@ -365,74 +371,76 @@ const MemberPage = () => {
               </Link>
             </div>
 
-            {/* COMPACTED: Two-column layout for Marriage and Relationships */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-              {/* Marriage Information Section - COMPACTED */}
-              <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-lg p-3 border border-rose-100">
-                <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-rose-700 to-pink-700 bg-clip-text text-transparent">
-                  💍 Marriage
-                </h3>
+            {/* COMPACTED: Layout for Marriage and Relationships - conditional based on age */}
+            <div className={`grid gap-4 mb-4 ${isMinor() ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+              {/* Marriage Information Section - COMPACTED - Hidden for minors */}
+              {!isMinor() && (
+                <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-lg p-3 border border-rose-100">
+                  <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-rose-700 to-pink-700 bg-clip-text text-transparent">
+                    💍 Marriage
+                  </h3>
 
-                {member.is_married ? (
-                  <div className="space-y-2">
+                  {member.is_married ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center">
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          ✅ Married
+                        </span>
+                      </div>
+
+                      {member.marriage_date && (
+                        <div className="bg-white/70 rounded-lg p-2">
+                          <strong className="text-xs text-gray-700">Marriage Date:</strong>
+                          <span className="ml-2 text-sm text-gray-800">{formatDate(member.marriage_date)}</span>
+                        </div>
+                      )}
+
+                      {spouseInfo ? (
+                        <div className="flex items-center space-x-2 bg-white/70 rounded-lg p-2 border border-white">
+                          {spouseInfo.photo_url && (
+                            <img
+                              src={`${process.env.REACT_APP_API}/${spouseInfo.photo_url}`}
+                              alt={`${spouseInfo.first_name} ${spouseInfo.last_name}`}
+                              className="w-8 h-8 rounded-full object-cover border border-rose-200"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">
+                              <strong>Spouse:</strong>
+                              <Link
+                                to={`/members/${spouseInfo.id}`}
+                                className="text-rose-600 hover:text-rose-800 hover:underline ml-1 font-semibold"
+                              >
+                                {spouseInfo.first_name} {spouseInfo.last_name}
+                              </Link>
+                            </p>
+                            {spouseInfo.birth_date && (
+                              <p className="text-xs text-gray-600">
+                                Born: {formatDate(spouseInfo.birth_date)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : member.spouse_id ? (
+                        <p className="text-xs text-gray-600 bg-white/70 rounded-lg p-2">
+                          <strong>Spouse:</strong> (Member #{member.spouse_id} - details not available)
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-600 bg-white/70 rounded-lg p-2">No spouse selected</p>
+                      )}
+                    </div>
+                  ) : (
                     <div className="flex items-center">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        ✅ Married
+                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        ❌ Not Married
                       </span>
                     </div>
-
-                    {member.marriage_date && (
-                      <div className="bg-white/70 rounded-lg p-2">
-                        <strong className="text-xs text-gray-700">Marriage Date:</strong>
-                        <span className="ml-2 text-sm text-gray-800">{formatDate(member.marriage_date)}</span>
-                      </div>
-                    )}
-
-                    {spouseInfo ? (
-                      <div className="flex items-center space-x-2 bg-white/70 rounded-lg p-2 border border-white">
-                        {spouseInfo.photo_url && (
-                          <img
-                            src={`${process.env.REACT_APP_API}/${spouseInfo.photo_url}`}
-                            alt={`${spouseInfo.first_name} ${spouseInfo.last_name}`}
-                            className="w-8 h-8 rounded-full object-cover border border-rose-200"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                            }}
-                          />
-                        )}
-                        <div>
-                          <p className="text-sm font-medium text-gray-700">
-                            <strong>Spouse:</strong>
-                            <Link
-                              to={`/members/${spouseInfo.id}`}
-                              className="text-rose-600 hover:text-rose-800 hover:underline ml-1 font-semibold"
-                            >
-                              {spouseInfo.first_name} {spouseInfo.last_name}
-                            </Link>
-                          </p>
-                          {spouseInfo.birth_date && (
-                            <p className="text-xs text-gray-600">
-                              Born: {formatDate(spouseInfo.birth_date)}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ) : member.spouse_id ? (
-                      <p className="text-xs text-gray-600 bg-white/70 rounded-lg p-2">
-                        <strong>Spouse:</strong> (Member #{member.spouse_id} - details not available)
-                      </p>
-                    ) : (
-                      <p className="text-xs text-gray-600 bg-white/70 rounded-lg p-2">No spouse selected</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                      ❌ Not Married
-                    </span>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {/* Relationships Section - COMPACTED */}
               <div>

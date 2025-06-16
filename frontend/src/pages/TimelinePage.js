@@ -69,24 +69,29 @@ const TimelinePage = () => {
           });
         }
 
-        // NEW: Marriage events
+        // NEW: Marriage events (avoid duplicates by only creating for the person with lower ID)
         if (member.is_married && member.marriage_date && member.spouse_id) {
           // Find the spouse's information
           const spouse = members.find(m => m.id === member.spouse_id);
-          const spouseName = spouse ? `${spouse.first_name} ${spouse.last_name}` : 'Unknown spouse';
+          
+          // Only create the marriage event if this member has a lower ID than their spouse
+          // This prevents duplicate marriage events for the same couple
+          if (!spouse || member.id < spouse.id) {
+            const spouseName = spouse ? `${spouse.first_name} ${spouse.last_name}` : 'Unknown spouse';
 
-          timelineEvents.push({
-            type: 'marriage',
-            date: new Date(member.marriage_date),
-            year: new Date(member.marriage_date).getFullYear(),
-            description: `${fullName} married ${spouseName}`,
-            location: 'Unknown location', // We could add a marriage_place field later
-            memberId: member.id,
-            memberName: fullName,
-            member: member,
-            spouse: spouse, // Store spouse info for display
-            spouseName: spouseName
-          });
+            timelineEvents.push({
+              type: 'marriage',
+              date: new Date(member.marriage_date),
+              year: new Date(member.marriage_date).getFullYear(),
+              description: `${fullName} married ${spouseName}`,
+              location: 'Unknown location', // We could add a marriage_place field later
+              memberId: member.id,
+              memberName: fullName,
+              member: member,
+              spouse: spouse, // Store spouse info for display
+              spouseName: spouseName
+            });
+          }
         }
       });
 

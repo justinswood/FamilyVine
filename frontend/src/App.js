@@ -13,6 +13,7 @@ import FamilyTree from './pages/FamilyTree';
 import VisualTreePage from './pages/VisualTreePage';
 import Settings from './pages/Settings';
 import TimelinePage from './pages/TimelinePage';
+import CalendarPage from './pages/CalendarPage';
 import LoginPage from './pages/LoginPage';
 
 // Component to protect routes - redirects to login if not authenticated
@@ -98,6 +99,13 @@ const Navigation = () => {
             className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
           >
             Timeline
+          </Link>
+          
+          <Link 
+            to="/calendar" 
+            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
+          >
+            Calendar
           </Link>
           
           <Link 
@@ -250,6 +258,11 @@ function App() {
           <Route path="/timeline" element={
             <ProtectedRoute>
               <TimelinePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/calendar" element={
+            <ProtectedRoute>
+              <CalendarPage />
             </ProtectedRoute>
           } />
         </Routes>

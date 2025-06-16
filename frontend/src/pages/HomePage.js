@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { Github } from 'lucide-react';
 
 // Vine Animation Component (inline for simplicity)
 const VineAnimation = ({ side = 'left', className = '' }) => {
@@ -80,38 +81,10 @@ const VineAnimation = ({ side = 'left', className = '' }) => {
 const HomePage = () => {
   const [recentPhotos, setRecentPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalMembers: 0,
-    totalAlbums: 0,
-    recentMembers: []
-  });
 
   useEffect(() => {
-    fetchHomeStats();
     fetchRecentPhotos();
   }, []);
-
-  const fetchHomeStats = async () => {
-    try {
-      const response = await axios.get(`${process.env.REACT_APP_API}/api/members`);
-      const members = response.data;
-      const albumResponse = await axios.get(`${process.env.REACT_APP_API}/api/albums`);
-      const albums = albumResponse.data;
-
-      // Get 3 most recent members
-      const recentMembers = members
-        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-        .slice(0, 3);
-
-      setStats({
-        totalMembers: members.length,
-        totalAlbums: albums.length,
-        recentMembers
-      });
-    } catch (error) {
-      console.error('Error fetching home stats:', error);
-    }
-  };
 
   const fetchRecentPhotos = async () => {
     try {
@@ -199,7 +172,27 @@ const HomePage = () => {
   const photosToShow = recentPhotos.length > 0 ? recentPhotos : defaultPhotos;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+      {/* Background pattern - Same as AddMember page */}
+      <div className="absolute inset-0 opacity-30">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="homepage-pattern" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
+              <path d="M25,10 L25,40 M10,25 L40,25" stroke="currentColor" strokeWidth="1" className="text-blue-200" />
+              <circle cx="25" cy="25" r="8" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-purple-200" />
+              <path d="M20,20 L30,30 M30,20 L20,30" stroke="currentColor" strokeWidth="0.5" className="text-pink-200" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#homepage-pattern)" />
+        </svg>
+      </div>
+
+      {/* Floating decorative elements - Same as AddMember page */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br from-pink-200/30 to-purple-200/30 rounded-full blur-xl"></div>
+        <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-bl from-blue-200/30 to-cyan-200/30 rounded-full blur-xl"></div>
+        <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 w-80 h-40 bg-gradient-to-t from-purple-200/30 to-pink-200/30 rounded-full blur-xl"></div>
+      </div>
       {/* Inline Styles for Vine Animation */}
       <style jsx>{`
         @keyframes drawVine {
@@ -266,9 +259,55 @@ const HomePage = () => {
         }
       `}</style>
 
-      {/* Updated Header Section with Vine Animations */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3">
-        <div className="max-w-7xl mx-auto px-4 text-center">
+      {/* Updated Header Section with Textured Background */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 relative overflow-hidden z-20">
+        {/* GitHub Link in Top Right Corner */}
+        <div className="absolute top-4 right-4 z-20">
+          <a
+            href="https://github.com/justinswood/FamilyVine"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full transition-all duration-300 transform hover:scale-110 backdrop-blur-sm"
+            title="View on GitHub"
+          >
+            <Github className="w-5 h-5 text-white" />
+          </a>
+        </div>
+        {/* Subtle texture overlay */}
+        <div className="absolute inset-0 opacity-10">
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="header-texture" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+                {/* Diamond/rhombus pattern for raised texture effect */}
+                <path d="M10,2 L18,10 L10,18 L2,10 Z" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.02)" strokeWidth="0.5" />
+                <path d="M10,5 L15,10 L10,15 L5,10 Z" fill="rgba(255,255,255,0.03)" />
+                {/* Small dots for additional texture */}
+                <circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.04)" />
+                <circle cx="5" cy="5" r="0.5" fill="rgba(255,255,255,0.02)" />
+                <circle cx="15" cy="15" r="0.5" fill="rgba(255,255,255,0.02)" />
+              </pattern>
+
+              {/* Light emboss effect pattern */}
+              <pattern id="emboss-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                <rect x="0" y="0" width="40" height="40" fill="none" />
+                <path d="M0,20 Q10,10 20,20 Q30,30 40,20" stroke="rgba(255,255,255,0.03)" strokeWidth="1" fill="none" />
+                <path d="M0,25 Q10,15 20,25 Q30,35 40,25" stroke="rgba(0,0,0,0.02)" strokeWidth="1" fill="none" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#header-texture)" />
+            <rect width="100%" height="100%" fill="url(#emboss-pattern)" />
+          </svg>
+        </div>
+
+        {/* Subtle light reflection overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-white/5 via-transparent to-black/5"></div>
+
+        {/* Subtle inner shadow for depth */}
+        <div className="absolute inset-0" style={{
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.1)'
+        }}></div>
+
+        <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
           {/* Title with Vine Decorations */}
           <div className="relative inline-block mb-1.5">
             {/* Left Vine */}
@@ -276,8 +315,9 @@ const HomePage = () => {
               <VineAnimation side="left" />
             </div>
 
-            {/* Main Title */}
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight relative z-10">
+            {/* Main Title with subtle text shadow for raised effect */}
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight relative z-10"
+              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
               <span className="text-white">Family</span>
               <span className="text-green-300">Vine</span>
             </h1>
@@ -288,19 +328,25 @@ const HomePage = () => {
             </div>
           </div>
 
-          <p className="text-base mb-2.5 opacity-90">
+          <p className="text-base mb-2.5 opacity-90"
+            style={{ textShadow: '0 1px 1px rgba(0,0,0,0.2)' }}>
             Connecting Generations Through Stories, Photos & Memories
           </p>
           <div className="flex flex-col sm:flex-row gap-1.5 justify-center">
             <Link
               to="/members"
               className="px-4 py-1.5 bg-white text-blue-600 rounded-full font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg text-sm"
+              style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.3)' }}
             >
               Explore Your Tree
             </Link>
             <Link
               to="/add"
               className="px-4 py-1.5 bg-transparent border-2 border-white text-white rounded-full font-semibold hover:bg-white hover:text-blue-600 transition-all transform hover:scale-105 text-sm"
+              style={{
+                textShadow: '0 1px 1px rgba(0,0,0,0.2)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 1px 2px rgba(0,0,0,0.1)'
+              }}
             >
               Add Family Member
             </Link>
@@ -309,7 +355,7 @@ const HomePage = () => {
       </div>
 
       {/* Photo Showcase Section - COMPACTED */}
-      <div className="max-w-7xl mx-auto px-4 py-5">
+      <div className="max-w-7xl mx-auto px-4 py-5 relative z-10">
         <div className="text-center mb-3">
           <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-1.5">
             Family Memories
@@ -325,14 +371,14 @@ const HomePage = () => {
             {photosToShow.slice(0, 6).map((photo, index) => (
               <div key={photo.id || index} className="group cursor-pointer">
                 <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
-                  <div className="aspect-w-4 aspect-h-3 bg-gray-200">
+                  <div className="relative w-full" style={{ paddingBottom: '66.67%' }}>
                     <img
                       src={photo.file_path?.startsWith('http') ?
                         photo.file_path :
                         `${process.env.REACT_APP_API}/${photo.file_path}`
                       }
                       alt={photo.caption || photo.albumTitle || 'Family photo'}
-                      className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         e.target.src = 'https://images.unsplash.com/photo-1511895426328-dc8714aecd1f?w=600';
                       }}
@@ -366,34 +412,10 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Stats Section - COMPACTED */}
-      <div className="bg-white py-6">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div className="p-3">
-              <div className="text-3xl font-bold text-blue-600 mb-1.5">
-                {stats.totalMembers}
-              </div>
-              <p className="text-gray-600">Family Members</p>
-            </div>
-            <div className="p-3">
-              <div className="text-3xl font-bold text-green-600 mb-1.5">
-                {stats.totalAlbums}
-              </div>
-              <p className="text-gray-600">Photo Albums</p>
-            </div>
-            <div className="p-3">
-              <div className="text-3xl font-bold text-purple-600 mb-1.5">
-                {photosToShow.length}
-              </div>
-              <p className="text-gray-600">Recent Photos</p>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       {/* Feature Cards - COMPACTED */}
-      <div className="max-w-7xl mx-auto px-4 py-10">
+      <div className="max-w-7xl mx-auto px-4 py-10 relative z-10">
         <div className="text-center mb-6">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2.5">
             Explore FamilyVine
@@ -438,44 +460,10 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Recent Members Section - COMPACTED */}
-      {!loading && stats.recentMembers.length > 0 && (
-        <div className="bg-gray-50 py-10">
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2.5">
-                Recently Added
-              </h2>
-              <p className="text-gray-600">
-                Welcome our newest family members to the tree
-              </p>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {stats.recentMembers.map((member) => (
-                <div key={member.id} className="bg-white p-4 rounded-lg shadow-md text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2.5 flex items-center justify-center">
-                    <span className="text-lg font-bold text-blue-600">
-                      {member.first_name.charAt(0)}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1.5">
-                    {member.first_name} {member.last_name}
-                  </h3>
-                  {member.birth_year && (
-                    <p className="text-gray-600">
-                      Born {member.birth_year}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Footer - COMPACTED */}
-      <footer className="bg-gray-800 text-white py-6">
+      <footer className="bg-gray-800/90 backdrop-blur-sm text-white py-6 relative z-10">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h3 className="text-xl font-bold mb-2.5">FamilyVine</h3>
           <p className="text-gray-400 mb-3">

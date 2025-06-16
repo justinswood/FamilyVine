@@ -5,10 +5,10 @@ import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import L from 'leaflet';
 
-// Add custom styles for the popup
+// Custom popup styles
 const popupStyles = `
   .family-location-popup {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: system-ui, -apple-system, sans-serif;
   }
   
   .location-header {
@@ -23,16 +23,16 @@ const popupStyles = `
   .location-title {
     font-size: 16px;
     font-weight: 600;
-    color: #1f2937;
+    color: #374151;
     margin: 0;
   }
   
   .member-count {
-    background-color: #3b82f6;
-    color: white;
-    font-size: 11px;
-    padding: 4px 8px;
+    background: #dbeafe;
+    color: #1e40af;
+    padding: 2px 8px;
     border-radius: 12px;
+    font-size: 12px;
     font-weight: 500;
   }
   
@@ -40,30 +40,35 @@ const popupStyles = `
     display: flex;
     flex-direction: column;
     gap: 8px;
-    max-height: 200px;
-    overflow-y: auto;
   }
   
   .member-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px;
-    border-radius: 8px;
-    transition: background-color 0.2s ease;
+    transition: transform 0.2s;
   }
   
   .member-item:hover {
-    background-color: #f3f4f6;
+    transform: translateX(2px);
+  }
+  
+  .member-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: inherit;
+  }
+  
+  .member-link:hover {
+    text-decoration: none;
   }
   
   .member-photo {
-    width: 48px;
-    height: 48px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background-color: #f3f4f6;
+    position: relative;
   }
   
   .member-photo img {
@@ -75,42 +80,31 @@ const popupStyles = `
   .photo-placeholder {
     width: 100%;
     height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #e5e7eb;
-    color: #6b7280;
-    font-weight: 600;
-    font-size: 20px;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
   }
   
   .member-info {
     flex: 1;
+    min-width: 0;
   }
   
   .member-name {
-    font-size: 14px;
     font-weight: 500;
-    color: #1f2937;
+    color: #374151;
+    display: block;
     text-decoration: none;
-    transition: color 0.2s ease;
   }
   
-  .member-name:hover {
-    color: #3b82f6;
-    text-decoration: underline;
+  .member-link:hover .member-name {
+    color: #2563eb;
   }
   
-  .member-link {
-    text-decoration: none;
-    color: inherit;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    width: 100%;
-  }
-  
-  /* Customize the leaflet popup */
   .leaflet-popup-content-wrapper {
     border-radius: 12px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -200,8 +194,7 @@ function MapPage() {
     
     setGeocodingProgress({ current: 0, total: totalToGeocode });
     
-    let processedCount = 0;
-    
+    let processedCount = 0;    
     // Process in batches to respect rate limits
     for (let i = 0; i < uniqueLocations.length; i += batchSize) {
       const batch = uniqueLocations.slice(i, i + batchSize);
@@ -311,11 +304,12 @@ function MapPage() {
         const response = await axios.get(`${process.env.REACT_APP_API}/api/members`);
         const members = response.data;
         
-        // Filter members with valid locations and exclude deceased members
+        // Filter members with valid locations (INCLUDE ALL MEMBERS, NOT JUST LIVING ONES)
         const membersWithLocations = members.filter(member => 
           member.location && 
-          member.location.trim() !== '' &&
-          (member.is_alive === null || member.is_alive === true) // Show only living members
+          member.location.trim() !== ''
+          // REMOVED: && (member.is_alive === null || member.is_alive === true)
+          // This was filtering out deceased members, causing only living members to show
         );
         
         console.log(`Found ${membersWithLocations.length} members with locations`);
