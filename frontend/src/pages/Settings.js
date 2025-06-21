@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Database, Shield, Bell, Palette, User, Save, Upload } from 'lucide-react';
+import { Download, Database, Shield, Bell, Palette, User, Save, Upload, LogOut } from 'lucide-react';
 import ExportFamilyData from '../components/ExportFamilyData';
 import CSVImport from './CSVImport'; // Import the CSVImport component
 import axios from 'axios';
@@ -119,6 +119,14 @@ const Settings = () => {
     }
   };
 
+  const handleLogout = () => {
+    // Clear login status
+    localStorage.removeItem('familyVine_loggedIn');
+    localStorage.removeItem('familyVine_user');
+    // Page will automatically redirect to login due to ProtectedRoute
+    window.location.reload();
+  };
+
   const handleSettingChange = (section, setting, value) => {
     setSettings(prev => ({
       ...prev,
@@ -149,6 +157,7 @@ const Settings = () => {
     { id: 'import', label: 'Import Data', icon: <Upload className="w-4 h-4" /> }, // NEW TAB
     { id: 'export', label: 'Export Data', icon: <Download className="w-4 h-4" /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
+    { id: 'logout', label: 'Logout', icon: <LogOut className="w-4 h-4" /> },
   ];
 
   const renderGeneralSettings = () => (
@@ -450,6 +459,37 @@ const Settings = () => {
           />
           <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
         </label>
+      </div>
+    </div>
+  );
+
+  const renderLogoutSettings = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+          Sign Out
+        </h3>
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          You will be logged out of FamilyVine and redirected to the login page.
+        </p>
+        <button
+          onClick={handleLogout}
+          className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium transition-colors flex items-center gap-2 mx-auto"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </button>
+      </div>
+      
+      <div className="mt-8 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+        <h4 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">
+          Before you go...
+        </h4>
+        <ul className="text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
+          <li>• Make sure all your changes are saved</li>
+          <li>• Your data will remain secure and accessible when you return</li>
+          <li>• You can always log back in with your credentials</li>
+        </ul>
       </div>
     </div>
   );

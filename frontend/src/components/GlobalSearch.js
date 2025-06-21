@@ -110,13 +110,13 @@ const GlobalSearch = () => {
           setIsOpen(true);
           setTimeout(() => inputRef.current?.focus(), 100);
         }}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 
-                   bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 
+        className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-300 
+                   bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 
                    transition-colors border border-gray-200 dark:border-gray-600"
       >
-        <Search className="w-4 h-4" />
-        <span className="hidden sm:inline">Search family...</span>
-        <span className="text-xs text-gray-400 dark:text-gray-500 hidden md:inline">Ctrl+K</span>
+        <Search className="w-3 h-3" />
+        <span className="hidden lg:inline">Search</span>
+        <span className="text-xs text-gray-400 dark:text-gray-500 hidden xl:inline">Ctrl+K</span>
       </button>
 
       {/* Search Modal */}
