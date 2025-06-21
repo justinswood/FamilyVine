@@ -318,62 +318,16 @@ const HomePage = () => {
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.1)'
         }}></div>
 
-        <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
-          {/* Title with Vine Decorations */}
-          <div className="relative inline-block mb-1.5">
-            {/* Left Vine */}
-            <div className="vine-left hidden md:block">
-              <VineAnimation side="left" />
-            </div>
-
-            {/* Main Title with subtle text shadow for raised effect */}
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight relative z-10"
-              style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
-              <span className="text-white">Family</span>
-              <span className="text-green-300">Vine</span>
-            </h1>
-
-            {/* Right Vine */}
-            <div className="vine-right hidden md:block">
-              <VineAnimation side="right" />
-            </div>
-          </div>
-
-          <p className="text-base mb-2.5 opacity-90"
-            style={{ textShadow: '0 1px 1px rgba(0,0,0,0.2)' }}>
-            Connecting Generations Through Stories, Photos & Memories
-          </p>
-          <div className="flex flex-col sm:flex-row gap-1.5 justify-center">
-            <Link
-              to="/members"
-              className="px-4 py-1.5 bg-white text-blue-600 rounded-full font-semibold hover:bg-gray-100 transition-all transform hover:scale-105 shadow-lg text-sm"
-              style={{ boxShadow: '0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.3)' }}
-            >
-              Explore Your Tree
-            </Link>
-            <Link
-              to="/add"
-              className="px-4 py-1.5 bg-transparent border-2 border-white text-white rounded-full font-semibold hover:bg-white hover:text-blue-600 transition-all transform hover:scale-105 text-sm"
-              style={{
-                textShadow: '0 1px 1px rgba(0,0,0,0.2)',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), 0 1px 2px rgba(0,0,0,0.1)'
-              }}
-            >
-              Add Family Member
-            </Link>
-          </div>
+        <div className="max-w-7xl mx-auto px-4 text-center relative z-10 py-2">
+          {/* Beautiful Rotating Text Animation */}
+          <BeautifulRotatingText />
         </div>
       </div>
 
-      {/* Beautiful Rotating Text Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 py-16 relative z-10">
-        <BeautifulRotatingText />
-      </div>
-
       {/* Photo Showcase Section - COMPACTED */}
-      <div className="max-w-7xl mx-auto px-4 py-5 relative z-10">
-        <div className="text-center mb-3">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-1.5">
+      <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
+        <div className="text-center mb-4">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">
             Family Memories
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto text-sm">

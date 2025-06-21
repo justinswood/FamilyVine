@@ -17,6 +17,7 @@ import TimelinePage from './pages/TimelinePage';
 import CalendarPage from './pages/CalendarPage';
 import LoginPage from './pages/LoginPage';
 import EnhancedTreePage from './pages/EnhancedTreePage';
+import VineLogoCompact from './components/VineLogoCompact';
 
 // Component to protect routes - redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -51,12 +52,9 @@ const Navigation = () => {
   return (
     <nav className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-700 shadow-sm transition-colors duration-200 border-b border-gray-200 dark:border-gray-600">
       <div className="max-w-6xl mx-auto px-4 py-2 flex items-center gap-8">
-        {/* Logo with blue-purple gradient styling */}
-        <Link 
-          to="/" 
-          className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-purple-700 transition-all duration-300"
-        >
-          FamilyVine
+        {/* Animated Vine Logo */}
+        <Link to="/">
+          <VineLogoCompact />
         </Link>
         
         {/* Navigation Links with smaller padding */}

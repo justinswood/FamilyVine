@@ -15,10 +15,10 @@ const BeautifulRotatingText = () => {
   }, [words.length]);
 
   return (
-    <div className="text-center max-w-5xl mx-auto">
-      <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-6 leading-tight">
+    <div className="text-center max-w-4xl mx-auto">
+      <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2 leading-tight">
         Explore Your Family's{' '}
-        <div className="relative inline-block">
+        <div className="relative inline-block min-w-[120px] md:min-w-[160px] lg:min-w-[200px]">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
@@ -47,14 +47,14 @@ const BeautifulRotatingText = () => {
                 stiffness: 200,
                 damping: 20
               }}
-              className="inline-block"
+              className="inline-block w-full text-center"
             >
-              <span className="relative inline-block px-6 py-3 mx-2">
+              <span className="relative inline-block px-3 py-1">
                 {/* Background with gradient and shadow */}
                 <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-black to-gray-900 rounded-xl shadow-2xl transform -skew-x-6"></div>
                 
                 {/* Glowing border effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-xl blur-sm opacity-75 animate-pulse"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-green-400 via-cyan-400 to-blue-400 rounded-xl blur-sm opacity-75 animate-pulse"></div>
                 
                 {/* Inner background */}
                 <div className="absolute inset-1 bg-black rounded-lg"></div>
@@ -69,39 +69,39 @@ const BeautifulRotatingText = () => {
         </div>
       </h1>
       
-      <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-        Build, explore, and preserve your family tree with photos, 
-        relationships, and interactive visualizations.
+      <p className="text-sm md:text-base text-white/90 mb-2 max-w-xl mx-auto leading-relaxed" 
+         style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
+        Build, explore, and preserve your family tree with photos and relationships.
       </p>
       
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+      <div className="flex flex-col sm:flex-row gap-2 justify-center mb-2">
         <motion.button 
-          whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(59, 130, 246, 0.3)" }}
+          whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(255, 255, 255, 0.2)" }}
           whileTap={{ scale: 0.95 }}
-          className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold shadow-lg transition-all"
+          className="px-4 py-1.5 bg-white text-purple-600 rounded-md font-semibold shadow-lg transition-all hover:bg-gray-50 text-xs"
         >
           Start Exploring
         </motion.button>
         <motion.button 
-          whileHover={{ scale: 1.05, borderColor: "#6366f1" }}
+          whileHover={{ scale: 1.05, borderColor: "#ffffff" }}
           whileTap={{ scale: 0.95 }}
-          className="px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-all"
+          className="px-4 py-1.5 border-2 border-white/70 text-white rounded-md font-semibold hover:bg-white/10 transition-all text-xs"
         >
           Learn More
         </motion.button>
       </div>
       
       {/* Progress indicators */}
-      <div className="flex justify-center mt-8 space-x-2">
+      <div className="flex justify-center mt-2 space-x-1">
         {words.map((_, index) => (
           <motion.div
             key={index}
-            className={`w-2 h-2 rounded-full ${
-              index === currentIndex ? 'bg-purple-600' : 'bg-gray-300'
+            className={`w-1.5 h-1.5 rounded-full ${
+              index === currentIndex ? 'bg-white' : 'bg-white/40'
             }`}
             animate={{
               scale: index === currentIndex ? 1.2 : 1,
-              opacity: index === currentIndex ? 1 : 0.5
+              opacity: index === currentIndex ? 1 : 0.6
             }}
             transition={{ duration: 0.3 }}
           />
