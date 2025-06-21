@@ -9,8 +9,7 @@ import {
   Calendar,
   Upload,
   Download,
-  Search,
-  Settings
+  Search
 } from 'lucide-react';
 
 const QuickActions = ({ className = '' }) => {
@@ -77,13 +76,6 @@ const QuickActions = ({ className = '' }) => {
       description: 'Import from CSV',
       icon: Upload,
       link: '/import-csv',
-      color: 'from-gray-500 to-gray-600'
-    },
-    {
-      title: 'Settings',
-      description: 'App preferences',
-      icon: Settings,
-      link: '/settings',
       color: 'from-gray-500 to-gray-600'
     }
   ];

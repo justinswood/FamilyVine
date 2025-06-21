@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { Settings as SettingsIcon } from 'lucide-react';
 import HomePage from './pages/HomePage';
 import AddMember from './pages/AddMember';
 import EditMember from './pages/EditMember';
@@ -112,18 +113,26 @@ const Navigation = () => {
           >
             Calendar
           </Link>
-          
-          <Link 
+        </div>
+
+        {/* Right side actions - Settings and Logout */}
+        <div className="flex items-center gap-2 ml-auto">
+          {/* Settings Gear Icon */}
+          <Link
             to="/settings"
-            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
+            className="p-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 
+                       hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r 
+                       dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 rounded-full transition-all duration-300
+                       hover:scale-110"
+            title="Settings"
           >
-            Settings
+            <SettingsIcon className="w-5 h-5" />
           </Link>
           
           {/* Logout button with special styling */}
           <button
             onClick={handleLogout}
-            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 ml-2"
+            className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             Logout
           </button>
