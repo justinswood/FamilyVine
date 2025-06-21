@@ -142,6 +142,46 @@ router.get('/', async (req, res) => {
   res.json(result.rows);
 });
 
+// NEW: Search endpoint for global search functionality (MUST come before /:id route)
+router.get('/search', async (req, res) => {
+  try {
+    const { q } = req.query;
+    
+    if (!q || q.trim().length === 0) {
+      return res.json([]);
+    }
+    
+    const searchTerm = `%${q.trim().toLowerCase()}%`;
+    
+    // Search in first_name, last_name, middle_name, and location
+    const result = await pool.query(`
+      SELECT id, first_name, middle_name, last_name, birth_date, birth_place, photo_url
+      FROM members 
+      WHERE 
+        LOWER(first_name) LIKE $1 OR 
+        LOWER(last_name) LIKE $1 OR 
+        LOWER(middle_name) LIKE $1 OR
+        LOWER(CONCAT(first_name, ' ', last_name)) LIKE $1 OR
+        LOWER(birth_place) LIKE $1
+      ORDER BY 
+        -- Prioritize exact matches first
+        CASE 
+          WHEN LOWER(first_name) = LOWER($2) THEN 1
+          WHEN LOWER(last_name) = LOWER($2) THEN 2
+          WHEN LOWER(CONCAT(first_name, ' ', last_name)) = LOWER($2) THEN 3
+          ELSE 4
+        END,
+        first_name, last_name
+      LIMIT 20
+    `, [searchTerm, q.trim()]);
+    
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   const result = await pool.query('SELECT * FROM members WHERE id = $1', [req.params.id]);
   res.json(result.rows[0]);

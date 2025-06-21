@@ -18,6 +18,8 @@ import CalendarPage from './pages/CalendarPage';
 import LoginPage from './pages/LoginPage';
 import EnhancedTreePage from './pages/EnhancedTreePage';
 import VineLogoCompact from './components/VineLogoCompact';
+import GlobalSearch from './components/GlobalSearch';
+import Breadcrumbs from './components/Breadcrumbs';
 
 // Component to protect routes - redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -59,6 +61,9 @@ const Navigation = () => {
         
         {/* Navigation Links with smaller padding */}
         <div className="flex items-center space-x-1">
+          {/* Global Search Component */}
+          <GlobalSearch />
+          
           <Link 
             to="/members" 
             className="px-3 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
@@ -189,6 +194,9 @@ function App() {
       <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
         {/* Navigation will automatically hide on login page */}
         <Navigation />
+        
+        {/* Breadcrumbs - shows navigation path */}
+        <Breadcrumbs />
         
         <Routes>
           {/* Login route - accessible without authentication */}
