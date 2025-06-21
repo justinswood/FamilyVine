@@ -9,7 +9,7 @@ const BeautifulRotatingText = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % words.length);
-    }, 3500);
+    }, 2625); // 25% faster than original 3500ms (3500 * 0.75 = 2625)
 
     return () => clearInterval(interval);
   }, [words.length]);
