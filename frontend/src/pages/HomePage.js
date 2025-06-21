@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Github } from 'lucide-react';
 import BeautifulRotatingText from '../components/BeautifulRotatingText';
-import FamilyStatistics from '../components/FamilyStatistics';
+import FamilyInsights from '../components/FamilyInsights';
+import QuickActions from '../components/QuickActions';
 
 // Vine Animation Component (inline for simplicity)
 const VineAnimation = ({ side = 'left', className = '' }) => {
@@ -375,9 +376,14 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Family Statistics Section */}
+      {/* Family Insights Section */}
       <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
-        <FamilyStatistics />
+        <FamilyInsights />
+      </div>
+
+      {/* Quick Actions Section */}
+      <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
+        <QuickActions />
       </div>
 
 
