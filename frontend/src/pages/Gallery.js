@@ -197,51 +197,123 @@ const Gallery = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {albums.map((album) => (
-              <Link
-                key={album.id}
-                to={`/gallery/${album.id}`}
-                className="group bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-white/50 transform hover:-translate-y-1"
-              >
-                <div className="aspect-w-4 aspect-h-3 bg-gradient-to-br from-gray-100 to-gray-200">
-                  {album.cover_photo_path ? (
-                    <img
-                      src={`${process.env.REACT_APP_API}/${album.cover_photo_path}`}
-                      alt={album.title}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="flex items-center justify-center h-48 bg-gradient-to-br from-blue-50 to-purple-50">
-                      <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg mb-2 text-gray-800 group-hover:text-blue-600 transition-colors">{album.title}</h3>
-                  {album.description && (
-                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{album.description}</p>
-                  )}
-                  <div className="flex justify-between items-center text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {album.photo_count || 0} photos
-                    </span>
-                    {album.event_date && (
-                      <span className="flex items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {new Date(album.event_date).toLocaleDateString()}
-                      </span>
-                    )}
+            {albums.map((album, index) => {
+              // Create unique gradient combinations for each album
+              const gradients = [
+                'from-pink-400 via-purple-400 to-indigo-500',
+                'from-blue-400 via-cyan-400 to-teal-500', 
+                'from-green-400 via-emerald-400 to-blue-500',
+                'from-yellow-400 via-orange-400 to-red-500',
+                'from-purple-400 via-pink-400 to-rose-500',
+                'from-indigo-400 via-blue-400 to-cyan-500',
+                'from-emerald-400 via-green-400 to-lime-500',
+                'from-rose-400 via-pink-400 to-purple-500',
+                'from-cyan-400 via-blue-400 to-indigo-500',
+                'from-orange-400 via-red-400 to-pink-500'
+              ];
+              
+              const borderGradients = [
+                'from-pink-500 to-indigo-600',
+                'from-blue-500 to-teal-600',
+                'from-green-500 to-blue-600', 
+                'from-yellow-500 to-red-600',
+                'from-purple-500 to-rose-600',
+                'from-indigo-500 to-cyan-600',
+                'from-emerald-500 to-lime-600',
+                'from-rose-500 to-purple-600',
+                'from-cyan-500 to-indigo-600',
+                'from-orange-500 to-pink-600'
+              ];
+
+              const albumGradient = gradients[index % gradients.length];
+              const albumBorder = borderGradients[index % borderGradients.length];
+
+              return (
+                <Link
+                  key={album.id}
+                  to={`/gallery/${album.id}`}
+                  className="group relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden transform hover:-translate-y-2 hover:rotate-1"
+                >
+                  {/* Animated border gradient */}
+                  <div className={`absolute inset-0 bg-gradient-to-r ${albumBorder} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl p-0.5`}>
+                    <div className="bg-white rounded-2xl h-full w-full"></div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                  
+                  {/* Content container */}
+                  <div className="relative z-10">
+                    {/* Image/thumbnail section with gradient overlay */}
+                    <div className="relative aspect-w-4 aspect-h-3">
+                      {album.cover_photo_path ? (
+                        <>
+                          <img
+                            src={`${process.env.REACT_APP_API}/${album.cover_photo_path}`}
+                            alt={album.title}
+                            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500 rounded-t-2xl"
+                          />
+                          {/* Gradient overlay on hover */}
+                          <div className={`absolute inset-0 bg-gradient-to-t ${albumGradient} opacity-0 group-hover:opacity-30 transition-opacity duration-300 rounded-t-2xl`}></div>
+                        </>
+                      ) : (
+                        <div className={`flex items-center justify-center h-48 bg-gradient-to-br ${albumGradient} rounded-t-2xl relative overflow-hidden`}>
+                          {/* Animated background pattern */}
+                          <div className="absolute inset-0 opacity-20">
+                            <div className="absolute -top-4 -left-4 w-8 h-8 bg-white/30 rounded-full animate-bounce delay-100"></div>
+                            <div className="absolute top-8 right-8 w-6 h-6 bg-white/20 rounded-full animate-bounce delay-300"></div>
+                            <div className="absolute bottom-6 left-1/3 w-4 h-4 bg-white/25 rounded-full animate-bounce delay-500"></div>
+                          </div>
+                          {/* Camera icon with animation */}
+                          <div className="relative">
+                            <svg className="w-20 h-20 text-white/80 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {/* Pulse effect */}
+                            <div className="absolute inset-0 bg-white/20 rounded-full group-hover:animate-ping"></div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Photo count badge */}
+                      <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {album.photo_count || 0}
+                      </div>
+                    </div>
+
+                    {/* Content section */}
+                    <div className="p-5">
+                      <h3 className="font-bold text-xl mb-2 text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-purple-600 group-hover:to-blue-600 transition-all duration-300">
+                        {album.title}
+                      </h3>
+                      
+                      {album.description && (
+                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">{album.description}</p>
+                      )}
+                      
+                      {/* Footer with enhanced styling */}
+                      <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${albumGradient} animate-pulse`}></div>
+                          <span className="text-sm font-medium text-gray-700">
+                            {album.photo_count || 0} photos
+                          </span>
+                        </div>
+                        
+                        {album.event_date && (
+                          <span className="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full font-medium">
+                            {new Date(album.event_date).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Hover glow effect */}
+                  <div className={`absolute -inset-1 bg-gradient-to-r ${albumGradient} rounded-2xl blur-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 -z-10`}></div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

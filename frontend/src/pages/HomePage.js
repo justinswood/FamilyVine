@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Github } from 'lucide-react';
+import BeautifulRotatingText from '../components/BeautifulRotatingText';
 
 // Vine Animation Component (inline for simplicity)
 const VineAnimation = ({ side = 'left', className = '' }) => {
@@ -88,9 +89,19 @@ const HomePage = () => {
 
   const fetchRecentPhotos = async () => {
     try {
-      // First, try to load selected hero images
-      const savedHeroImages = localStorage.getItem('familyVine_heroImages');
+      // First, try to load from API (more reliable than localStorage)
+      try {
+        const response = await axios.get(`${process.env.REACT_APP_API}/api/hero-images`);
+        if (response.data && response.data.length > 0) {
+          setRecentPhotos(response.data);
+          return;
+        }
+      } catch (error) {
+        console.error('Error loading hero images from API:', error);
+      }
 
+      // Fallback: check localStorage for saved hero images
+      const savedHeroImages = localStorage.getItem('familyVine_heroImages');
       if (savedHeroImages) {
         try {
           const heroImages = JSON.parse(savedHeroImages);
@@ -99,11 +110,11 @@ const HomePage = () => {
             return;
           }
         } catch (error) {
-          console.error('Error loading hero images:', error);
+          console.error('Error loading hero images from localStorage:', error);
         }
       }
 
-      // Fallback: get photos from albums
+      // Final fallback: get photos from albums
       const response = await axios.get(`${process.env.REACT_APP_API}/api/albums`);
       const albums = response.data;
 
@@ -354,6 +365,11 @@ const HomePage = () => {
         </div>
       </div>
 
+      {/* Beautiful Rotating Text Hero Section */}
+      <div className="max-w-7xl mx-auto px-4 py-16 relative z-10">
+        <BeautifulRotatingText />
+      </div>
+
       {/* Photo Showcase Section - COMPACTED */}
       <div className="max-w-7xl mx-auto px-4 py-5 relative z-10">
         <div className="text-center mb-3">
@@ -384,14 +400,6 @@ const HomePage = () => {
                       }}
                     />
                   </div>
-                  {(photo.caption || photo.albumTitle) && (
-                    <div className="p-3">
-                      <p className="text-gray-700 font-medium">
-                        {photo.albumTitle}
-                      </p>
-                    </div>
-                  )}
-
                 </div>
               </div>
             ))}

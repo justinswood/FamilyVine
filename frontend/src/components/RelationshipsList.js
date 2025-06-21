@@ -164,9 +164,6 @@ const RelationshipsList = ({ memberId }) => {
                 >
                   {display.relatedPerson}
                 </Link>
-                <span className="text-xs text-gray-400 ml-2">
-                  ({relationship.direction}, {relationship.relationship_type})
-                </span>
               </div>
             </div>
             

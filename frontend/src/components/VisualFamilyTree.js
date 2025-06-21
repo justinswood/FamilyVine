@@ -1,14 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import * as d3 from 'd3';
-import './VisualFamilyTree.css';
+import React, { useEffect, useState } from 'react';
 
 const VisualFamilyTree = () => {
-  const svgRef = useRef();
   const [members, setMembers] = useState([]);
   const [relationships, setRelationships] = useState([]);
-  const [selectedMember, setSelectedMember] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [familyTree, setFamilyTree] = useState(null);
 
   useEffect(() => {
     fetchFamilyData();
@@ -16,332 +13,623 @@ const VisualFamilyTree = () => {
 
   useEffect(() => {
     if (members.length > 0 && relationships.length > 0) {
-      renderFamilyTree();
+      buildFullFamilyTree();
     }
   }, [members, relationships]);
 
   const fetchFamilyData = async () => {
     try {
       setLoading(true);
-      // Use your existing environment variable and correct port
-      const API_BASE = process.env.REACT_APP_API || 'http://192.168.1.120:5000';
       
-      console.log('Fetching data from:', API_BASE);
+      // Use the SAME domain for API calls - Cloudflare tunnel handles routing
+      const API_BASE = window.location.hostname === 'family.techwoods.cc' 
+        ? 'https://family.techwoods.cc'  // Same domain, Cloudflare routes /api/* to port 5000
+        : 'http://192.168.1.120:5000';   // Direct connection for local access
       
-      const [membersResponse, relationshipsResponse] = await Promise.all([
-        fetch(`${API_BASE}/api/members`),
-        fetch(`${API_BASE}/api/relationships`)
-      ]);
+      console.log('=== CLOUDFLARE TUNNEL API Configuration ===');
+      console.log('Window hostname:', window.location.hostname);
+      console.log('Using API_BASE:', API_BASE);
+      console.log('==========================================');
+      
+      try {
+        console.log('Attempting to fetch from:', `${API_BASE}/api/members`);
+        
+        const [membersResponse, relationshipsResponse] = await Promise.all([
+          fetch(`${API_BASE}/api/members`),
+          fetch(`${API_BASE}/api/relationships`)
+        ]);
 
-      console.log('Response status:', {
-        members: membersResponse.status,
-        relationships: relationshipsResponse.status
-      });
+        console.log('Response status:', membersResponse.status, relationshipsResponse.status);
 
-      if (!membersResponse.ok || !relationshipsResponse.ok) {
-        throw new Error(`HTTP error! Members: ${membersResponse.status}, Relationships: ${relationshipsResponse.status}`);
+        if (membersResponse.ok && relationshipsResponse.ok) {
+          const membersData = await membersResponse.json();
+          const relationshipsData = await relationshipsResponse.json();
+          
+          console.log('✅ Successfully loaded from API:', { 
+            members: membersData.length, 
+            relationships: relationshipsData.length 
+          });
+          
+          setMembers(Array.isArray(membersData) ? membersData : []);
+          setRelationships(Array.isArray(relationshipsData) ? relationshipsData : []);
+          return;
+        } else {
+          console.log('❌ API responded with error:', membersResponse.status, relationshipsResponse.status);
+        }
+      } catch (apiError) {
+        console.log('❌ API connection failed:', apiError.message);
+        console.log('Full error:', apiError);
       }
 
-      const membersData = await membersResponse.json();
-      const relationshipsData = await relationshipsResponse.json();
+      // Fall back to expanded mock data
+      console.log('Using expanded mock data for development');
+      setMembers([
+        // Generation 1 (Root)
+        { id: 1, first_name: 'Percy', last_name: 'Manning Sr.', birth_year: 1920, death_year: 1995, is_alive: false, photo_url: null },
+        { id: 2, first_name: 'Alice', last_name: 'Manning', birth_year: 1925, death_year: 2000, is_alive: false, photo_url: null },
+        
+        // Generation 2 (Their children)
+        { id: 3, first_name: 'Ruth', last_name: 'Dees', birth_year: 1945, is_alive: true, photo_url: null },
+        { id: 4, first_name: 'Alonzo', last_name: 'Dees', birth_year: 1940, is_alive: true, photo_url: null },
+        { id: 5, first_name: 'Hazel', last_name: 'Raymond', birth_year: 1950, is_alive: true, photo_url: null },
+        
+        // Generation 3 (Grandchildren)
+        { id: 6, first_name: 'Debra', last_name: 'Woods', birth_year: 1965, is_alive: true, photo_url: null },
+        { id: 7, first_name: 'Frank', last_name: 'Woods Jr.', birth_year: 1960, is_alive: true, photo_url: null },
+        { id: 8, first_name: 'Steven', last_name: 'Dees', birth_year: 1970, is_alive: true, photo_url: null },
+        
+        // Generation 4 (Great-grandchildren)
+        { id: 9, first_name: 'Justin', last_name: 'Woods', birth_year: 1987, is_alive: true, photo_url: null },
+        { id: 10, first_name: 'Priya', last_name: 'Baliga', birth_year: 1985, is_alive: true, photo_url: null },
+        { id: 11, first_name: 'Shanna', last_name: 'Woods', birth_year: 1990, is_alive: true, photo_url: null },
+        
+        // Generation 5 (Current)
+        { id: 12, first_name: 'Asha', last_name: 'Woods', birth_year: 2023, is_alive: true, photo_url: null }
+      ]);
       
-      console.log('Fetched data:', {
-        members: membersData.length,
-        relationships: relationshipsData.length
-      });
+      setRelationships([
+        // Generation 1 spouses
+        { id: 1, member1_id: 1, member2_id: 2, relationship_type: 'husband' },
+        { id: 2, member1_id: 2, member2_id: 1, relationship_type: 'wife' },
+        
+        // Generation 1 -> 2 parent-child
+        { id: 3, member1_id: 1, member2_id: 3, relationship_type: 'father' },
+        { id: 4, member1_id: 2, member2_id: 3, relationship_type: 'mother' },
+        { id: 5, member1_id: 2, member2_id: 5, relationship_type: 'mother' },
+        
+        // Generation 2 spouses
+        { id: 6, member1_id: 3, member2_id: 4, relationship_type: 'wife' },
+        { id: 7, member1_id: 4, member2_id: 3, relationship_type: 'husband' },
+        
+        // Generation 2 -> 3 parent-child
+        { id: 8, member1_id: 3, member2_id: 6, relationship_type: 'mother' },
+        { id: 9, member1_id: 4, member2_id: 6, relationship_type: 'father' },
+        { id: 10, member1_id: 3, member2_id: 8, relationship_type: 'mother' },
+        { id: 11, member1_id: 4, member2_id: 8, relationship_type: 'father' },
+        
+        // Generation 3 spouses
+        { id: 12, member1_id: 6, member2_id: 7, relationship_type: 'wife' },
+        { id: 13, member1_id: 7, member2_id: 6, relationship_type: 'husband' },
+        
+        // Generation 3 -> 4 parent-child
+        { id: 14, member1_id: 6, member2_id: 9, relationship_type: 'mother' },
+        { id: 15, member1_id: 7, member2_id: 9, relationship_type: 'father' },
+        { id: 16, member1_id: 6, member2_id: 11, relationship_type: 'mother' },
+        { id: 17, member1_id: 7, member2_id: 11, relationship_type: 'father' },
+        
+        // Generation 4 spouses
+        { id: 18, member1_id: 9, member2_id: 10, relationship_type: 'husband' },
+        { id: 19, member1_id: 10, member2_id: 9, relationship_type: 'wife' },
+        
+        // Generation 4 -> 5 parent-child
+        { id: 20, member1_id: 9, member2_id: 12, relationship_type: 'father' },
+        { id: 21, member1_id: 10, member2_id: 12, relationship_type: 'mother' }
+      ]);
       
-      setMembers(membersData);
-      setRelationships(relationshipsData);
     } catch (error) {
-      console.error('Detailed error fetching family data:', error);
-      setError(`Failed to load family data: ${error.message}`);
+      console.error('Error fetching family data:', error);
+      setError(error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const buildFamilyGraph = () => {
-    // Create nodes for each member
-    const nodes = members.map(member => ({
-      id: member.id,
-      name: `${member.first_name} ${member.last_name}`,
-      photo: member.photo_url,
-      gender: member.gender,
-      member: member
-    }));
-
-    // Create links from relationships
-    const links = relationships.map(rel => ({
-      source: rel.member1_id,
-      target: rel.member2_id,
-      type: rel.relationship_type,
-      id: `${rel.member1_id}-${rel.member2_id}`
-    }));
-
-    return { nodes, links };
-  };
-
-  const renderFamilyTree = () => {
-    const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove(); // Clear previous render
-
-    const width = 1200;
-    const height = 800;
-    const nodeRadius = 35;
-
-    svg.attr('width', width).attr('height', height);
-
-    // Create zoom behavior
-    const zoom = d3.zoom()
-      .scaleExtent([0.1, 4])
-      .on('zoom', (event) => {
-        container.attr('transform', event.transform);
-      });
-
-    svg.call(zoom);
-
-    const container = svg.append('g');
-
-    const { nodes, links } = buildFamilyGraph();
-
-    // Create force simulation
-    const simulation = d3.forceSimulation(nodes)
-      .force('link', d3.forceLink(links)
-        .id(d => d.id)
-        .distance(d => {
-          // Adjust distance based on relationship type
-          const parentChildTypes = ['father', 'mother', 'son', 'daughter'];
-          const spouseTypes = ['husband', 'wife'];
-          const siblingTypes = ['brother', 'sister'];
-          
-          if (parentChildTypes.includes(d.type)) return 120;
-          if (spouseTypes.includes(d.type)) return 100;
-          if (siblingTypes.includes(d.type)) return 150;
-          return 180;
-        })
-        .strength(0.8)
-      )
-      .force('charge', d3.forceManyBody().strength(-800))
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius(nodeRadius + 10));
-
-    // Define arrow markers and colors for different relationship types
-    const defs = svg.append('defs');
+  const buildFullFamilyTree = () => {
+    console.log('Building full dynamic family tree...');
     
-    const relationshipColors = {
-      'father': '#4A90E2',
-      'mother': '#E24A7F',
-      'son': '#4A90E2',
-      'daughter': '#E24A7F',
-      'husband': '#8E44AD',
-      'wife': '#8E44AD',
-      'brother': '#27AE60',
-      'sister': '#27AE60',
-      'uncle': '#F39C12',
-      'aunt': '#F39C12',
-      'grandfather': '#34495E',
-      'grandmother': '#34495E',
-      'grandson': '#34495E',
-      'granddaughter': '#34495E',
-      'nephew': '#E67E22',
-      'niece': '#E67E22',
-      'cousin': '#95A5A6'
-    };
-
-    // Create arrow markers
-    Object.entries(relationshipColors).forEach(([type, color]) => {
-      defs.append('marker')
-        .attr('id', `arrow-${type}`)
-        .attr('viewBox', '0 -5 10 10')
-        .attr('refX', nodeRadius + 15)
-        .attr('refY', 0)
-        .attr('markerWidth', 6)
-        .attr('markerHeight', 6)
-        .attr('orient', 'auto')
-        .append('path')
-        .attr('d', 'M0,-5L10,0L0,5')
-        .attr('fill', color);
-    });
-
-    // Create links
-    const link = container.append('g')
-      .selectAll('line')
-      .data(links)
-      .enter().append('line')
-      .attr('stroke', d => relationshipColors[d.type] || '#999')
-      .attr('stroke-width', 2)
-      .attr('marker-end', d => `url(#arrow-${d.type})`);
-
-    // Create link labels
-    const linkLabels = container.append('g')
-      .selectAll('.link-label')
-      .data(links)
-      .enter().append('text')
-      .attr('class', 'link-label')
-      .attr('font-size', '10px')
-      .attr('fill', '#666')
-      .attr('text-anchor', 'middle')
-      .style('background', 'rgba(255,255,255,0.8)')
-      .text(d => d.type);
-
-    // Create node groups
-    const node = container.append('g')
-      .selectAll('.node')
-      .data(nodes)
-      .enter().append('g')
-      .attr('class', 'node')
-      .call(d3.drag()
-        .on('start', dragstarted)
-        .on('drag', dragged)
-        .on('end', dragended));
-
-    // Add circles for nodes
-    node.append('circle')
-      .attr('r', nodeRadius)
-      .attr('fill', d => d.gender === 'Male' ? '#87CEEB' : '#FFB6C1')
-      .attr('stroke', '#333')
-      .attr('stroke-width', 2);
-
-    // Add photos to nodes
-    node.each(function(d) {
-      if (d.photo) {
-        const API_BASE = process.env.REACT_APP_API || 'http://192.168.1.120:5000';
-        const pattern = defs.append('pattern')
-          .attr('id', `photo-${d.id}`)
-          .attr('patternUnits', 'objectBoundingBox')
-          .attr('width', 1)
-          .attr('height', 1);
-
-        pattern.append('image')
-          .attr('x', 0)
-          .attr('y', 0)
-          .attr('width', nodeRadius * 2)
-          .attr('height', nodeRadius * 2)
-          .attr('href', `${API_BASE}/${d.photo}`);
-
-        d3.select(this).select('circle')
-          .attr('fill', `url(#photo-${d.id})`);
+    // Build relationship maps
+    const spouseMap = new Map();
+    const parentToChildren = new Map();
+    const childToParents = new Map();
+    
+    relationships.forEach(rel => {
+      if (rel.relationship_type === 'husband' || rel.relationship_type === 'wife') {
+        spouseMap.set(rel.member1_id, rel.member2_id);
+      } else if (rel.relationship_type === 'father' || rel.relationship_type === 'mother') {
+        // Parent -> children
+        if (!parentToChildren.has(rel.member1_id)) {
+          parentToChildren.set(rel.member1_id, []);
+        }
+        parentToChildren.get(rel.member1_id).push(rel.member2_id);
+        
+        // Child -> parents
+        if (!childToParents.has(rel.member2_id)) {
+          childToParents.set(rel.member2_id, []);
+        }
+        childToParents.get(rel.member2_id).push(rel.member1_id);
       }
     });
 
-    // Add labels to nodes
-    node.append('text')
-      .attr('dy', nodeRadius + 15)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '12px')
-      .attr('font-weight', 'bold')
-      .text(d => d.name);
+    // Find root generation (people with no parents)
+    const rootMemberIds = members
+      .filter(member => !childToParents.has(member.id))
+      .map(member => member.id);
+    
+    console.log('Root members:', rootMemberIds.map(id => {
+      const m = members.find(mem => mem.id === id);
+      return `${m.first_name} ${m.last_name}`;
+    }));
 
-    // Add click functionality to nodes
-    node.on('click', function(event, d) {
-      setSelectedMember(d.member);
+    // Build generations
+    const generations = [];
+    let currentGenIds = rootMemberIds;
+    let processedIds = new Set();
+    let genIndex = 0;
+
+    while (currentGenIds.length > 0 && genIndex < 6) {
+      console.log(`\n=== Generation ${genIndex} ===`);
       
-      // Highlight connected nodes
-      const connectedNodeIds = new Set();
-      links.forEach(link => {
-        if (link.source.id === d.id) connectedNodeIds.add(link.target.id);
-        if (link.target.id === d.id) connectedNodeIds.add(link.source.id);
+      // Create family units for this generation
+      const familyUnits = createFamilyUnits(currentGenIds, spouseMap, processedIds);
+      generations.push(familyUnits);
+      
+      // Mark all as processed
+      familyUnits.forEach(unit => {
+        unit.members.forEach(member => processedIds.add(member.id));
       });
 
-      node.selectAll('circle')
-        .attr('stroke-width', nodeId => nodeId.id === d.id ? 4 : 
-              connectedNodeIds.has(nodeId.id) ? 3 : 2)
-        .attr('stroke', nodeId => nodeId.id === d.id ? '#FF4444' : 
-              connectedNodeIds.has(nodeId.id) ? '#4444FF' : '#333');
-    });
+      // Find next generation
+      const nextGenIds = [];
+      familyUnits.forEach(unit => {
+        unit.members.forEach(parent => {
+          const children = parentToChildren.get(parent.id) || [];
+          children.forEach(childId => {
+            if (!processedIds.has(childId) && !nextGenIds.includes(childId)) {
+              nextGenIds.push(childId);
+            }
+          });
+        });
+      });
 
-    // Simulation tick
-    simulation.on('tick', () => {
-      link
-        .attr('x1', d => d.source.x)
-        .attr('y1', d => d.source.y)
-        .attr('x2', d => d.target.x)
-        .attr('y2', d => d.target.y);
-
-      linkLabels
-        .attr('x', d => (d.source.x + d.target.x) / 2)
-        .attr('y', d => (d.source.y + d.target.y) / 2 - 5);
-
-      node
-        .attr('transform', d => `translate(${d.x},${d.y})`);
-    });
-
-    // Drag functions
-    function dragstarted(event, d) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
-      d.fx = d.x;
-      d.fy = d.y;
+      currentGenIds = nextGenIds;
+      genIndex++;
     }
 
-    function dragged(event, d) {
-      d.fx = event.x;
-      d.fy = event.y;
-    }
-
-    function dragended(event, d) {
-      if (!event.active) simulation.alphaTarget(0);
-      d.fx = null;
-      d.fy = null;
-    }
+    // Calculate layout
+    const layout = calculateLayout(generations, parentToChildren, childToParents);
+    setFamilyTree(layout);
+    
+    console.log('Built family tree with', generations.length, 'generations');
   };
 
+  const createFamilyUnits = (memberIds, spouseMap, processedIds) => {
+    const units = [];
+    const processed = new Set();
+    
+    memberIds.forEach(memberId => {
+      if (processed.has(memberId)) return;
+      
+      const member = members.find(m => m.id === memberId);
+      if (!member) return;
+      
+      const spouseId = spouseMap.get(memberId);
+      const spouse = spouseId ? members.find(m => m.id === spouseId) : null;
+      
+      if (spouse && memberIds.includes(spouseId) && !processed.has(spouseId)) {
+        // Couple unit
+        console.log(`Creating couple: ${member.first_name} & ${spouse.first_name}`);
+        units.push({
+          type: 'couple',
+          members: [member, spouse],
+          id: `couple-${member.id}-${spouse.id}`
+        });
+        processed.add(memberId);
+        processed.add(spouseId);
+      } else {
+        // Single unit
+        console.log(`Creating single: ${member.first_name}`);
+        units.push({
+          type: 'single',
+          members: [member],
+          id: `single-${member.id}`
+        });
+        processed.add(memberId);
+      }
+    });
+    
+    return units;
+  };
+
+  const calculateLayout = (generations, parentToChildren, childToParents) => {
+    const PERSON_WIDTH = 140;
+    const PERSON_HEIGHT = 180;
+    const COUPLE_GAP = 20;
+    const UNIT_GAP = 60;
+    const GENERATION_GAP = 120;
+    const CONTAINER_WIDTH = 1200;
+    
+    const layoutData = {
+      generations: [],
+      connections: [],
+      containerWidth: CONTAINER_WIDTH,
+      containerHeight: generations.length * (PERSON_HEIGHT + GENERATION_GAP) + 200
+    };
+
+    // Position each generation
+    generations.forEach((units, genIndex) => {
+      console.log(`\n--- Positioning Generation ${genIndex} ---`);
+      
+      // Calculate total width needed
+      let totalWidth = 0;
+      units.forEach(unit => {
+        if (unit.type === 'couple') {
+          totalWidth += (PERSON_WIDTH * 2) + COUPLE_GAP + UNIT_GAP;
+        } else {
+          totalWidth += PERSON_WIDTH + UNIT_GAP;
+        }
+      });
+      totalWidth -= UNIT_GAP; // Remove last gap
+      
+      // Center the generation
+      let startX = (CONTAINER_WIDTH - totalWidth) / 2;
+      const y = genIndex * (PERSON_HEIGHT + GENERATION_GAP) + 50;
+      
+      const positionedUnits = [];
+      let currentX = startX;
+      
+      units.forEach((unit, unitIndex) => {
+        if (unit.type === 'couple') {
+          const person1X = currentX;
+          const person2X = currentX + PERSON_WIDTH + COUPLE_GAP;
+          const centerX = currentX + PERSON_WIDTH + (COUPLE_GAP / 2);
+          
+          console.log(`Couple: ${unit.members[0].first_name} & ${unit.members[1].first_name} at x=${centerX}`);
+          
+          positionedUnits.push({
+            ...unit,
+            centerX: centerX,
+            y: y,
+            person1: { ...unit.members[0], x: person1X, y: y },
+            person2: { ...unit.members[1], x: person2X, y: y }
+          });
+          
+          currentX += (PERSON_WIDTH * 2) + COUPLE_GAP + UNIT_GAP;
+        } else {
+          const centerX = currentX + (PERSON_WIDTH / 2);
+          
+          console.log(`Single: ${unit.members[0].first_name} at x=${centerX}`);
+          
+          positionedUnits.push({
+            ...unit,
+            centerX: centerX,
+            y: y,
+            person1: { ...unit.members[0], x: currentX, y: y }
+          });
+          
+          currentX += PERSON_WIDTH + UNIT_GAP;
+        }
+      });
+      
+      layoutData.generations.push(positionedUnits);
+    });
+
+    // Calculate connections
+    for (let genIndex = 0; genIndex < layoutData.generations.length - 1; genIndex++) {
+      const currentGen = layoutData.generations[genIndex];
+      const nextGen = layoutData.generations[genIndex + 1];
+
+      nextGen.forEach(childUnit => {
+        childUnit.members.forEach(child => {
+          const parentIds = childToParents.get(child.id) || [];
+          
+          currentGen.forEach(parentUnit => {
+            const parentUnitIds = parentUnit.members.map(m => m.id);
+            const hasConnection = parentIds.some(parentId => parentUnitIds.includes(parentId));
+            
+            if (hasConnection) {
+              layoutData.connections.push({
+                from: { 
+                  x: parentUnit.centerX, 
+                  y: parentUnit.y + PERSON_HEIGHT 
+                },
+                to: { 
+                  x: childUnit.centerX, 
+                  y: childUnit.y 
+                },
+                type: 'parent-child'
+              });
+            }
+          });
+        });
+      });
+    }
+
+    return layoutData;
+  };
+
+  const renderPersonBox = (person, x, y) => {
+    if (!person) return null;
+    
+    const API_BASE = process.env.REACT_APP_API || 'http://192.168.1.120:5000';
+    
+    return (
+      <div 
+        key={person.id}
+        style={{
+          position: 'absolute',
+          left: `${x}px`,
+          top: `${y}px`,
+          width: '140px',
+          height: '180px',
+          border: '2px solid #007bff',
+          borderRadius: '12px',
+          background: 'white',
+          padding: '12px',
+          textAlign: 'center',
+          boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+          cursor: 'pointer',
+          transition: 'transform 0.2s',
+          zIndex: 10
+        }}
+        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+      >
+        <div style={{ 
+          width: '100px', 
+          height: '100px', 
+          margin: '0 auto 12px', 
+          borderRadius: '12px', 
+          overflow: 'hidden', 
+          background: person.gender === 'Male' ? '#e3f2fd' : '#fce4ec',
+          border: `3px solid ${person.gender === 'Male' ? '#2196f3' : '#e91e63'}`
+        }}>
+          {person.photo_url ? (
+            <img 
+              src={`${API_BASE}/${person.photo_url}`} 
+              alt={person.first_name}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <div style={{ 
+              width: '100%', 
+              height: '100%', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              fontSize: '32px',
+              color: person.gender === 'Male' ? '#1976d2' : '#c2185b'
+            }}>
+              👤
+            </div>
+          )}
+        </div>
+        <div style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '6px', lineHeight: '1.2' }}>
+          {person.first_name}<br/>{person.last_name}
+        </div>
+        <div style={{ fontSize: '11px', color: '#666', marginBottom: '4px' }}>
+          {person.birth_year || 'Unknown'} - {person.is_alive ? 'Present' : (person.death_year || '?')}
+        </div>
+        <div style={{ 
+          fontSize: '10px', 
+          fontWeight: 'bold',
+          color: person.is_alive ? '#4caf50' : '#757575',
+          textTransform: 'uppercase'
+        }}>
+          {person.is_alive ? 'ALIVE' : 'DECEASED'}
+        </div>
+      </div>
+    );
+  };
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Loading family tree...</div>
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <div style={{ fontSize: '18px', marginBottom: '20px' }}>Loading family tree...</div>
+        <div style={{ 
+          width: '50px', 
+          height: '50px', 
+          border: '4px solid #f3f3f3',
+          borderTop: '4px solid #007bff',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          margin: '0 auto'
+        }}></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-red-600 text-center">
-          <div>{error}</div>
-          <div className="mt-2 text-sm">
-            Check console for details. Make sure your backend is running on port 5000.
-          </div>
-        </div>
+      <div style={{ padding: '40px', textAlign: 'center', color: 'red' }}>
+        <h3>Error Loading Family Tree</h3>
+        <p>{error}</p>
+        <button 
+          onClick={fetchFamilyData}
+          style={{ 
+            padding: '10px 20px', 
+            background: '#007bff', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  if (!familyTree || !familyTree.generations.length) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <div>Building family tree...</div>
       </div>
     );
   }
 
   return (
-    <div className="visual-family-tree">
-      <div className="tree-controls">
-        <h2>Visual Family Tree</h2>
-        <button 
-          onClick={() => {
-            const svg = d3.select(svgRef.current);
-            svg.transition().duration(750)
-              .call(d3.zoom().transform, d3.zoomIdentity);
-          }}
-          className="reset-button"
-        >
-          Reset View
-        </button>
-        {selectedMember && (
-          <div className="selected-member-info">
-            <h3>Selected: {selectedMember.first_name} {selectedMember.last_name}</h3>
-            <p>Born: {selectedMember.birth_year}</p>
-            {selectedMember.death_year && <p>Died: {selectedMember.death_year}</p>}
-          </div>
-        )}
-      </div>
+    <div style={{ padding: '20px', background: '#f5f5f5', minHeight: '100vh' }}>
+      <h1 style={{ textAlign: 'center', marginBottom: '10px', color: '#333' }}>
+        Manning Family Tree
+      </h1>
       
-      <div className="tree-legend">
-        <h4>Relationship Colors:</h4>
-        <div className="legend-items">
-          <span><div className="color-box" style={{backgroundColor: '#4A90E2'}}></div> Father/Son</span>
-          <span><div className="color-box" style={{backgroundColor: '#E24A7F'}}></div> Mother/Daughter</span>
-          <span><div className="color-box" style={{backgroundColor: '#8E44AD'}}></div> Spouse</span>
-          <span><div className="color-box" style={{backgroundColor: '#27AE60'}}></div> Siblings</span>
-          <span><div className="color-box" style={{backgroundColor: '#F39C12'}}></div> Uncle/Aunt</span>
-          <span><div className="color-box" style={{backgroundColor: '#34495E'}}></div> Grandparents</span>
+      <div style={{ textAlign: 'center', marginBottom: '30px', color: '#666' }}>
+        <p>Showing {familyTree.generations.length} generations with {members.length} family members</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '30px', marginTop: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '20px', height: '4px', background: '#8b5cf6' }}></div>
+            <span style={{ fontSize: '14px' }}>Spouse Connection</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '20px', height: '3px', background: '#4a90e2' }}></div>
+            <span style={{ fontSize: '14px' }}>Parent-Child Connection</span>
+          </div>
         </div>
       </div>
       
-      <svg ref={svgRef} className="family-tree-svg"></svg>
+      <div style={{ 
+        position: 'relative', 
+        width: `${familyTree.containerWidth}px`, 
+        height: `${familyTree.containerHeight}px`, 
+        margin: '0 auto', 
+        background: 'white', 
+        border: '2px solid #ddd',
+        borderRadius: '12px',
+        boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+        overflow: 'hidden'
+      }}>
+        
+        {/* SVG for all connection lines */}
+        <svg style={{ 
+          position: 'absolute', 
+          top: 0, 
+          left: 0, 
+          width: '100%', 
+          height: '100%', 
+          pointerEvents: 'none',
+          zIndex: 1
+        }}>
+          {/* Parent-child connections */}
+          {familyTree.connections.map((connection, index) => (
+            <g key={`connection-${index}`}>
+              {/* Vertical line down from parent */}
+              <line
+                x1={connection.from.x}
+                y1={connection.from.y}
+                x2={connection.from.x}
+                y2={connection.from.y + 60}
+                stroke="#4a90e2"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+              {/* Horizontal line across */}
+              <line
+                x1={connection.from.x}
+                y1={connection.from.y + 60}
+                x2={connection.to.x}
+                y2={connection.from.y + 60}
+                stroke="#4a90e2"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+              {/* Vertical line down to child */}
+              <line
+                x1={connection.to.x}
+                y1={connection.from.y + 60}
+                x2={connection.to.x}
+                y2={connection.to.y}
+                stroke="#4a90e2"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+            </g>
+          ))}
+          
+          {/* Spouse connection lines */}
+          {familyTree.generations.map((generation, genIndex) =>
+            generation.map((unit, unitIndex) => {
+              if (unit.type === 'couple' && unit.person1 && unit.person2) {
+                const leftEdge = unit.person1.x + 140; // Right edge of left person
+                const rightEdge = unit.person2.x;      // Left edge of right person
+                const yPos = unit.person1.y + 90;      // Middle of persons
+                
+                return (
+                  <line
+                    key={`spouse-${genIndex}-${unitIndex}`}
+                    x1={leftEdge}
+                    y1={yPos}
+                    x2={rightEdge}
+                    y2={yPos}
+                    stroke="#8b5cf6"
+                    strokeWidth="5"
+                    strokeLinecap="round"
+                  />
+                );
+              }
+              return null;
+            })
+          )}
+        </svg>
+
+        {/* Render all member boxes */}
+        {familyTree.generations.map((generation, genIndex) =>
+          generation.map((unit, unitIndex) => (
+            <div key={`gen-${genIndex}-unit-${unitIndex}`}>
+              {unit.person1 && renderPersonBox(unit.person1, unit.person1.x, unit.person1.y)}
+              {unit.person2 && renderPersonBox(unit.person2, unit.person2.x, unit.person2.y)}
+            </div>
+          ))
+        )}
+        
+        {/* Generation labels */}
+        {familyTree.generations.map((generation, genIndex) => (
+          <div
+            key={`gen-label-${genIndex}`}
+            style={{
+              position: 'absolute',
+              left: '20px',
+              top: `${genIndex * 300 + 100}px`,
+              background: 'rgba(0,123,255,0.1)',
+              padding: '8px 12px',
+              borderRadius: '20px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              color: '#007bff',
+              border: '2px solid #007bff'
+            }}
+          >
+            Generation {genIndex + 1}
+          </div>
+        ))}
+      </div>
+      
+      <div style={{ textAlign: 'center', marginTop: '30px', color: '#666' }}>
+        <button 
+          onClick={fetchFamilyData}
+          style={{ 
+            padding: '12px 24px', 
+            background: '#28a745', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 'bold'
+          }}
+        >
+          Refresh Family Tree
+        </button>
+      </div>
     </div>
   );
 };

@@ -1,0 +1,363 @@
+.visual-family-tree {
+  padding: 20px;
+  height: calc(100vh - 120px);
+  background-color: #f8f9fa;
+  overflow: hidden;
+}
+
+.tree-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.tree-controls h2 {
+  margin: 0;
+  color: #333;
+  font-size: 1.5rem;
+}
+
+.controls-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.reset-button, .refresh-button, .debug-button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.reset-button:hover, .refresh-button:hover, .debug-button:hover {
+  background-color: #0056b3;
+}
+
+.refresh-button {
+  background-color: #28a745;
+}
+
+.refresh-button:hover {
+  background-color: #1e7e34;
+}
+
+.debug-button {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.debug-button:hover {
+  background-color: #e0a800;
+}
+
+.selected-member-info {
+  background-color: #e8f4f8;
+  padding: 10px 15px;
+  border-radius: 5px;
+  border-left: 4px solid #007bff;
+  max-width: 300px;
+}
+
+.selected-member-info h3 {
+  margin: 0 0 5px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.selected-member-info p {
+  margin: 2px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.tree-legend {
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+
+.tree-legend h4 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 16px;
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.legend-items span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #555;
+}
+
+.color-box {
+  width: 20px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid #ddd;
+}
+
+.family-tree-svg {
+  width: 100%;
+  height: calc(100vh - 400px);
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: white;
+  cursor: grab;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.family-tree-svg:active {
+  cursor: grabbing;
+}
+
+/* Connection points on cards */
+.spouse-connection-point, .parent-connection-point, .child-connection-point {
+  transition: all 0.3s ease;
+  z-index: 20;
+}
+
+.member-card:hover .spouse-connection-point,
+.member-card:hover .parent-connection-point,
+.member-card:hover .child-connection-point {
+  r: 6;
+  filter: brightness(1.2);
+}
+
+/* Tree-specific styles */
+.member-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.member-card:hover {
+  transform: scale(1.05);
+}
+
+.member-card rect {
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.member-card:hover rect {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+
+.member-card text {
+  pointer-events: none;
+  user-select: none;
+}
+
+.spouse-line {
+  marker-start: url(#connection-dot);
+  marker-end: url(#connection-dot);
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.spouse-line:hover {
+  opacity: 1;
+  stroke-width: 4;
+}
+
+.parent-child-line {
+  marker-end: url(#arrow);
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.parent-child-line:hover {
+  opacity: 1;
+  stroke-width: 3;
+}
+
+.tree-stats {
+  background-color: white;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+}
+
+.tree-stats p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+}
+/* Connection line animations */
+.spouse-line {
+  stroke-dasharray: 5,5;
+  animation: dash 10s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.parent-child-line {
+  stroke-dasharray: 3,3;
+  animation: dash-slow 15s linear infinite;
+}
+
+@keyframes dash-slow {
+  to {
+    stroke-dashoffset: -12;
+  }
+}
+
+/* Generation labels */
+.generation-label {
+  font-size: 18px;
+  font-weight: bold;
+  fill: #333;
+  text-anchor: middle;
+}
+
+/* Photo styling */
+circle[fill^="url"] {
+  transition: all 0.3s ease;
+}
+
+.member-card:hover circle[fill^="url"] {
+  stroke-width: 4;
+  filter: brightness(1.1);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .tree-controls {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .controls-group {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .legend-items {
+    justify-content: center;
+  }
+  
+  .visual-family-tree {
+    padding: 10px;
+  }
+  
+  .family-tree-svg {
+    height: calc(100vh - 450px);
+    min-height: 400px;
+  }
+  
+  .tree-stats {
+    flex-direction: column;
+    text-align: center;
+    gap: 10px;
+  }
+  
+  .selected-member-info {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .tree-controls h2 {
+    font-size: 1.25rem;
+  }
+  
+  .reset-button, .refresh-button {
+    padding: 8px 16px;
+    font-size: 12px;
+  }
+  
+  .legend-items span {
+    font-size: 12px;
+  }
+  
+  .family-tree-svg {
+    height: calc(100vh - 500px);
+    min-height: 300px;
+  }
+}
+
+/* Loading and error states */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-message {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 5px;
+  padding: 15px;
+  margin: 20px 0;
+}
+
+/* Zoom controls */
+.zoom-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.zoom-btn {
+  width: 40px;
+  height: 40px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.zoom-btn:hover {
+  background-color: #f8f9fa;
+  border-color: #007bff;
+  color: #007bff;
+}

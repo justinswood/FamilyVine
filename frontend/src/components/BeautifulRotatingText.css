@@ -1,0 +1,49 @@
+/* Enhanced text shadow and glowing effects */
+.text-shadow-lg {
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), 
+               0 2px 4px rgba(0, 0, 0, 0.2),
+               0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+/* Smooth perspective animations */
+.rotating-word-container {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+/* Additional glow animation */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(147, 51, 234, 0.6), 
+                0 0 40px rgba(59, 130, 246, 0.4);
+  }
+}
+
+.glow-animation {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Gradient text background */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}

@@ -53,15 +53,22 @@ const HeroImageSelector = () => {
     }
   };
 
-  const loadSelectedImages = () => {
-    // Load selected images from localStorage
-    const saved = localStorage.getItem('familyVine_heroImages');
-    if (saved) {
-      try {
-        const parsedImages = JSON.parse(saved);
-        setSelectedImages(parsedImages);
-      } catch (error) {
-        console.error('Error loading saved hero images:', error);
+  const loadSelectedImages = async () => {
+    try {
+      // Load selected images from database instead of localStorage
+      const response = await axios.get(`${process.env.REACT_APP_API}/api/hero-images`);
+      setSelectedImages(response.data);
+    } catch (error) {
+      console.error('Error loading hero images from database:', error);
+      // Fallback to localStorage if API fails
+      const saved = localStorage.getItem('familyVine_heroImages');
+      if (saved) {
+        try {
+          const parsedImages = JSON.parse(saved);
+          setSelectedImages(parsedImages);
+        } catch (localError) {
+          console.error('Error loading saved hero images:', localError);
+        }
       }
     }
   };
@@ -69,13 +76,12 @@ const HeroImageSelector = () => {
   const saveSelectedImages = async () => {
     setSaving(true);
     try {
-      // Save to localStorage
+      // Save to localStorage for consistency
       localStorage.setItem('familyVine_heroImages', JSON.stringify(selectedImages));
       
-      // Simulate API save
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Since images are already saved to database individually, just confirm
+      alert('Hero images are already saved! The homepage will show these images.');
       
-      alert('Hero images saved successfully!');
     } catch (error) {
       console.error('Error saving hero images:', error);
       alert('Failed to save hero images');
@@ -172,22 +178,51 @@ const HeroImageSelector = () => {
     setCropImageFile(null);
   };
 
-  const toggleImageSelection = (photo) => {
-    setSelectedImages(prev => {
-      const isSelected = prev.some(img => img.id === photo.id);
-      
-      if (isSelected) {
-        // Remove from selection
-        return prev.filter(img => img.id !== photo.id);
-      } else {
-        // Add to selection (max 8 images)
-        if (prev.length >= 8) {
-          alert('You can select a maximum of 8 images for the hero slideshow');
-          return prev;
-        }
-        return [...prev, photo];
+  const toggleImageSelection = async (photo) => {
+    const isSelected = selectedImages.some(img => img.id === photo.id);
+    
+    if (isSelected) {
+      // Remove from selection - delegate to removeImage function
+      await removeImage(photo);
+    } else {
+      // Add to selection (max 8 images)
+      if (selectedImages.length >= 8) {
+        alert('You can select a maximum of 8 images for the hero slideshow');
+        return;
       }
-    });
+      
+      try {
+        // Add to database by copying the photo and marking as hero image
+        const formData = new FormData();
+        
+        // Fetch the original image and convert to blob
+        const imageResponse = await fetch(`${process.env.REACT_APP_API}/${photo.file_path}`);
+        const imageBlob = await imageResponse.blob();
+        const imageFile = new File([imageBlob], photo.filename, { type: photo.mime_type });
+        
+        formData.append('heroImage', imageFile);
+        formData.append('caption', photo.caption || `Hero image from ${photo.albumTitle}`);
+        formData.append('albumTitle', photo.albumTitle || 'gallery');
+
+        // Send to backend
+        const response = await axios.post(`${process.env.REACT_APP_API}/api/hero-images`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        // Update local state
+        const savedImage = response.data;
+        setSelectedImages(prev => [...prev, {
+          ...savedImage,
+          albumTitle: photo.albumTitle
+        }]);
+        
+      } catch (error) {
+        console.error('Error adding hero image:', error);
+        alert('Failed to add hero image');
+      }
+    }
   };
 
   const isImageSelected = (photo) => {
@@ -214,8 +249,22 @@ const HeroImageSelector = () => {
     });
   };
 
-  const removeImage = (photo) => {
-    setSelectedImages(prev => prev.filter(img => img.id !== photo.id));
+  const removeImage = async (photo) => {
+    try {
+      // Remove from database
+      await axios.delete(`${process.env.REACT_APP_API}/api/hero-images/${photo.id}`);
+      
+      // Update local state
+      setSelectedImages(prev => prev.filter(img => img.id !== photo.id));
+      
+      // Update localStorage for consistency
+      const updatedImages = selectedImages.filter(img => img.id !== photo.id);
+      localStorage.setItem('familyVine_heroImages', JSON.stringify(updatedImages));
+      
+    } catch (error) {
+      console.error('Error removing hero image:', error);
+      alert('Failed to remove hero image');
+    }
   };
 
   if (loading) {

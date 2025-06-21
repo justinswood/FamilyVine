@@ -1,10 +1,10 @@
 import React from 'react';
-import HierarchicalFamilyTree from '../components/HierarchicalFamilyTree';
+import VisualFamilyTree from '../components/VisualFamilyTree';
 
 const VisualTreePage = () => {
   return (
     <div className="max-w-full mx-auto">
-      <HierarchicalFamilyTree />
+      <VisualFamilyTree />
     </div>
   );
 };

@@ -182,7 +182,7 @@ function MapPage() {
   const [geocodingProgress, setGeocodingProgress] = useState({ current: 0, total: 0 });
 
   // Batch geocoding function with concurrent requests (respecting rate limits)
-  const batchGeocodeLocations = async (locationGroups) => {
+  const batchGeocodeLocations = async (locationGroups, originalCaseMap) => {
     const uniqueLocations = Object.keys(locationGroups);
     const batchSize = 3; // Process 3 locations concurrently
     const delayBetweenBatches = 2000; // 2 seconds between batches
@@ -220,7 +220,7 @@ function MapPage() {
           return {
             lat: geoResult.lat,
             lon: geoResult.lon,
-            location: membersAtLocation[0].location,
+            location: originalCaseMap[location], // Use original case instead of member location
             display_name: geoResult.display_name,
             members: membersAtLocation
           };
@@ -304,12 +304,11 @@ function MapPage() {
         const response = await axios.get(`${process.env.REACT_APP_API}/api/members`);
         const members = response.data;
         
-        // Filter members with valid locations (INCLUDE ALL MEMBERS, NOT JUST LIVING ONES)
+        // Filter members with valid locations (exclude deceased members)
         const membersWithLocations = members.filter(member => 
           member.location && 
-          member.location.trim() !== ''
-          // REMOVED: && (member.is_alive === null || member.is_alive === true)
-          // This was filtering out deceased members, causing only living members to show
+          member.location.trim() !== '' &&
+          !member.death_date // Exclude members who have a death date
         );
         
         console.log(`Found ${membersWithLocations.length} members with locations`);
@@ -322,10 +321,14 @@ function MapPage() {
 
         // Group members by location to reduce geocoding calls
         const locationGroups = {};
+        const originalCaseMap = {}; // Keep track of original case
         membersWithLocations.forEach(member => {
           const loc = member.location.trim().toLowerCase();
+          const originalCase = member.location.trim();
+          
           if (!locationGroups[loc]) {
             locationGroups[loc] = [];
+            originalCaseMap[loc] = originalCase; // Store the first occurrence's original case
           }
           locationGroups[loc].push(member);
         });
@@ -340,7 +343,7 @@ function MapPage() {
         console.log(`${cachedCount} locations cached, ${needsGeocoding} need geocoding`);
         
         // Process all locations (cached + new)
-        const geocodedLocations = await batchGeocodeLocations(locationGroups);
+        const geocodedLocations = await batchGeocodeLocations(locationGroups, originalCaseMap);
         
         console.log(`Successfully processed ${geocodedLocations.length} member locations`);
         setLocations(geocodedLocations);

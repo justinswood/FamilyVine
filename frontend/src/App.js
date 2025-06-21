@@ -11,10 +11,12 @@ import Gallery from './pages/Gallery';
 import AlbumView from './pages/AlbumView';
 import FamilyTree from './pages/FamilyTree';
 import VisualTreePage from './pages/VisualTreePage';
+import FamilyTreeDebug from './components/FamilyTreeDebug';
 import Settings from './pages/Settings';
 import TimelinePage from './pages/TimelinePage';
 import CalendarPage from './pages/CalendarPage';
 import LoginPage from './pages/LoginPage';
+import EnhancedTreePage from './pages/EnhancedTreePage';
 
 // Component to protect routes - redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -248,6 +250,16 @@ function App() {
           <Route path="/visual-tree" element={
             <ProtectedRoute>
               <VisualTreePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/enhanced-tree" element={
+            <ProtectedRoute>
+              <EnhancedTreePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/debug-tree" element={
+            <ProtectedRoute>
+              <FamilyTreeDebug />
             </ProtectedRoute>
           } />
           <Route path="/settings" element={

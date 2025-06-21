@@ -33,7 +33,11 @@ const CalendarPage = () => {
 
         // Birthday events
         if (member.birth_date) {
-          const birthDate = new Date(member.birth_date);
+          // Parse date as local date to avoid timezone issues
+          const birthDateStr = member.birth_date.split('T')[0]; // Get just the date part (YYYY-MM-DD)
+          const [year, month, day] = birthDateStr.split('-').map(Number);
+          const birthDate = new Date(year, month - 1, day); // month - 1 because JS months are 0-indexed
+          
           calendarEvents.push({
             type: 'birthday',
             date: birthDate,
@@ -41,7 +45,7 @@ const CalendarPage = () => {
             day: birthDate.getDate(),
             year: birthDate.getFullYear(),
             description: `${fullName}'s Birthday`,
-            subtitle: `Born ${birthDate.getFullYear()}`,
+            subtitle: `Born ${year}`, // Use original year from data
             member: member,
             memberId: member.id,
             memberName: fullName
@@ -54,7 +58,10 @@ const CalendarPage = () => {
           
           // Only create one anniversary per couple (like we did with timeline)
           if (!spouse || member.id < spouse.id) {
-            const marriageDate = new Date(member.marriage_date);
+            // Parse date as local date to avoid timezone issues
+            const marriageDateStr = member.marriage_date.split('T')[0]; // Get just the date part
+            const [year, month, day] = marriageDateStr.split('-').map(Number);
+            const marriageDate = new Date(year, month - 1, day); // month - 1 because JS months are 0-indexed
             const spouseName = spouse ? `${spouse.first_name} ${spouse.last_name}` : 'Unknown spouse';
             
             calendarEvents.push({
@@ -64,7 +71,7 @@ const CalendarPage = () => {
               day: marriageDate.getDate(),
               year: marriageDate.getFullYear(),
               description: `${fullName} & ${spouseName}`,
-              subtitle: `Anniversary (${marriageDate.getFullYear()})`,
+              subtitle: `Anniversary (${year})`, // Use original year from data
               member: member,
               spouse: spouse,
               memberId: member.id,
@@ -94,6 +101,7 @@ const CalendarPage = () => {
   // Get upcoming events (next 30 days)
   const getUpcomingEvents = () => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset to start of day
     const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
     
     return events.filter(event => {
@@ -402,7 +410,30 @@ const CalendarPage = () => {
                         />
                       </div>
                       <div className="flex-1">
-                        <div className="font-semibold text-gray-800">{event.description}</div>
+                        {event.type === 'anniversary' ? (
+                          <div className="font-semibold text-gray-800">
+                            <Link 
+                              to={`/members/${event.memberId}`}
+                              className="hover:text-blue-600 hover:underline transition-colors cursor-pointer"
+                            >
+                              {event.memberName}
+                            </Link>
+                            <span className="mx-1">&</span>
+                            <Link 
+                              to={`/members/${event.spouse.id}`}
+                              className="hover:text-blue-600 hover:underline transition-colors cursor-pointer"
+                            >
+                              {event.spouseName}
+                            </Link>
+                          </div>
+                        ) : (
+                          <Link 
+                            to={`/members/${event.memberId}`}
+                            className="font-semibold text-gray-800 hover:text-blue-600 hover:underline transition-colors cursor-pointer"
+                          >
+                            {event.description}
+                          </Link>
+                        )}
                         <div className="text-sm text-gray-600">{event.subtitle}</div>
                         <div className="text-xs text-gray-500">
                           {months[event.month]} {event.day}

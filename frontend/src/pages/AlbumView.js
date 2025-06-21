@@ -617,13 +617,15 @@ const AlbumView = () => {
       {/* Photo Modal */}
       {showPhotoModal && enlargedPhoto && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" onClick={closePhotoModal}>
-          <div className="relative max-w-full max-h-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="relative max-w-full max-h-full overflow-hidden group" onClick={(e) => e.stopPropagation()}>
             <button
               onClick={closePhotoModal}
-              className="absolute top-4 right-4 text-white text-3xl bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75 z-10"
+              className="absolute top-4 right-4 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-10 h-10 flex items-center justify-center hover:bg-white/20 hover:border-white/30 transition-all duration-200 z-10 group/close"
               title="Close (Esc)"
             >
-              ×
+              <svg className="w-5 h-5 group-hover/close:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
             
             <img
@@ -643,10 +645,12 @@ const AlbumView = () => {
                       setEnlargedPhoto(album.photos[currentIndex - 1]);
                     }
                   }}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white text-4xl bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75"
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-12 h-12 flex items-center justify-center hover:bg-white/20 hover:border-white/30 hover:scale-105 opacity-0 group-hover:opacity-100 transition-all duration-300 group/prev"
                   title="Previous photo (←)"
                 >
-                  ‹
+                  <svg className="w-6 h-6 group-hover/prev:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                  </svg>
                 </button>
                 <button
                   onClick={() => {
@@ -656,10 +660,12 @@ const AlbumView = () => {
                       setEnlargedPhoto(album.photos[currentIndex + 1]);
                     }
                   }}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white text-4xl bg-black bg-opacity-50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-75"
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-12 h-12 flex items-center justify-center hover:bg-white/20 hover:border-white/30 hover:scale-105 opacity-0 group-hover:opacity-100 transition-all duration-300 group/next"
                   title="Next photo (→)"
                 >
-                  ›
+                  <svg className="w-6 h-6 group-hover/next:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
                 </button>
               </>
             )}
