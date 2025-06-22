@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Github } from 'lucide-react';
 import BeautifulRotatingText from '../components/BeautifulRotatingText';
-import FamilyInsights from '../components/FamilyInsights';
 import QuickActions from '../components/QuickActions';
 
 // Vine Animation Component (inline for simplicity)
@@ -326,8 +325,8 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Photo Showcase Section - COMPACTED */}
-      <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
+      {/* Photo Showcase Section - MOVED CLOSER TO HEADER */}
+      <div className="max-w-7xl mx-auto px-4 py-3 relative z-10">
         <div className="text-center mb-4">
           <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">
             Family Memories
@@ -363,7 +362,7 @@ const HomePage = () => {
         )}
 
         {/* View More Photos Button - COMPACTED */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
           <Link
             to="/gallery"
             className="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition-colors"
@@ -374,11 +373,6 @@ const HomePage = () => {
             </svg>
           </Link>
         </div>
-      </div>
-
-      {/* Family Insights Section */}
-      <div className="max-w-7xl mx-auto px-4 py-6 relative z-10">
-        <FamilyInsights />
       </div>
 
       {/* Quick Actions Section */}
