@@ -14,6 +14,63 @@ const GlobalSearch = () => {
   const searchRef = useRef(null);
   const inputRef = useRef(null);
 
+  // Helper function to format birth date without timezone
+  const formatBirthDate = (dateString) => {
+    if (!dateString) return '';
+    
+    try {
+      // Create date from the string and format it nicely
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      
+      // Return in a clean format like "August 29, 1987"
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    } catch (error) {
+      // If date parsing fails, try to extract just the year
+      const yearMatch = dateString.match(/(\d{4})/);
+      return yearMatch ? yearMatch[1] : '';
+    }
+  };
+
+  // Helper function to render user avatar
+  const renderUserAvatar = (member, gradientColors = "from-blue-500 to-purple-500") => {
+    const hasPhoto = member.photo_url && member.photo_url.trim() !== '';
+    
+    if (hasPhoto) {
+      // Construct the full photo URL
+      const photoUrl = member.photo_url.startsWith('http') 
+        ? member.photo_url 
+        : `${process.env.REACT_APP_API}/${member.photo_url}`;
+        
+      return (
+        <img
+          src={photoUrl}
+          alt={`${member.first_name} ${member.last_name}`}
+          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+          onError={(e) => {
+            // If image fails to load, show initials instead
+            e.target.style.display = 'none';
+            e.target.nextSibling.style.display = 'flex';
+          }}
+        />
+      );
+    }
+    
+    // Fallback to initials
+    return (
+      <div className={`w-10 h-10 bg-gradient-to-br ${gradientColors} 
+                      rounded-full flex items-center justify-center text-white font-semibold shadow-sm`}>
+        {member.first_name?.[0]}{member.last_name?.[0]}
+      </div>
+    );
+  };
+
   // Load recent searches from localStorage when component mounts
   useEffect(() => {
     const saved = localStorage.getItem('familyVine_recentSearches');
@@ -171,16 +228,21 @@ const GlobalSearch = () => {
                       className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 dark:hover:bg-gray-700 
                                  rounded-lg transition-colors text-left"
                     >
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 
-                                      rounded-full flex items-center justify-center text-white font-semibold">
-                        {member.first_name?.[0]}{member.last_name?.[0]}
+                      <div className="relative">
+                        {renderUserAvatar(member)}
+                        {/* Fallback initials (hidden by default, shown if image fails) */}
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 
+                                        rounded-full flex items-center justify-center text-white font-semibold shadow-sm"
+                             style={{ display: 'none' }}>
+                          {member.first_name?.[0]}{member.last_name?.[0]}
+                        </div>
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-gray-900 dark:text-gray-100">
                           {member.first_name} {member.last_name}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {member.birth_date && `Born ${member.birth_date}`}
+                          {member.birth_date && `Born ${formatBirthDate(member.birth_date)}`}
                           {member.birth_place && ` in ${member.birth_place}`}
                         </div>
                       </div>
@@ -209,9 +271,14 @@ const GlobalSearch = () => {
                       className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 dark:hover:bg-gray-700 
                                  rounded-lg transition-colors text-left"
                     >
-                      <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 
-                                      rounded-full flex items-center justify-center text-white font-semibold">
-                        {member.first_name?.[0]}{member.last_name?.[0]}
+                      <div className="relative">
+                        {renderUserAvatar(member, "from-green-500 to-teal-500")}
+                        {/* Fallback initials for recent searches */}
+                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 
+                                        rounded-full flex items-center justify-center text-white font-semibold shadow-sm"
+                             style={{ display: 'none' }}>
+                          {member.first_name?.[0]}{member.last_name?.[0]}
+                        </div>
                       </div>
                       <div className="flex-1">
                         <div className="font-medium text-gray-900 dark:text-gray-100">
