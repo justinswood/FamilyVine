@@ -272,18 +272,18 @@ const HomePage = () => {
         }
       `}</style>
 
-      {/* Updated Header Section with Textured Background */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 relative overflow-hidden z-20">
+      {/* Updated Header Section with Textured Background - 20% smaller */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 relative overflow-hidden z-20">
         {/* GitHub Link in Top Right Corner */}
-        <div className="absolute top-4 right-4 z-20">
+        <div className="absolute top-3 right-4 z-20">
           <a
             href="https://github.com/justinswood/FamilyVine"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center w-10 h-10 bg-white/20 hover:bg-white/30 rounded-full transition-all duration-300 transform hover:scale-110 backdrop-blur-sm"
+            className="inline-flex items-center justify-center w-9 h-9 bg-white/20 hover:bg-white/30 rounded-full transition-all duration-300 transform hover:scale-110 backdrop-blur-sm"
             title="View on GitHub"
           >
-            <Github className="w-5 h-5 text-white" />
+            <Github className="w-4 h-4 text-white" />
           </a>
         </div>
         {/* Subtle texture overlay */}
@@ -320,7 +320,7 @@ const HomePage = () => {
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.1)'
         }}></div>
 
-        <div className="max-w-7xl mx-auto px-4 text-center relative z-10 py-2">
+        <div className="max-w-7xl mx-auto px-4 text-center relative z-10 py-1">
           {/* Beautiful Rotating Text Animation */}
           <BeautifulRotatingText />
         </div>
