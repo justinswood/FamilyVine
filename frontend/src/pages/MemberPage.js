@@ -3,6 +3,17 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import RelationshipsList from '../components/RelationshipsList';
 import AddRelationship from '../components/AddRelationship';
+import { 
+  MapPin, 
+  Mail, 
+  Phone, 
+  User, 
+  Calendar, 
+  Briefcase, 
+  Home,
+  Heart,
+  Users
+} from 'lucide-react';
 
 const MemberPage = () => {
   const { id } = useParams();
@@ -219,8 +230,23 @@ const MemberPage = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+      {/* Paper texture overlay */}
+      <div className="absolute inset-0 opacity-40"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill-opacity='0.03'%3E%3Cpolygon fill='%23000' points='50 0 60 40 100 50 60 60 50 100 40 60 0 50 40 40'/%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundSize: '100px 100px'
+        }}>
+      </div>
+
+      {/* Fabric/linen texture pattern */}
+      <div className="absolute inset-0 opacity-20"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E")`,
+        }}>
+      </div>
+
       {/* Animated background pattern - REDUCED opacity and size */}
-      <div className="absolute inset-0 opacity-3">
+      <div className="absolute inset-0 opacity-10">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="family-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -242,7 +268,13 @@ const MemberPage = () => {
 
       {/* Main content - COMPACTED with smaller padding and margins */}
       <div className="relative z-10 max-w-5xl mx-auto p-2">
-        <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-xl p-4 border border-white/50 relative overflow-hidden">
+        <div className="backdrop-blur-sm shadow-2xl rounded-xl p-4 border border-gray-200 relative overflow-hidden"
+          style={{
+            backgroundColor: '#c3c3c3',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 40' width='80' height='40'%3E%3Cpath fill='%23000000' fill-opacity='0.03' d='M0 40a19.96 19.96 0 0 1 5.9-14.11 20.17 20.17 0 0 1 19.44-5.2A20 20 0 0 1 20.2 40H0zM65.32.75A20.02 20.02 0 0 1 40.8 25.26 20.02 20.02 0 0 1 65.32.76zM.07 0h20.1l-.08.07A20.02 20.02 0 0 1 .75 5.25 20.08 20.08 0 0 1 .07 0zm1.94 40h2.53l4.26-4.24v-9.78A17.96 17.96 0 0 0 2 40zm5.38 0h9.8a17.98 17.98 0 0 0 6.67-16.42L7.4 40zm3.43-15.42v9.17l11.62-11.59c-3.97-.5-8.08.3-11.62 2.42zm32.86-.78A18 18 0 0 0 63.85 3.63L43.68 23.8zm7.2-19.17v9.15L62.43 2.22c-3.96-.5-8.05.3-11.57 2.4zm-3.49 2.72c-4.1 4.1-5.81 9.69-5.13 15.03l6.61-6.6V6.02c-.51.41-1 .85-1.48 1.33zM17.18 0H7.42L3.64 3.78A18 18 0 0 0 17.18 0zM2.08 0c-.01.8.04 1.58.14 2.37L4.59 0H2.07z'%3E%3C/path%3E%3C/svg%3E")`,
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06), 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          }}>
+          {/* Paper texture inside card - removed since we have new pattern */}
           {/* Subtle inner glow - REDUCED */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-purple-50/20 pointer-events-none"></div>
 
@@ -252,13 +284,16 @@ const MemberPage = () => {
             <div className="text-center mb-4">
               {member.photo_url && (
                 <div className="relative inline-block mb-3">
-                  {/* SMALLER decorative ring */}
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full opacity-50 blur-sm"></div>
-                  <div className="relative bg-white rounded-full p-1">
+                  {/* SMALLER decorative ring with shadow */}
+                  <div className="absolute -inset-1 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full opacity-70 blur-md"></div>
+                  <div className="relative bg-white rounded-full p-1.5 shadow-xl">
                     <img
                       src={`${process.env.REACT_APP_API}/${member.photo_url}`}
                       alt={fullName}
-                      className="w-24 h-24 object-cover rounded-full shadow-md"
+                      className="w-24 h-24 object-cover rounded-full shadow-inner"
+                      style={{
+                        boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)'
+                      }}
                       onError={(e) => {
                         e.target.style.display = 'none';
                       }}
@@ -278,7 +313,7 @@ const MemberPage = () => {
 
               {/* COMPACTED: Life dates with smaller padding */}
               {member.birth_date && (
-                <div className="text-gray-600 mt-2 bg-white/60 backdrop-blur-sm rounded-lg p-2 inline-block border border-white/50">
+                <div className="text-gray-600 mt-2 bg-white/80 backdrop-blur-sm rounded-lg p-2 inline-block border border-gray-200 shadow-md">
                   <p className="text-sm font-medium">
                     {formatDate(member.birth_date)} – {member.death_date ? formatDate(member.death_date) : 'Present'}
                   </p>
@@ -296,23 +331,32 @@ const MemberPage = () => {
               {/* Left column */}
               <div className="space-y-2">
                 {member.relationship && (
-                  <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-2 border border-blue-100">
-                    <span className="text-xs font-medium text-gray-600">Relationship</span>
-                    <p className="text-sm font-semibold text-gray-800">{member.relationship}</p>
+                  <div className="bg-gradient-to-r from-blue-50/95 to-purple-50/95 rounded-lg p-2 border border-blue-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <Heart className="w-4 h-4 text-blue-600" />
+                      <span className="text-xs font-medium text-gray-600">Relationship</span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-800 ml-6">{member.relationship}</p>
                   </div>
                 )}
 
                 {member.gender && (
-                  <div className="bg-gradient-to-r from-pink-50 to-purple-50 rounded-lg p-2 border border-pink-100">
-                    <span className="text-xs font-medium text-gray-600">Gender</span>
-                    <p className="text-sm font-semibold text-gray-800">{member.gender}</p>
+                  <div className="bg-gradient-to-r from-pink-50/95 to-purple-50/95 rounded-lg p-2 border border-pink-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-pink-600" />
+                      <span className="text-xs font-medium text-gray-600">Gender</span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-800 ml-6">{member.gender}</p>
                   </div>
                 )}
 
                 {member.birth_place && (
-                  <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-2 border border-green-100">
-                    <span className="text-xs font-medium text-gray-600">Birthplace</span>
-                    <p className="text-sm font-semibold text-gray-800">{member.birth_place}</p>
+                  <div className="bg-gradient-to-r from-green-50/95 to-blue-50/95 rounded-lg p-2 border border-green-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <Home className="w-4 h-4 text-green-600" />
+                      <span className="text-xs font-medium text-gray-600">Birthplace</span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-800 ml-6">{member.birth_place}</p>
                   </div>
                 )}
               </div>
@@ -320,23 +364,32 @@ const MemberPage = () => {
               {/* Middle column */}
               <div className="space-y-2">
                 {member.location && (
-                  <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-2 border border-yellow-100">
-                    <span className="text-xs font-medium text-gray-600">Location</span>
-                    <p className="text-sm font-semibold text-gray-800">{member.location}</p>
+                  <div className="bg-gradient-to-r from-yellow-50/95 to-orange-50/95 rounded-lg p-2 border border-yellow-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-yellow-600" />
+                      <span className="text-xs font-medium text-gray-600">Location</span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-800 ml-6">{member.location}</p>
                   </div>
                 )}
 
                 {member.occupation && (
-                  <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg p-2 border border-indigo-100">
-                    <span className="text-xs font-medium text-gray-600">Occupation</span>
-                    <p className="text-sm font-semibold text-gray-800">{member.occupation}</p>
+                  <div className="bg-gradient-to-r from-indigo-50/95 to-blue-50/95 rounded-lg p-2 border border-indigo-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="w-4 h-4 text-indigo-600" />
+                      <span className="text-xs font-medium text-gray-600">Occupation</span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-800 ml-6">{member.occupation}</p>
                   </div>
                 )}
 
                 {member.death_place && (
-                  <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-lg p-2 border border-gray-100">
-                    <span className="text-xs font-medium text-gray-600">Death Place</span>
-                    <p className="text-sm font-semibold text-gray-800">{member.death_place}</p>
+                  <div className="bg-gradient-to-r from-gray-50/95 to-slate-50/95 rounded-lg p-2 border border-gray-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 shadow-sm backdrop-blur-sm">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-gray-600" />
+                      <span className="text-xs font-medium text-gray-600">Death Place</span>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-800 ml-6">{member.death_place}</p>
                   </div>
                 )}
               </div>
@@ -344,11 +397,24 @@ const MemberPage = () => {
               {/* Right column */}
               <div className="space-y-2 md:col-span-2 lg:col-span-1">
                 {(member.email || member.phone) && (
-                  <div className="bg-gradient-to-r from-teal-50 to-cyan-50 rounded-lg p-2 border border-teal-100">
-                    <span className="text-xs font-medium text-gray-600">Contact</span>
-                    <div className="space-y-1">
-                      {member.email && <p className="text-sm font-semibold text-gray-800">{member.email}</p>}
-                      {member.phone && <p className="text-sm font-semibold text-gray-800">{member.phone}</p>}
+                  <div className="bg-gradient-to-r from-teal-50/95 to-cyan-50/95 rounded-lg p-2 border border-teal-100 hover:shadow-lg hover:scale-[1.02] transition-all duration-200 shadow-sm backdrop-blur-sm">
+                    <span className="text-xs font-medium text-gray-600 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-teal-600" />
+                      Contact
+                    </span>
+                    <div className="space-y-1 ml-6">
+                      {member.email && (
+                        <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                          <Mail className="w-3 h-3 text-teal-500" />
+                          {member.email}
+                        </p>
+                      )}
+                      {member.phone && (
+                        <p className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                          <Phone className="w-3 h-3 text-teal-500" />
+                          {member.phone}
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -371,11 +437,20 @@ const MemberPage = () => {
               </Link>
             </div>
 
+            {/* Decorative Divider */}
+            <div className="flex items-center justify-center my-6">
+              <div className="h-px bg-gradient-to-r from-transparent via-purple-300 to-transparent flex-1"></div>
+              <div className="px-4">
+                <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+              </div>
+              <div className="h-px bg-gradient-to-r from-transparent via-purple-300 to-transparent flex-1"></div>
+            </div>
+
             {/* COMPACTED: Layout for Marriage and Relationships - conditional based on age */}
             <div className={`grid gap-4 mb-4 ${isMinor() ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
               {/* Marriage Information Section - COMPACTED - Hidden for minors */}
               {!isMinor() && (
-                <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-lg p-3 border border-rose-100">
+                <div className="bg-gradient-to-r from-rose-50 to-pink-50 rounded-lg p-3 border border-rose-100 shadow-md hover:shadow-lg transition-shadow duration-200">
                   <h3 className="text-lg font-semibold mb-2 bg-gradient-to-r from-rose-700 to-pink-700 bg-clip-text text-transparent">
                     💍 Marriage
                   </h3>
@@ -389,19 +464,19 @@ const MemberPage = () => {
                       </div>
 
                       {member.marriage_date && (
-                        <div className="bg-white/70 rounded-lg p-2">
+                        <div className="bg-white/80 rounded-lg p-2 shadow-sm border border-white">
                           <strong className="text-xs text-gray-700">Marriage Date:</strong>
                           <span className="ml-2 text-sm text-gray-800">{formatDate(member.marriage_date)}</span>
                         </div>
                       )}
 
                       {spouseInfo ? (
-                        <div className="flex items-center space-x-2 bg-white/70 rounded-lg p-2 border border-white">
+                        <div className="flex items-center space-x-2 bg-white/80 rounded-lg p-2 border border-white shadow-sm">
                           {spouseInfo.photo_url && (
                             <img
                               src={`${process.env.REACT_APP_API}/${spouseInfo.photo_url}`}
                               alt={`${spouseInfo.first_name} ${spouseInfo.last_name}`}
-                              className="w-8 h-8 rounded-full object-cover border border-rose-200"
+                              className="w-8 h-8 rounded-full object-cover border border-rose-200 shadow-sm"
                               onError={(e) => {
                                 e.target.style.display = 'none';
                               }}
@@ -444,7 +519,7 @@ const MemberPage = () => {
 
               {/* Relationships Section - COMPACTED */}
               <div>
-                <div className="flex justify-between items-center mb-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-100">
+                <div className="flex justify-between items-center mb-2 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-3 border border-purple-100 shadow-md">
                   <h2 className="text-lg font-bold bg-gradient-to-r from-purple-700 to-pink-700 bg-clip-text text-transparent">
                     👨‍👩‍👧‍👦 Relationships
                   </h2>
@@ -456,7 +531,7 @@ const MemberPage = () => {
                   </button>
                 </div>
 
-                <div className="bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-white/50">
+                <div className="bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-gray-200 shadow-md">
                   <RelationshipsList memberId={parseInt(id)} key={showAddRelationship ? 'refresh' : 'normal'} />
                 </div>
               </div>
@@ -465,36 +540,45 @@ const MemberPage = () => {
             {/* COMPACTED: Tagged Photos Section */}
             {taggedPhotos && taggedPhotos.length > 0 && (
               <div>
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-100 mb-2">
+                {/* Decorative Divider */}
+                <div className="flex items-center justify-center my-6">
+                  <div className="h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent flex-1"></div>
+                  <div className="px-4">
+                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                  </div>
+                  <div className="h-px bg-gradient-to-r from-transparent via-blue-300 to-transparent flex-1"></div>
+                </div>
+
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-100 mb-2 shadow-md">
                   <h2 className="text-lg font-bold bg-gradient-to-r from-blue-700 to-purple-700 bg-clip-text text-transparent">
                     📸 Photos of {firstName}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 bg-white/60 backdrop-blur-sm rounded-lg p-3 border border-white/50">
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 bg-white/80 backdrop-blur-sm rounded-lg p-3 border border-gray-200 shadow-md">
                   {taggedPhotos.map((photo) => (
                     <div key={photo.id} className="relative group">
-                      <div className="relative overflow-hidden rounded-lg border border-white shadow-sm">
+                      <div className="relative overflow-hidden rounded-lg border border-white shadow-sm hover:shadow-lg transition-all duration-300">
                         <img
                           src={`${process.env.REACT_APP_API}/${photo.file_path}`}
                           alt="Tagged photo"
-                          className="w-full h-20 object-cover transition-transform group-hover:scale-110"
+                          className="w-full h-20 object-cover transition-transform duration-300 group-hover:scale-110"
                           onError={(e) => {
                             e.target.style.display = 'none';
                           }}
                         />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-opacity rounded-lg">
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-300 rounded-lg">
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                             <button
                               onClick={() => setAsProfilePhoto(photo.id)}
-                              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-2 py-1 rounded-full text-xs hover:from-blue-600 hover:to-purple-600 shadow-md font-medium"
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-2 py-1 rounded-full text-xs hover:from-blue-600 hover:to-purple-600 shadow-md font-medium transform hover:scale-110 transition-transform duration-200"
                             >
                               Set
                             </button>
                           </div>
                         </div>
                       </div>
-                      <p className="text-xs text-gray-600 mt-1 text-center bg-white/70 rounded px-1 py-0.5">
+                      <p className="text-xs text-gray-600 mt-1 text-center bg-white/70 rounded px-1 py-0.5 group-hover:bg-white/90 transition-colors duration-200">
                         {photo.album_title}
                       </p>
                     </div>
