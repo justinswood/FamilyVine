@@ -100,4 +100,25 @@ $$ language 'plpgsql';
 DROP TRIGGER IF EXISTS update_albums_updated_at ON albums;
 CREATE TRIGGER update_albums_updated_at 
     BEFORE UPDATE ON albums
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();-- Add this to your existing init.sql file
+-- Table for storing React Flow node positions
+CREATE TABLE IF NOT EXISTS tree_node_positions (
+    id SERIAL PRIMARY KEY,
+    member_id INTEGER REFERENCES members(id) ON DELETE CASCADE,
+    x_position DECIMAL(10,2) NOT NULL,
+    y_position DECIMAL(10,2) NOT NULL,
+    tree_type VARCHAR(50) NOT NULL DEFAULT 'reactflow', -- For different tree layouts
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- One position per member per tree type
+    UNIQUE(member_id, tree_type)
+);
+
+-- Index for faster lookups
+CREATE INDEX IF NOT EXISTS idx_tree_positions_member ON tree_node_positions(member_id);
+CREATE INDEX IF NOT EXISTS idx_tree_positions_type ON tree_node_positions(tree_type);
+
+-- Update trigger for tree positions
+DROP TRIGGER IF EXISTS update_tree_positions_updated_at ON tree_node_positions;
+CREATE TRIGGER update_tree_positions_updated_at 
+    BEFORE UPDATE ON tree_node_positions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

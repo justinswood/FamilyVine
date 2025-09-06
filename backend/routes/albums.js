@@ -2,7 +2,9 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { Pool } = require('pg');
+const { processImage, isImageSupported } = require('../utils/imageProcessor');
 
 console.log('=== ALBUMS.JS LOADED ===');
 
@@ -17,7 +19,12 @@ const pool = new Pool({
 // Configure multer for photo uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/gallery/');
+    const uploadDir = 'uploads/gallery/';
+    // Ensure directory exists
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     const timestamp = Date.now();
@@ -33,10 +40,10 @@ const upload = multer({
     files: 100  // Allow up to 100 files total
   },
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
+    if (isImageSupported(file)) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed'));
+      cb(new Error('Only image files are allowed (JPG, PNG, GIF, WebP, HEIC)'));
     }
   }
 });
@@ -72,7 +79,7 @@ router.get('/:id', async (req, res) => {
       SELECT a.*, p.file_path as cover_photo_path
       FROM albums a
       LEFT JOIN photos p ON a.cover_photo_id = p.id
-      WHERE a.id = $1
+      WHERE a.id::text = $1::text
     `;
     const albumResult = await pool.query(albumQuery, [id]);
     
@@ -180,41 +187,72 @@ router.post('/:id/photos', upload.array('photos', 100), async (req, res) => {
     }
     
     const uploadedPhotos = [];
+    const errors = [];
     
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
       const caption = Array.isArray(captions) ? captions[i] : captions;
       
-      console.log(`Processing file ${i + 1}/${req.files.length}: ${file.filename}`);
+      console.log(`Processing file ${i + 1}/${req.files.length}: ${file.originalname}`);
       
-      const query = `
-        INSERT INTO photos (
-          album_id, filename, original_name, file_path, file_size,
-          mime_type, caption
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *
-      `;
-      
-      const values = [
-        id,
-        file.filename,
-        file.originalname,
-        file.path,
-        file.size,
-        file.mimetype,
-        caption || null
-      ];
-      
-      const result = await pool.query(query, values);
-      uploadedPhotos.push(result.rows[0]);
+      try {
+        // Process the image (handles HEIC conversion and optimization)
+        const finalPath = path.join('uploads/gallery/', `processed_${Date.now()}_${i}`);
+        const processResult = await processImage(file, finalPath);
+        
+        if (!processResult.success) {
+          console.error(`Failed to process ${file.originalname}:`, processResult.error);
+          errors.push(`Failed to process ${file.originalname}: ${processResult.error}`);
+          continue;
+        }
+        
+        console.log(`File processed successfully: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
+        
+        const query = `
+          INSERT INTO photos (
+            album_id, filename, original_name, file_path, file_size,
+            mime_type, width, height, caption
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          RETURNING *
+        `;
+        
+        const values = [
+          id,
+          processResult.filename,
+          processResult.originalName,
+          processResult.path,
+          processResult.size,
+          processResult.mimetype,
+          processResult.width,
+          processResult.height,
+          caption || null
+        ];
+        
+        const result = await pool.query(query, values);
+        uploadedPhotos.push(result.rows[0]);
+        
+      } catch (fileError) {
+        console.error(`Error processing file ${file.originalname}:`, fileError);
+        errors.push(`Error processing ${file.originalname}: ${fileError.message}`);
+      }
     }
     
     console.log(`Successfully uploaded ${uploadedPhotos.length} photos`);
+    if (errors.length > 0) {
+      console.log(`Errors: ${errors.length}`);
+    }
     
-    res.status(201).json({
+    const response = {
       message: `Successfully uploaded ${uploadedPhotos.length} photos`,
       photos: uploadedPhotos
-    });
+    };
+    
+    if (errors.length > 0) {
+      response.errors = errors;
+      response.message += ` (${errors.length} files failed)`;
+    }
+    
+    res.status(201).json(response);
   } catch (error) {
     console.error('Error uploading photos:', error);
     res.status(500).json({ error: 'Failed to upload photos: ' + error.message });

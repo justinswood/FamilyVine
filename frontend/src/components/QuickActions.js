@@ -7,10 +7,9 @@ import {
   Users, 
   MapPin, 
   Calendar,
-  Upload,
-  Download,
   Search
 } from 'lucide-react';
+import SiteMetrics from './SiteMetrics';
 
 const QuickActions = ({ className = '' }) => {
   const quickActions = [
@@ -70,16 +69,6 @@ const QuickActions = ({ className = '' }) => {
     }
   ];
 
-  const utilityActions = [
-    {
-      title: 'Import Data',
-      description: 'Import from CSV',
-      icon: Upload,
-      link: '/import-csv',
-      color: 'from-gray-500 to-gray-600'
-    }
-  ];
-
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Main Quick Actions */}
@@ -123,54 +112,8 @@ const QuickActions = ({ className = '' }) => {
         </div>
       </div>
 
-      {/* Utility Actions */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
-          Utilities
-        </h3>
-        
-        <div className="flex flex-wrap gap-3">
-          {utilityActions.map((action, index) => {
-            const IconComponent = action.icon;
-            
-            return (
-              <Link
-                key={index}
-                to={action.link}
-                className="group flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 
-                           rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors
-                           border border-gray-200 dark:border-gray-600"
-              >
-                <div className={`p-1 rounded bg-gradient-to-r ${action.color} text-white`}>
-                  <IconComponent className="w-3 h-3" />
-                </div>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 
-                               group-hover:text-gray-900 dark:group-hover:text-gray-100">
-                  {action.title}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Help Text */}
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 
-                      rounded-lg p-4">
-        <div className="flex items-start gap-2">
-          <Search className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-1">
-              Pro Tip: Use Global Search
-            </h4>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              Press <kbd className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-800 rounded text-xs font-mono">
-                Ctrl+K
-              </kbd> anywhere in the app to quickly search for family members.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* Site Metrics */}
+      <SiteMetrics />
     </div>
   );
 };

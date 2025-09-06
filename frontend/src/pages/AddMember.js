@@ -431,7 +431,7 @@ const AddMember = () => {
                     <input
                       id="photo-upload"
                       type="file"
-                      accept="image/*"
+                      accept="image/*,.heic,.heif"
                       onChange={handleFileChange}
                       className="hidden"
                     />

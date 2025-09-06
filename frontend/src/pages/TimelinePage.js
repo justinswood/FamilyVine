@@ -3,6 +3,87 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import ProfileImage from '../components/ProfileImage';
 
+// Inject timeline-specific CSS to override any conflicts
+const timelineStyles = `
+  .timeline-page * {
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    transform: none !important;
+    max-width: none !important;
+  }
+  
+  .timeline-page .timeline-event-card {
+    display: block !important;
+    width: auto !important;
+    max-width: none !important;
+  }
+  
+  .timeline-page .timeline-event-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    white-space: normal !important;
+  }
+  
+  .timeline-page .timeline-event-description {
+    display: block !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+  }
+  
+  .timeline-page .timeline-profile-container {
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+    width: auto !important;
+    height: auto !important;
+  }
+  
+  .timeline-page .timeline-year-badge {
+    display: inline-block !important;
+    white-space: nowrap !important;
+  }
+  
+  .timeline-page .timeline-location {
+    display: block !important;
+    white-space: normal !important;
+  }
+  
+  /* Mobile-specific timeline fixes */
+  @media (max-width: 768px) {
+    .timeline-mobile-card {
+      width: 85% !important;
+      margin-left: 4rem !important;
+      margin-right: auto !important;
+    }
+    
+    .timeline-mobile-line {
+      left: 2rem !important;
+    }
+    
+    .timeline-mobile-dot {
+      left: 2rem !important;
+    }
+    
+    .timeline-mobile-decade {
+      justify-content: flex-start !important;
+      padding-left: 4rem !important;
+    }
+  }
+`;
+
+// Inject the styles
+if (typeof document !== 'undefined') {
+  const existingStyle = document.getElementById('timeline-override-styles');
+  if (existingStyle) {
+    existingStyle.remove();
+  }
+  
+  const style = document.createElement('style');
+  style.id = 'timeline-override-styles';
+  style.textContent = timelineStyles;
+  document.head.appendChild(style);
+}
+
 const TimelinePage = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -172,7 +253,7 @@ const TimelinePage = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+    <div className="timeline-page min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
       {/* Animated background pattern */}
       <div className="absolute inset-0 opacity-3">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
@@ -317,15 +398,15 @@ const TimelinePage = () => {
           </div>
         ) : (
           <div className="relative max-w-4xl mx-auto">
-            {/* Central timeline line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-200 via-purple-200 to-pink-200 transform -translate-x-1/2"></div>
+            {/* Central timeline line - responsive */}
+            <div className="absolute left-1/2 md:left-1/2 left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-200 via-purple-200 to-pink-200 transform md:transform md:-translate-x-1/2 timeline-mobile-line"></div>
 
             {/* Timeline content */}
             <div className="space-y-16">
               {decades.map(decade => (
                 <div key={decade} className="relative">
                   {/* Decade marker */}
-                  <div className="flex justify-center mb-8">
+                  <div className="flex justify-center md:justify-center justify-start pl-16 mb-8 timeline-mobile-decade">
                     <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-full shadow-xl border-4 border-white text-lg font-bold z-10 relative">
                       {decade}s
                     </div>
@@ -335,17 +416,17 @@ const TimelinePage = () => {
                   <div className="space-y-8">
                     {groupedByDecade[decade].map((event, index) => (
                       <div key={index} className="relative flex items-center">
-                        {/* UPDATED: Timeline dot with different colors for different event types */}
-                        <div className={`absolute left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full border-4 border-white shadow-lg z-10 ${event.type === 'birth' ? 'bg-green-500' :
+                        {/* UPDATED: Timeline dot with different colors for different event types - responsive */}
+                        <div className={`absolute left-1/2 md:left-1/2 left-8 transform md:transform md:-translate-x-1/2 w-4 h-4 rounded-full border-4 border-white shadow-lg z-10 timeline-mobile-dot ${event.type === 'birth' ? 'bg-green-500' :
                           event.type === 'marriage' ? 'bg-pink-500' :
                             'bg-gray-500'
                           }`}></div>
 
-                        {/* Event card */}
-                        <div className={`w-5/12 ${index % 2 === 0 ? 'mr-auto pr-8' : 'ml-auto pl-8'}`}>
-                          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/50 hover:shadow-2xl transition-all hover:scale-105">
-                            <div className="flex items-center mb-4">
-                              <div className="mr-4">
+                        {/* Event card - responsive layout */}
+                        <div className={`w-full md:w-5/12 ml-16 md:ml-0 ${index % 2 === 0 ? 'md:mr-auto md:pr-8' : 'md:ml-auto md:pl-8'} timeline-mobile-card`}>
+                          <div className="timeline-event-card bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/50 hover:shadow-2xl transition-all hover:scale-105" style={{display: 'block', width: 'auto', maxWidth: 'none'}}>
+                            <div className="timeline-event-header flex items-center mb-4" style={{display: 'flex', flexDirection: 'row', alignItems: 'center', whiteSpace: 'normal', writingMode: 'horizontal-tb'}}>
+                              <div className="timeline-profile-container mr-4" style={{display: 'inline-block', flexShrink: 0, width: 'auto', height: 'auto'}}>
                                 <div className="relative">
                                   <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full opacity-75 blur-sm"></div>
                                   <div className="relative bg-white rounded-full p-1">
@@ -357,8 +438,8 @@ const TimelinePage = () => {
                                   </div>
                                 </div>
                               </div>
-                              <div>
-                                <span className="text-xl font-bold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent">
+                              <div style={{display: 'block', whiteSpace: 'normal'}}>
+                                <span className="timeline-year-badge text-xl font-bold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent" style={{display: 'inline-block', whiteSpace: 'nowrap', writingMode: 'horizontal-tb'}}>
                                   {event.year}
                                 </span>
                                 {/* UPDATED: Event type badge with different colors */}
@@ -367,14 +448,14 @@ const TimelinePage = () => {
                                   : event.type === 'marriage'
                                     ? 'bg-gradient-to-r from-pink-400 to-rose-400 text-white'
                                     : 'bg-gradient-to-r from-gray-400 to-slate-400 text-white'
-                                  }`}>
+                                  }`} style={{display: 'inline-block', whiteSpace: 'nowrap'}}>
                                   {event.type === 'birth' ? '🎂 Birth' :
                                     event.type === 'marriage' ? '💍 Marriage' :
                                       '🕊️ Passing'}
                                 </div>
                               </div>
                             </div>
-                            <h3 className="font-bold text-xl mb-3 bg-gradient-to-r from-gray-800 to-slate-700 bg-clip-text text-transparent">
+                            <h3 className="timeline-event-description font-bold text-xl mb-3 bg-gradient-to-r from-gray-800 to-slate-700 bg-clip-text text-transparent" style={{display: 'block', whiteSpace: 'normal', wordWrap: 'break-word', writingMode: 'horizontal-tb'}}>
                               {event.description}
                             </h3>
 
@@ -403,8 +484,8 @@ const TimelinePage = () => {
                               </div>
                             )}
 
-                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 mb-4 border border-blue-100">
-                              <p className="text-base text-gray-700 font-medium">📍 {event.location}</p>
+                            <div className="timeline-location bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 mb-4 border border-blue-100" style={{display: 'block', whiteSpace: 'normal', writingMode: 'horizontal-tb'}}>
+                              <p className="text-base text-gray-700 font-medium" style={{display: 'block', whiteSpace: 'normal', writingMode: 'horizontal-tb'}}>📍 {event.location}</p>
                             </div>
                             <Link
                               to={`/members/${event.memberId}`}

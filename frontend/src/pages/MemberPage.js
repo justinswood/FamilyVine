@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import RelationshipsList from '../components/RelationshipsList';
 import AddRelationship from '../components/AddRelationship';
+import OrbProfilePhoto from '../components/OrbProfilePhoto';
 import { 
   MapPin, 
   Mail, 
@@ -23,6 +24,15 @@ const MemberPage = () => {
   const [error, setError] = useState(null);
   const [showAddRelationship, setShowAddRelationship] = useState(false);
   const [spouseInfo, setSpouseInfo] = useState(null);
+
+  // Generate a purple-themed hue for each member based on their ID
+  const generateMemberHue = (memberId) => {
+    // Focus on purple spectrum (270-320 degrees) with some variation
+    const hash = memberId * 137; // Prime number for better distribution
+    const purpleBase = 270; // Base purple hue (pure purple)
+    const variation = (hash % 30) - 15; // Variation of ±15 degrees
+    return purpleBase + variation; // Returns hue between 255-285 (purple range)
+  };
 
   useEffect(() => {
     if (id) {
@@ -280,30 +290,20 @@ const MemberPage = () => {
 
           {/* Content - with relative positioning */}
           <div className="relative z-10">
-            {/* COMPACTED: Profile Photo Section - smaller photo and spacing */}
-            <div className="text-center mb-4">
-              {member.photo_url && (
-                <div className="relative inline-block mb-3">
-                  {/* SMALLER decorative ring with shadow */}
-                  <div className="absolute -inset-1 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full opacity-70 blur-md"></div>
-                  <div className="relative bg-white rounded-full p-1.5 shadow-xl">
-                    <img
-                      src={`${process.env.REACT_APP_API}/${member.photo_url}`}
-                      alt={fullName}
-                      className="w-24 h-24 object-cover rounded-full shadow-inner"
-                      style={{
-                        boxShadow: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)'
-                      }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+            {/* Animated Orb Profile Photo Section */}
+            <div className="text-center mb-1">
+              <div className="relative inline-block mb-1">
+                <OrbProfilePhoto 
+                  member={member}
+                  size={234}
+                  hue={270}
+                  hoverIntensity={0.3}
+                  rotateOnHover={true}
+                />
+              </div>
 
-              {/* COMPACTED: Name with smaller text */}
-              <h1 className="text-2xl font-bold mb-1 bg-gradient-to-r from-gray-800 via-purple-700 to-blue-700 bg-clip-text text-transparent">
+              {/* Name with negative margin to pull closer to profile */}
+              <h1 className="text-2xl font-bold mb-0 -mt-4 bg-gradient-to-r from-gray-800 via-purple-700 to-blue-700 bg-clip-text text-transparent">
                 {firstName} {middleName && `${middleName} `}{lastName}
               </h1>
 
@@ -311,9 +311,14 @@ const MemberPage = () => {
                 <p className="text-purple-600 italic text-sm font-medium">{member.pronouns}</p>
               )}
 
-              {/* COMPACTED: Life dates with smaller padding */}
+              {/* Pulsating Purple Dot Separator */}
+              <div className="flex items-center justify-center my-3">
+                <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+              </div>
+
+              {/* Life dates with original styling */}
               {member.birth_date && (
-                <div className="text-gray-600 mt-2 bg-white/80 backdrop-blur-sm rounded-lg p-2 inline-block border border-gray-200 shadow-md">
+                <div className="text-gray-600 mt-1 bg-white/80 backdrop-blur-sm rounded-lg p-2 inline-block border border-gray-200 shadow-md">
                   <p className="text-sm font-medium">
                     {formatDate(member.birth_date)} – {member.death_date ? formatDate(member.death_date) : 'Present'}
                   </p>

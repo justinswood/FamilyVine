@@ -18,9 +18,13 @@ import TimelinePage from './pages/TimelinePage';
 import CalendarPage from './pages/CalendarPage';
 import LoginPage from './pages/LoginPage';
 import EnhancedTreePage from './pages/EnhancedTreePage';
+import ReactFlowTreePage from './pages/ReactFlowTreePage';
 import VineLogoCompact from './components/VineLogoCompact';
 import GlobalSearch from './components/GlobalSearch';
 import Breadcrumbs from './components/Breadcrumbs';
+import OfflineIndicator from './components/OfflineIndicator';
+import InstallPrompt from './components/InstallPrompt';
+import ScrollToTop from './components/ScrollToTop';
 
 // Component to protect routes - redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -53,72 +57,78 @@ const Navigation = () => {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-700 shadow-sm transition-colors duration-200 border-b border-gray-200 dark:border-gray-600">
-      <div className="max-w-full mx-auto px-3 py-2 flex items-center justify-between">
-        {/* Left section - Logo and Search */}
-        <div className="flex items-center gap-3">
+    <nav className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-700 shadow-sm transition-colors duration-200 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-50">
+      <div className="w-full px-3 py-2 flex items-center justify-between min-w-0">
+        {/* Left section - Logo (fixed) */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Link to="/">
             <VineLogoCompact />
           </Link>
-          {/* Global Search Component */}
-          <GlobalSearch />
         </div>
         
-        {/* Center section - Navigation Links */}
-        <div className="flex items-center space-x-1">
-          <Link 
-            to="/members" 
-            className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
-          >
-            Members
-          </Link>
-          
-          <Link 
-            to="/add" 
-            className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
-          >
-            Add
-          </Link>
-          
-          <Link 
-            to="/gallery" 
-            className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
-          >
-            Gallery
-          </Link>
-          
-          <Link 
-            to="/map" 
-            className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
-          >
-            Map
-          </Link>
-          
-          <Link 
-            to="/visual-tree" 
-            className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
-          >
-            Tree
-          </Link>
-          
-          <Link 
-            to="/timeline" 
-            className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
-          >
-            Timeline
-          </Link>
-          
-          <Link 
-            to="/calendar" 
-            className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20"
-          >
-            Calendar
-          </Link>
+        {/* Center section - Scrollable Navigation Links */}
+        <div className="flex-1 mx-4 min-w-0">
+          <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide pb-1">
+            <Link 
+              to="/members" 
+              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
+            >
+              Members
+            </Link>
+            
+            <Link 
+              to="/add" 
+              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
+            >
+              Add
+            </Link>
+            
+            <Link 
+              to="/gallery" 
+              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
+            >
+              Gallery
+            </Link>
+            
+            <Link 
+              to="/map" 
+              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
+            >
+              Map
+            </Link>
+            
+            <Link 
+              to="/visual-tree" 
+              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
+            >
+              Tree
+            </Link>
+            
+            <Link 
+              to="/interactive-tree" 
+              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
+            >
+              Interactive
+            </Link>
+            
+            <Link 
+              to="/timeline" 
+              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
+            >
+              Timeline
+            </Link>
+            
+            <Link 
+              to="/calendar" 
+              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
+            >
+              Calendar
+            </Link>
+          </div>
         </div>
 
-        {/* Right section - Settings only */}
-        <div className="flex items-center">
-          {/* Settings Gear Icon */}
+        {/* Right section - Settings (fixed) */}
+        <div className="flex items-center flex-shrink-0">
           <Link
             to="/settings"
             className="p-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 
@@ -192,10 +202,15 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       {/* REMOVED: mb-6 class to eliminate gap between navbar and content */}
-      <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
+      <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200 main-content">
         {/* Navigation will automatically hide on login page */}
         <Navigation />
+        
+        {/* PWA Components */}
+        <OfflineIndicator />
+        <InstallPrompt />
         
         {/* Breadcrumbs - shows navigation path */}
         <Breadcrumbs />
@@ -263,6 +278,11 @@ function App() {
           <Route path="/enhanced-tree" element={
             <ProtectedRoute>
               <EnhancedTreePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/interactive-tree" element={
+            <ProtectedRoute>
+              <ReactFlowTreePage />
             </ProtectedRoute>
           } />
           <Route path="/debug-tree" element={

@@ -4,6 +4,7 @@ const path = require('path');
 const membersRoute = require('./routes/members');
 const albumsRoute = require('./routes/albums');
 const relationshipsRoute = require('./routes/relationships');
+const treePositionsRoute = require('./routes/tree-positions');
 const app = express();
 const heroImagesRoute = require('./routes/hero-images');
 
@@ -44,6 +45,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes - Order matters!
+app.use('/api/tree-positions', treePositionsRoute);
 app.use('/api/relationships', relationshipsRoute);
 app.use('/api/albums', albumsRoute);
 app.use('/api/members', membersRoute);

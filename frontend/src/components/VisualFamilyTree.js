@@ -50,7 +50,14 @@ const VisualFamilyTree = () => {
             relationships: relationshipsData.length 
           });
           
-          setMembers(Array.isArray(membersData) ? membersData : []);
+          // Add birth_year extraction from birth_date for compatibility
+          const processedMembers = membersData.map(member => ({
+            ...member,
+            birth_year: member.birth_date ? new Date(member.birth_date).getFullYear() : null,
+            generation: member.generation || 0 // Use database generation
+          }));
+          
+          setMembers(Array.isArray(processedMembers) ? processedMembers : []);
           setRelationships(Array.isArray(relationshipsData) ? relationshipsData : []);
           return;
         } else {
@@ -61,70 +68,10 @@ const VisualFamilyTree = () => {
         console.log('Full error:', apiError);
       }
 
-      // Fall back to expanded mock data
-      console.log('Using expanded mock data for development');
-      setMembers([
-        // Generation 1 (Root)
-        { id: 1, first_name: 'Percy', last_name: 'Manning Sr.', birth_year: 1920, death_year: 1995, is_alive: false, photo_url: null },
-        { id: 2, first_name: 'Alice', last_name: 'Manning', birth_year: 1925, death_year: 2000, is_alive: false, photo_url: null },
-        
-        // Generation 2 (Their children)
-        { id: 3, first_name: 'Ruth', last_name: 'Dees', birth_year: 1945, is_alive: true, photo_url: null },
-        { id: 4, first_name: 'Alonzo', last_name: 'Dees', birth_year: 1940, is_alive: true, photo_url: null },
-        { id: 5, first_name: 'Hazel', last_name: 'Raymond', birth_year: 1950, is_alive: true, photo_url: null },
-        
-        // Generation 3 (Grandchildren)
-        { id: 6, first_name: 'Debra', last_name: 'Woods', birth_year: 1965, is_alive: true, photo_url: null },
-        { id: 7, first_name: 'Frank', last_name: 'Woods Jr.', birth_year: 1960, is_alive: true, photo_url: null },
-        { id: 8, first_name: 'Steven', last_name: 'Dees', birth_year: 1970, is_alive: true, photo_url: null },
-        
-        // Generation 4 (Great-grandchildren)
-        { id: 9, first_name: 'Justin', last_name: 'Woods', birth_year: 1987, is_alive: true, photo_url: null },
-        { id: 10, first_name: 'Priya', last_name: 'Baliga', birth_year: 1985, is_alive: true, photo_url: null },
-        { id: 11, first_name: 'Shanna', last_name: 'Woods', birth_year: 1990, is_alive: true, photo_url: null },
-        
-        // Generation 5 (Current)
-        { id: 12, first_name: 'Asha', last_name: 'Woods', birth_year: 2023, is_alive: true, photo_url: null }
-      ]);
-      
-      setRelationships([
-        // Generation 1 spouses
-        { id: 1, member1_id: 1, member2_id: 2, relationship_type: 'husband' },
-        { id: 2, member1_id: 2, member2_id: 1, relationship_type: 'wife' },
-        
-        // Generation 1 -> 2 parent-child
-        { id: 3, member1_id: 1, member2_id: 3, relationship_type: 'father' },
-        { id: 4, member1_id: 2, member2_id: 3, relationship_type: 'mother' },
-        { id: 5, member1_id: 2, member2_id: 5, relationship_type: 'mother' },
-        
-        // Generation 2 spouses
-        { id: 6, member1_id: 3, member2_id: 4, relationship_type: 'wife' },
-        { id: 7, member1_id: 4, member2_id: 3, relationship_type: 'husband' },
-        
-        // Generation 2 -> 3 parent-child
-        { id: 8, member1_id: 3, member2_id: 6, relationship_type: 'mother' },
-        { id: 9, member1_id: 4, member2_id: 6, relationship_type: 'father' },
-        { id: 10, member1_id: 3, member2_id: 8, relationship_type: 'mother' },
-        { id: 11, member1_id: 4, member2_id: 8, relationship_type: 'father' },
-        
-        // Generation 3 spouses
-        { id: 12, member1_id: 6, member2_id: 7, relationship_type: 'wife' },
-        { id: 13, member1_id: 7, member2_id: 6, relationship_type: 'husband' },
-        
-        // Generation 3 -> 4 parent-child
-        { id: 14, member1_id: 6, member2_id: 9, relationship_type: 'mother' },
-        { id: 15, member1_id: 7, member2_id: 9, relationship_type: 'father' },
-        { id: 16, member1_id: 6, member2_id: 11, relationship_type: 'mother' },
-        { id: 17, member1_id: 7, member2_id: 11, relationship_type: 'father' },
-        
-        // Generation 4 spouses
-        { id: 18, member1_id: 9, member2_id: 10, relationship_type: 'husband' },
-        { id: 19, member1_id: 10, member2_id: 9, relationship_type: 'wife' },
-        
-        // Generation 4 -> 5 parent-child
-        { id: 20, member1_id: 9, member2_id: 12, relationship_type: 'father' },
-        { id: 21, member1_id: 10, member2_id: 12, relationship_type: 'mother' }
-      ]);
+      // Fall back to basic data if API fails
+      console.log('Using reduced dataset for development');
+      setMembers([]);
+      setRelationships([]);
       
     } catch (error) {
       console.error('Error fetching family data:', error);

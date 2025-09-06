@@ -4,8 +4,8 @@ import { Upload, X, Image, AlertCircle, CheckCircle } from 'lucide-react';
 const EnhancedPhotoUpload = ({ 
   onUpload, 
   maxFiles = 10, 
-  maxFileSize = 5 * 1024 * 1024, // 5MB
-  acceptedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  maxFileSize = 50 * 1024 * 1024, // 50MB for HEIC files
+  acceptedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/heic', 'image/heif'],
   className = ''
 }) => {
   const [isDragActive, setIsDragActive] = useState(false);
@@ -187,7 +187,7 @@ const EnhancedPhotoUpload = ({
           </div>
           
           <div className="text-xs text-gray-400 dark:text-gray-500">
-            <p>Supported: JPEG, PNG, GIF, WebP</p>
+            <p>Supported: JPEG, PNG, GIF, WebP, HEIC</p>
             <p>Max size: {Math.round(maxFileSize / 1024 / 1024)}MB per file</p>
             <p>Max files: {maxFiles}</p>
           </div>

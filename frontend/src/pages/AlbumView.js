@@ -387,6 +387,25 @@ const AlbumView = () => {
     setEnlargedPhoto(null);
   };
 
+  // Handle body overflow when modal is open (prevent background scrolling)
+  useEffect(() => {
+    if (showPhotoModal) {
+      // Prevent background scrolling when modal is open
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      // Restore scrolling when modal is closed
+      document.body.style.overflow = 'auto';
+      document.body.style.touchAction = 'auto';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'auto';
+      document.body.style.touchAction = 'auto';
+    };
+  }, [showPhotoModal]);
+
   // Handle keyboard navigation in modal
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -431,49 +450,71 @@ const AlbumView = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
-      {/* Header */}
-      <div className="mb-6">
-        <Link to="/gallery" className="text-blue-600 hover:underline mb-2 inline-block">
-          ← Back to Gallery
-        </Link>
-        <div className="flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold">{album.title}</h1>
-            {album.description && (
-              <p className="text-gray-600 mt-2">{album.description}</p>
-            )}
-            {album.event_date && (
-              <p className="text-gray-500 text-sm mt-1">
-                Event Date: {new Date(album.event_date).toLocaleDateString()}
-              </p>
-            )}
-          </div>
-          <button
-            onClick={deleteAlbum}
-            disabled={deleting}
-            className={`px-4 py-2 rounded text-white ${
-              deleting 
-                ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-red-600 hover:bg-red-700'
-            }`}
-            title="Delete album"
-          >
-            {deleting ? 'Deleting...' : 'Delete Album'}
-          </button>
-        </div>
-        <div className="mt-4">
-          <button
-            onClick={() => setShowUploadForm(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Upload Photos
-          </button>
-        </div>
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-30">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <pattern id="gallery-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M8,8 L32,8 L32,32 L8,32 Z M12,12 L28,12 L28,28 L12,28 Z M16,16 L24,16 L24,24 L16,24 Z"
+                stroke="currentColor" strokeWidth="0.5" className="text-blue-200" fill="none" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#gallery-pattern)" />
+        </svg>
       </div>
 
-      {/* Upload Modal */}
-      {showUploadForm && (
+      {/* Floating decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-5 -left-5 w-20 h-20 bg-gradient-to-br from-pink-200/20 to-purple-200/20 rounded-full blur-lg"></div>
+        <div className="absolute -top-10 -right-10 w-30 h-30 bg-gradient-to-bl from-blue-200/20 to-cyan-200/20 rounded-full blur-lg"></div>
+        <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 w-40 h-20 bg-gradient-to-t from-purple-200/20 to-pink-200/20 rounded-full blur-lg"></div>
+      </div>
+
+      {/* Main content */}
+      <div className="relative z-10 max-w-6xl mx-auto p-4">
+        {/* Header */}
+        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-4 mb-6 border border-white/50">
+          <Link to="/gallery" className="text-blue-600 hover:text-purple-600 mb-2 inline-block text-sm transition-colors">
+            ← Back to Gallery
+          </Link>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{album.title}</h1>
+              {album.description && (
+                <p className="text-gray-600 mt-1 text-sm">{album.description}</p>
+              )}
+              {album.event_date && (
+                <p className="text-gray-500 text-xs mt-1">
+                  Event Date: {new Date(album.event_date).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+            <button
+              onClick={deleteAlbum}
+              disabled={deleting}
+              className={`px-3 py-1.5 rounded-full text-white text-sm ${
+                deleting 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 transform hover:scale-105 transition-all shadow-md'
+              }`}
+              title="Delete album"
+            >
+              {deleting ? 'Deleting...' : 'Delete Album'}
+            </button>
+          </div>
+          <div className="mt-4">
+            <button
+              onClick={() => setShowUploadForm(true)}
+              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all shadow-md text-sm font-medium"
+            >
+              Upload Photos
+            </button>
+          </div>
+        </div>
+
+        {/* Upload Modal */}
+        {showUploadForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg max-w-md w-full">
             <h2 className="text-xl font-bold mb-4">Upload Photos</h2>
@@ -483,7 +524,7 @@ const AlbumView = () => {
                 <input
                   type="file"
                   multiple
-                  accept="image/*"
+                  accept="image/*,.heic,.heif"
                   onChange={handleFileSelect}
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   required
@@ -530,15 +571,15 @@ const AlbumView = () => {
         </div>
       )}
 
-      {/* Photos Grid - UPDATED with Crop Button */}
-      {album.photos && album.photos.length > 0 ? (
+        {/* Photos Grid - UPDATED with Crop Button */}
+        {album.photos && album.photos.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {album.photos.map((photo) => (
-            <div key={photo.id} className="relative group">
+            <div key={photo.id} className="relative group bg-white/50 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition-all duration-300">
               <img
                 src={`${process.env.REACT_APP_API}/${photo.file_path}`}
                 alt={photo.caption || 'Photo'}
-                className="w-full h-64 object-cover rounded-lg shadow-md hover:shadow-lg transition-all duration-200 cursor-pointer hover:opacity-90"
+                className="w-full h-64 object-cover hover:opacity-90 cursor-pointer transition-all duration-200 hover:scale-105"
                 onClick={() => enlargePhoto(photo)}
               />
               
@@ -551,7 +592,7 @@ const AlbumView = () => {
                         e.stopPropagation();
                         setCoverPhoto(photo.id);
                       }}
-                      className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 transition-colors"
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-2 py-1 rounded-full text-xs hover:from-blue-600 hover:to-purple-600 transition-all shadow-sm"
                       title="Set as cover photo"
                     >
                       Cover
@@ -562,7 +603,7 @@ const AlbumView = () => {
                         e.stopPropagation();
                         handleCropGalleryImage(photo);
                       }}
-                      className="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700 transition-colors"
+                      className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm"
                       title="Crop image"
                     >
                       Crop
@@ -572,7 +613,7 @@ const AlbumView = () => {
                         e.stopPropagation();
                         openPhotoTagger(photo);
                       }}
-                      className="bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition-colors"
+                      className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full text-xs hover:from-green-600 hover:to-emerald-600 transition-all shadow-sm"
                       title="Tag people in photo"
                     >
                       Tag
@@ -582,7 +623,7 @@ const AlbumView = () => {
                         e.stopPropagation();
                         deletePhoto(photo.id);
                       }}
-                      className="bg-red-600 text-white px-2 py-1 rounded text-xs hover:bg-red-700 transition-colors"
+                      className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs hover:from-red-600 hover:to-pink-600 transition-all shadow-sm"
                       title="Delete photo"
                     >
                       Delete
@@ -593,7 +634,7 @@ const AlbumView = () => {
               
               {/* Cover photo indicator */}
               {album.cover_photo_id === photo.id && (
-                <div className="absolute bottom-2 left-2 bg-green-600 text-white px-2 py-1 rounded text-xs">
+                <div className="absolute bottom-2 left-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full text-xs shadow-md">
                   Cover Photo
                 </div>
               )}
@@ -607,21 +648,47 @@ const AlbumView = () => {
             </div>
           ))}
         </div>
-      ) : (
-        <div className="text-center text-gray-500 mt-8">
-          <p>No photos in this album yet.</p>
-          <p className="text-sm">Click "Upload Photos" to add some!</p>
-        </div>
-      )}
+        ) : (
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-12 text-center shadow-lg border border-white/50">
+            <div className="text-gray-500">
+              <p className="text-lg mb-2">No photos in this album yet.</p>
+              <p className="text-sm">Click "Upload Photos" to add some!</p>
+            </div>
+          </div>
+        )}
 
-      {/* Photo Modal */}
-      {showPhotoModal && enlargedPhoto && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" onClick={closePhotoModal}>
-          <div className="relative max-w-full max-h-full overflow-hidden group" onClick={(e) => e.stopPropagation()}>
+        {/* Photo Modal */}
+        {showPhotoModal && enlargedPhoto && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" 
+          onClick={closePhotoModal}
+          style={{
+            touchAction: 'none',
+            overflow: 'hidden'
+          }}
+          onTouchStart={(e) => {
+            // Prevent background scrolling
+            document.body.style.overflow = 'hidden';
+          }}
+          onTouchEnd={() => {
+            // Re-enable background scrolling when modal closes
+            document.body.style.overflow = 'auto';
+          }}
+        >
+          <div 
+            className="relative max-w-full max-h-full overflow-hidden group" 
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              touchAction: 'pan-x pan-y pinch-zoom',
+              maxWidth: '100vw',
+              maxHeight: '100vh'
+            }}
+          >
             <button
               onClick={closePhotoModal}
               className="absolute top-4 right-4 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-10 h-10 flex items-center justify-center hover:bg-white/20 hover:border-white/30 transition-all duration-200 z-10 group/close"
               title="Close (Esc)"
+              style={{ touchAction: 'manipulation' }}
             >
               <svg className="w-5 h-5 group-hover/close:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -632,6 +699,27 @@ const AlbumView = () => {
               src={`${process.env.REACT_APP_API}/${enlargedPhoto.file_path}`}
               alt={enlargedPhoto.caption || 'Photo'}
               className="max-w-screen-lg max-h-screen object-contain"
+              style={{
+                touchAction: 'pan-x pan-y pinch-zoom',
+                userSelect: 'none',
+                WebkitUserSelect: 'none',
+                MozUserSelect: 'none',
+                msUserSelect: 'none',
+                maxWidth: '100vw',
+                maxHeight: '100vh',
+                width: 'auto',
+                height: 'auto'
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation();
+              }}
+              onTouchMove={(e) => {
+                e.stopPropagation();
+              }}
+              onTouchEnd={(e) => {
+                e.stopPropagation();
+              }}
+              draggable={false}
             />
             
             {/* Navigation arrows */}
@@ -647,6 +735,8 @@ const AlbumView = () => {
                   }}
                   className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-12 h-12 flex items-center justify-center hover:bg-white/20 hover:border-white/30 hover:scale-105 opacity-0 group-hover:opacity-100 transition-all duration-300 group/prev"
                   title="Previous photo (←)"
+                  style={{ touchAction: 'manipulation' }}
+                  onTouchStart={(e) => e.stopPropagation()}
                 >
                   <svg className="w-6 h-6 group-hover/prev:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -662,6 +752,8 @@ const AlbumView = () => {
                   }}
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-12 h-12 flex items-center justify-center hover:bg-white/20 hover:border-white/30 hover:scale-105 opacity-0 group-hover:opacity-100 transition-all duration-300 group/next"
                   title="Next photo (→)"
+                  style={{ touchAction: 'manipulation' }}
+                  onTouchStart={(e) => e.stopPropagation()}
                 >
                   <svg className="w-6 h-6 group-hover/next:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
@@ -687,8 +779,8 @@ const AlbumView = () => {
         </div>
       )}
 
-      {/* Photo Tagging Modal */}
-      {showTagger && selectedPhoto && (
+        {/* Photo Tagging Modal */}
+        {showTagger && selectedPhoto && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="max-w-6xl w-full max-h-full overflow-auto">
             <PhotoTagging
@@ -705,8 +797,8 @@ const AlbumView = () => {
         </div>
       )}
 
-      {/* NEW: Photo Cropper Modal for Gallery Images */}
-      {showCropper && cropImageFile && selectedImageForCrop && (
+        {/* NEW: Photo Cropper Modal for Gallery Images */}
+        {showCropper && cropImageFile && selectedImageForCrop && (
         <PhotoCropper
           imageFile={cropImageFile}
           onCropComplete={handleCropComplete}
@@ -714,8 +806,8 @@ const AlbumView = () => {
         />
       )}
 
-      {/* NEW: Member Selection Modal */}
-      {showMemberSelection && pendingCroppedFile && (
+        {/* NEW: Member Selection Modal */}
+        {showMemberSelection && pendingCroppedFile && (
         <MemberSelectionModal
           isOpen={showMemberSelection}
           onClose={handleMemberSelectionClose}
@@ -723,6 +815,7 @@ const AlbumView = () => {
           croppedFile={pendingCroppedFile}
         />
       )}
+      </div>
     </div>
   );
 };

@@ -5,6 +5,7 @@ const path = require('path');
 const { Pool } = require('pg');
 const csv = require('csv-parser');
 const fs = require('fs');
+const { processImage, isImageSupported } = require('../utils/imageProcessor');
 
 const pool = new Pool({
   user: 'user',
@@ -34,15 +35,15 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
-    // Only allow image files
-    if (file.mimetype.startsWith('image/')) {
+    // Allow image files including HEIC
+    if (isImageSupported(file)) {
       cb(null, true);
     } else {
-      cb(new Error('Only image files are allowed!'), false);
+      cb(new Error('Only image files are allowed (JPG, PNG, GIF, WebP, HEIC)!'), false);
     }
   },
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 50 * 1024 * 1024 // 50MB limit for HEIC files
   }
 });
 
@@ -197,10 +198,25 @@ router.post('/', upload.single('photo'), async (req, res) => {
     is_married, marriage_date, spouse_id  // NEW: Add marriage fields
   } = req.body;
 
-  // Fix: Store path without leading slash
-  const photo_url = req.file ? `uploads/${req.file.filename}` : null;
-
+  let photo_url = null;
+  
   try {
+    // Process uploaded photo if present
+    if (req.file) {
+      console.log(`Processing profile photo for ${first_name} ${last_name}`);
+      
+      const finalPath = path.join('uploads/', `profile_${Date.now()}`);
+      const processResult = await processImage(req.file, finalPath);
+      
+      if (processResult.success) {
+        photo_url = `uploads/${processResult.filename}`;
+        console.log(`Profile photo processed: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
+      } else {
+        console.error('Failed to process profile photo:', processResult.error);
+        // Continue without photo rather than failing the entire request
+      }
+    }
+
     // First, create the new member
     const result = await pool.query(
       'INSERT INTO members (first_name, middle_name, last_name, relationship, gender, is_alive, birth_date, death_date, birth_place, death_place, location, occupation, pronouns, email, phone, photo_url, is_married, marriage_date, spouse_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *',
@@ -265,9 +281,24 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
   // Handle photo during update
   let finalPhotoUrl = photo_url || null;
   if (req.file) {
-    // Fix: Store path without leading slash
-    finalPhotoUrl = `uploads/${req.file.filename}`;
-    console.log('Using uploaded file for photo_url:', finalPhotoUrl);
+    console.log(`Processing updated profile photo for member ${req.params.id}`);
+    
+    try {
+      const finalPath = path.join('uploads/', `profile_update_${Date.now()}`);
+      const processResult = await processImage(req.file, finalPath);
+      
+      if (processResult.success) {
+        finalPhotoUrl = `uploads/${processResult.filename}`;
+        console.log(`Profile photo updated: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
+      } else {
+        console.error('Failed to process updated profile photo:', processResult.error);
+        // Keep existing photo if processing fails
+        console.log('Keeping existing photo due to processing error');
+      }
+    } catch (photoError) {
+      console.error('Error processing profile photo:', photoError);
+      // Keep existing photo if processing fails
+    }
   } else {
     console.log('Using existing photo_url:', finalPhotoUrl);
   }

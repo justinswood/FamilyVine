@@ -7,116 +7,156 @@ import L from 'leaflet';
 
 // Custom popup styles
 const popupStyles = `
-  .family-location-popup {
-    font-family: system-ui, -apple-system, sans-serif;
-  }
-  
-  .location-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #e5e7eb;
-  }
-  
-  .location-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #374151;
-    margin: 0;
-  }
-  
-  .member-count {
-    background: #dbeafe;
-    color: #1e40af;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 500;
-  }
-  
-  .members-list {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  .member-item {
-    transition: transform 0.2s;
-  }
-  
-  .member-item:hover {
-    transform: translateX(2px);
-  }
-  
-  .member-link {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    text-decoration: none;
-    color: inherit;
-  }
-  
-  .member-link:hover {
-    text-decoration: none;
-  }
-  
-  .member-photo {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    overflow: hidden;
-    flex-shrink: 0;
-    position: relative;
-  }
-  
-  .member-photo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .photo-placeholder {
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 14px;
-  }
-  
-  .member-info {
-    flex: 1;
-    min-width: 0;
-  }
-  
-  .member-name {
-    font-weight: 500;
-    color: #374151;
-    display: block;
-    text-decoration: none;
-  }
-  
-  .member-link:hover .member-name {
-    color: #2563eb;
-  }
-  
   .leaflet-popup-content-wrapper {
-    border-radius: 12px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-radius: 12px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+    max-width: 300px !important;
+    min-width: 200px !important;
   }
   
   .leaflet-popup-content {
-    margin: 12px !important;
-    font-size: 14px;
+    margin: 16px !important;
+    font-size: 14px !important;
+    width: auto !important;
+    overflow: visible !important;
+    line-height: normal !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    font-family: system-ui, -apple-system, sans-serif !important;
   }
   
   .leaflet-popup-tip {
-    background: white;
+    background: white !important;
+  }
+  
+  .family-location-popup {
+    font-family: system-ui, -apple-system, sans-serif !important;
+    width: 100% !important;
+    max-width: 280px !important;
+    overflow: visible !important;
+    white-space: normal !important;
+  }
+  
+  .location-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 12px !important;
+    padding-bottom: 8px !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    flex-direction: row !important;
+    white-space: normal !important;
+  }
+  
+  .location-title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    margin: 0 !important;
+    flex: 1 !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    line-height: 1.2 !important;
+  }
+  
+  .member-count {
+    background: #dbeafe !important;
+    color: #1e40af !important;
+    padding: 2px 8px !important;
+    border-radius: 12px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    white-space: nowrap !important;
+    margin-left: 8px !important;
+  }
+  
+  .members-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+  
+  .member-item {
+    transition: transform 0.2s !important;
+    width: 100% !important;
+  }
+  
+  .member-item:hover {
+    transform: translateX(2px) !important;
+  }
+  
+  .member-link {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    text-decoration: none !important;
+    color: inherit !important;
+    width: 100% !important;
+    flex-direction: row !important;
+  }
+  
+  .member-link:hover {
+    text-decoration: none !important;
+  }
+  
+  .member-photo {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+    position: relative !important;
+    min-width: 32px !important;
+  }
+  
+  .member-photo img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+  
+  .photo-placeholder {
+    width: 100% !important;
+    height: 100% !important;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-weight: bold !important;
+    font-size: 14px !important;
+  }
+  
+  .member-info {
+    flex: 1 !important;
+    min-width: 0 !important;
+  }
+  
+  .member-name {
+    font-weight: 500 !important;
+    color: #374151 !important;
+    display: block !important;
+    text-decoration: none !important;
+    white-space: normal !important;
+    word-wrap: break-word !important;
+    line-height: 1.3 !important;
+  }
+  
+  .member-link:hover .member-name {
+    color: #2563eb !important;
+  }
+  
+  /* Override any global styles that might interfere */
+  .leaflet-popup-content * {
+    box-sizing: border-box !important;
+  }
+  
+  /* Ensure no text rotation or transforms */
+  .leaflet-popup .family-location-popup * {
+    transform: none !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
   }
 `;
 
