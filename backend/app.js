@@ -5,6 +5,7 @@ const membersRoute = require('./routes/members');
 const albumsRoute = require('./routes/albums');
 const relationshipsRoute = require('./routes/relationships');
 const treePositionsRoute = require('./routes/tree-positions');
+const treeRoute = require('./routes/tree');
 const app = express();
 const heroImagesRoute = require('./routes/hero-images');
 
@@ -12,7 +13,10 @@ const heroImagesRoute = require('./routes/hero-images');
 const corsOptions = {
   origin: [
     'http://localhost:3000',           // Local development
+    'http://localhost:3030',           // Local frontend (current port)
     'http://192.168.1.120:3000',       // Local network access
+    'http://192.168.1.171:3030',       // Network access from 192.168.1.171
+    /^http:\/\/192\.168\.1\.\d+:3030$/, // Allow any device on 192.168.1.x network on port 3030
     'https://family.techwoods.cc',     // Production domain
     'http://family.techwoods.cc'       // HTTP fallback
   ],
@@ -45,6 +49,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes - Order matters!
+app.use('/api/tree', treeRoute);
 app.use('/api/tree-positions', treePositionsRoute);
 app.use('/api/relationships', relationshipsRoute);
 app.use('/api/albums', albumsRoute);

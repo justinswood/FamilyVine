@@ -219,24 +219,16 @@ router.post('/', upload.single('photo'), async (req, res) => {
 
     // First, create the new member
     const result = await pool.query(
-      'INSERT INTO members (first_name, middle_name, last_name, relationship, gender, is_alive, birth_date, death_date, birth_place, death_place, location, occupation, pronouns, email, phone, photo_url, is_married, marriage_date, spouse_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19) RETURNING *',
+      'INSERT INTO members (first_name, middle_name, last_name, relationship, gender, is_alive, birth_date, death_date, birth_place, death_place, location, occupation, pronouns, email, phone, photo_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *',
       [
         first_name, middle_name, last_name, relationship, gender, is_alive === 'true',
-        parseDate(birth_date), parseDate(death_date), // Fix: Use parseDate function
+        parseDate(birth_date), parseDate(death_date),
         birth_place || null, death_place || null,
-        location || null, occupation || null, pronouns || null, email || null, phone || null, photo_url,
-        is_married === 'true',  // NEW: Convert to boolean
-        parseDate(marriage_date),  // NEW: Parse marriage date
-        spouse_id ? parseInt(spouse_id) : null  // NEW: Convert to integer or null
+        location || null, occupation || null, pronouns || null, email || null, phone || null, photo_url
       ]
     );
 
     const newMember = result.rows[0];
-
-    // NEW: If they're married and have a spouse, link them automatically
-    if (is_married === 'true' && spouse_id) {
-      await linkSpouses(newMember.id, parseInt(spouse_id), parseDate(marriage_date));
-    }
 
     res.status(201).json(newMember);
 
@@ -304,49 +296,21 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
   }
 
   try {
-    // NEW: Get the current member data to see what changed
-    const currentMemberResult = await pool.query('SELECT spouse_id FROM members WHERE id = $1', [req.params.id]);
-    const currentMember = currentMemberResult.rows[0];
-    const oldSpouseId = currentMember ? currentMember.spouse_id : null;
-
-    console.log(`Old spouse ID: ${oldSpouseId}, New spouse ID: ${spouse_id}`);
-
     console.log('Attempting database update...');
     const result = await pool.query(
-      'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, relationship = $4, gender = $5, is_alive = $6, birth_date = $7, death_date = $8, birth_place = $9, death_place = $10, location = $11, occupation = $12, pronouns = $13, email = $14, phone = $15, photo_url = $16, is_married = $17, marriage_date = $18, spouse_id = $19 WHERE id = $20 RETURNING *',
+      'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, relationship = $4, gender = $5, is_alive = $6, birth_date = $7, death_date = $8, birth_place = $9, death_place = $10, location = $11, occupation = $12, pronouns = $13, email = $14, phone = $15, photo_url = $16 WHERE id = $17 RETURNING *',
       [
         first_name, middle_name, last_name,
         relationship, gender, is_alive === 'true',
-        parseDate(birth_date), parseDate(death_date), // Fix: Use parseDate function
+        parseDate(birth_date), parseDate(death_date),
         birth_place || null, death_place || null,
         location || null, occupation || null, pronouns || null,
         email || null, phone || null, finalPhotoUrl,
-        is_married === 'true',  // NEW: Convert to boolean
-        parseDate(marriage_date),  // NEW: Parse marriage date
-        spouse_id ? parseInt(spouse_id) : null,  // NEW: Convert to integer or null
         req.params.id
       ]
     );
 
     const updatedMember = result.rows[0];
-
-    // NEW: Handle spouse linking/unlinking
-    const newSpouseId = spouse_id ? parseInt(spouse_id) : null;
-
-    // If spouse changed, unlink the old spouse first
-    if (oldSpouseId && oldSpouseId !== newSpouseId) {
-      await unlinkSpouses(req.params.id, oldSpouseId);
-    }
-
-    // If they're married and have a spouse, link them
-    if (is_married === 'true' && newSpouseId) {
-      await linkSpouses(req.params.id, newSpouseId, parseDate(marriage_date));
-    }
-
-    // If they're no longer married, unlink current spouse
-    if (is_married !== 'true' && newSpouseId) {
-      await unlinkSpouses(req.params.id, newSpouseId);
-    }
 
     console.log('Database update successful');
     console.log('Updated member:', updatedMember);
