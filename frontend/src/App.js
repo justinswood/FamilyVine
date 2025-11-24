@@ -10,18 +10,13 @@ import MapPage from './pages/MapPage';
 import CSVImport from './pages/CSVImport';
 import Gallery from './pages/Gallery';
 import AlbumView from './pages/AlbumView';
-import FamilyTree from './pages/FamilyTree';
-import VisualTreePage from './pages/VisualTreePage';
-import FamilyTreeDebug from './components/FamilyTreeDebug';
 import Settings from './pages/Settings';
 import TimelinePage from './pages/TimelinePage';
 import CalendarPage from './pages/CalendarPage';
 import LoginPage from './pages/LoginPage';
-import EnhancedTreePage from './pages/EnhancedTreePage';
-import ReactFlowTreePage from './pages/ReactFlowTreePage';
+import FamilyTreePage from './pages/FamilyTreePage';
 import VineLogoCompact from './components/VineLogoCompact';
 import GlobalSearch from './components/GlobalSearch';
-import Breadcrumbs from './components/Breadcrumbs';
 import OfflineIndicator from './components/OfflineIndicator';
 import InstallPrompt from './components/InstallPrompt';
 import ScrollToTop from './components/ScrollToTop';
@@ -69,8 +64,15 @@ const Navigation = () => {
         {/* Center section - Scrollable Navigation Links */}
         <div className="flex-1 mx-4 min-w-0">
           <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide pb-1">
-            <Link 
-              to="/members" 
+            <Link
+              to="/tree"
+              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
+            >
+              Tree
+            </Link>
+
+            <Link
+              to="/members"
               className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
             >
               Members
@@ -97,19 +99,6 @@ const Navigation = () => {
               Map
             </Link>
             
-            <Link 
-              to="/visual-tree" 
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Tree
-            </Link>
-            
-            <Link 
-              to="/interactive-tree" 
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Interactive
-            </Link>
             
             <Link 
               to="/timeline" 
@@ -127,8 +116,9 @@ const Navigation = () => {
           </div>
         </div>
 
-        {/* Right section - Settings (fixed) */}
-        <div className="flex items-center flex-shrink-0">
+        {/* Right section - Search and Settings (fixed) */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <GlobalSearch />
           <Link
             to="/settings"
             className="p-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 
@@ -211,10 +201,7 @@ function App() {
         {/* PWA Components */}
         <OfflineIndicator />
         <InstallPrompt />
-        
-        {/* Breadcrumbs - shows navigation path */}
-        <Breadcrumbs />
-        
+
         <Routes>
           {/* Login route - accessible without authentication */}
           <Route path="/login" element={<LoginPage />} />
@@ -223,6 +210,11 @@ function App() {
           <Route path="/" element={
             <ProtectedRoute>
               <HomePage />
+            </ProtectedRoute>
+          } />
+          <Route path="/tree" element={
+            <ProtectedRoute>
+              <FamilyTreePage />
             </ProtectedRoute>
           } />
           <Route path="/add" element={
@@ -263,31 +255,6 @@ function App() {
           <Route path="/gallery/:id" element={
             <ProtectedRoute>
               <AlbumView />
-            </ProtectedRoute>
-          } />
-          <Route path="/family-tree/:id" element={
-            <ProtectedRoute>
-              <FamilyTree />
-            </ProtectedRoute>
-          } />
-          <Route path="/visual-tree" element={
-            <ProtectedRoute>
-              <VisualTreePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/enhanced-tree" element={
-            <ProtectedRoute>
-              <EnhancedTreePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/interactive-tree" element={
-            <ProtectedRoute>
-              <ReactFlowTreePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/debug-tree" element={
-            <ProtectedRoute>
-              <FamilyTreeDebug />
             </ProtectedRoute>
           } />
           <Route path="/settings" element={

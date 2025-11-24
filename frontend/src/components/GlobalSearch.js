@@ -19,11 +19,12 @@ const GlobalSearch = () => {
     if (!dateString) return '';
     
     try {
-      // Create date from the string and format it nicely
-      const date = new Date(dateString);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
+      // Parse date string as local date to avoid timezone shifts
+      const dateOnly = dateString.split('T')[0]; // Remove time part if present
+      const [year, month, day] = dateOnly.split('-');
+      
+      // Create date object with local timezone (no timezone conversion)
+      const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
       
       // Return in a clean format like "August 29, 1987"
       return date.toLocaleDateString('en-US', { 

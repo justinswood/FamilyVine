@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { 
   UserPlus, 
   Camera, 
-  TreePine, 
   Users, 
   MapPin, 
   Calendar,
@@ -30,15 +29,6 @@ const QuickActions = ({ className = '' }) => {
       color: 'from-purple-500 to-purple-600',
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       borderColor: 'border-purple-200 dark:border-purple-700'
-    },
-    {
-      title: 'Family Tree',
-      description: 'Explore family connections',
-      icon: TreePine,
-      link: '/visual-tree',
-      color: 'from-green-500 to-green-600',
-      bgColor: 'bg-green-50 dark:bg-green-900/20',
-      borderColor: 'border-green-200 dark:border-green-700'
     },
     {
       title: 'All Members',

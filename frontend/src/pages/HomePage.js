@@ -145,13 +145,6 @@ const HomePage = () => {
 
   const features = [
     {
-      title: "Interactive Family Tree",
-      description: "Visualize your family connections with our beautiful, interactive tree view",
-      icon: "🌳",
-      color: "from-emerald-500 to-green-600",
-      link: "/visual-tree"
-    },
-    {
       title: "Photo Gallery",
       description: "Upload, organize, and tag family photos with advanced face recognition",
       icon: "📸",

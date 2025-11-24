@@ -434,12 +434,6 @@ const MemberPage = () => {
               >
                 ✏️ Edit
               </Link>
-              <Link
-                to={`/family-tree/${member.id}`}
-                className="px-4 py-1.5 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-full text-sm font-medium hover:from-green-600 hover:to-teal-600 transform hover:scale-105 transition-all shadow-md"
-              >
-                🌳 Family Tree
-              </Link>
             </div>
 
             {/* Decorative Divider */}

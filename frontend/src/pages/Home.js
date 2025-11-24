@@ -50,12 +50,6 @@ const Home = () => {
 
   const features = [
     {
-      title: "Family Tree Visualization",
-      description: "Interactive D3.js family tree with drag-and-drop nodes and relationship mapping",
-      icon: "🌳",
-      link: "/visual-tree"
-    },
-    {
       title: "Photo Management",
       description: "Upload, crop, and organize family photos with smart tagging system",
       icon: "📸",
@@ -105,7 +99,7 @@ const Home = () => {
                 to="/members"
                 className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
               >
-                View Family Tree
+                View All Members
               </Link>
               <Link
                 to="/add"
@@ -156,7 +150,7 @@ const Home = () => {
       {/* Features Section */}
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Powerful Family Tree Features</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">Powerful Family Management Features</h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             FamilyVine provides all the tools you need to build, visualize, and preserve your family history
           </p>

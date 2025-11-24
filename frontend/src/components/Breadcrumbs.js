@@ -23,10 +23,6 @@ const Breadcrumbs = () => {
       'add': 'Add Member',
       'edit': 'Edit Member',
       'gallery': 'Photo Gallery',
-      'visual-tree': 'Family Tree',
-      'enhanced-tree': 'Enhanced Tree',
-      'debug-tree': 'Debug Tree',
-      'family-tree': 'Family Tree',
       'map': 'Family Map',
       'timeline': 'Timeline',
       'calendar': 'Calendar',
@@ -50,11 +46,6 @@ const Breadcrumbs = () => {
         } else if (pathSegments[index - 1] === 'gallery') {
           breadcrumbs.push({
             label: 'Album',
-            path: currentPath
-          });
-        } else if (pathSegments[index - 1] === 'family-tree') {
-          breadcrumbs.push({
-            label: 'Tree View',
             path: currentPath
           });
         }

@@ -135,64 +135,73 @@ const MemberList = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-3">
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="family-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M20,5 L20,35 M5,20 L35,20 M12,12 L28,28 M28,12 L12,28"
-                stroke="currentColor" strokeWidth="0.5" className="text-blue-200" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#family-pattern)" />
-        </svg>
-      </div>
-
-      {/* Floating decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-5 -left-5 w-20 h-20 bg-gradient-to-br from-pink-200/20 to-purple-200/20 rounded-full blur-lg"></div>
-        <div className="absolute -top-10 -right-10 w-30 h-30 bg-gradient-to-bl from-blue-200/20 to-cyan-200/20 rounded-full blur-lg"></div>
-        <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 w-40 h-20 bg-gradient-to-t from-purple-200/20 to-pink-200/20 rounded-full blur-lg"></div>
-      </div>
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#fee440' }}>
+      {/* Animated SVG Background */}
+      <svg style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh' }} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="goo">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -8" result="goo" />
+            <feBlend in="SourceGraphic" in2="goo" />
+          </filter>
+        </defs>
+        <g filter="url(#goo)">
+          <circle cx="20%" cy="30%" r="80" fill="#00a8cc">
+            <animate attributeName="cx" values="20%;80%;20%" dur="20s" repeatCount="indefinite" begin="0s" />
+            <animate attributeName="cy" values="30%;70%;30%" dur="15s" repeatCount="indefinite" begin="0s" />
+          </circle>
+          <circle cx="70%" cy="60%" r="60" fill="#9b59b6">
+            <animate attributeName="cx" values="70%;30%;70%" dur="18s" repeatCount="indefinite" begin="0s" />
+            <animate attributeName="cy" values="60%;40%;60%" dur="12s" repeatCount="indefinite" begin="0s" />
+          </circle>
+          <circle cx="30%" cy="70%" r="70" fill="#f97068">
+            <animate attributeName="cx" values="30%;60%;30%" dur="22s" repeatCount="indefinite" begin="0s" />
+            <animate attributeName="cy" values="70%;20%;70%" dur="16s" repeatCount="indefinite" begin="0s" />
+          </circle>
+          <circle cx="60%" cy="30%" r="50" fill="#00d9ff">
+            <animate attributeName="cx" values="60%;20%;60%" dur="19s" repeatCount="indefinite" begin="0s" />
+            <animate attributeName="cy" values="30%;80%;30%" dur="14s" repeatCount="indefinite" begin="0s" />
+          </circle>
+        </g>
+      </svg>
 
       {/* Main content */}
       <div className="relative z-10 max-w-7xl mx-auto p-2">
 
-        {/* 🎯 COMPACT HEADER - Reduced size and removed Import CSV */}
-        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-2 mb-4 border border-white/50">
+        {/* 🎯 COMPACT HEADER - 50% smaller version */}
+        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-1 mb-2 border border-white/50">
 
           {/* Top Row: Title + Add Member Button (Import CSV removed) */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2 mb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
-                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-1 mb-1.5">
+            <div className="flex items-center gap-1">
+              <div className="p-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
+                <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                <h1 className="text-sm font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                   All Family Members
                 </h1>
-                <p className="text-sm text-gray-600">Explore and manage your family tree</p>
+                <p className="text-xs text-gray-600">Explore and manage your family tree</p>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               <Link
                 to="/add"
-                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-full hover:from-green-600 hover:to-emerald-600 transform hover:scale-105 transition-all shadow-lg font-medium text-sm"
+                className="flex items-center gap-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full hover:from-green-600 hover:to-emerald-600 transform hover:scale-105 transition-all shadow-lg font-medium text-xs"
               >
-                <span className="text-base">➕</span>
+                <span className="text-xs">➕</span>
                 Add Member
               </Link>
             </div>
           </div>
 
           {/* Middle Row: Search Bar (made more compact) */}
-          <div className="mb-3">
+          <div className="mb-1.5">
             <div className="relative max-w-2xl mx-auto">
-              <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -200,14 +209,14 @@ const MemberList = () => {
                 placeholder="Search by name, location..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+                className="w-full pl-7 pr-3 py-1 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm text-xs"
               />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
@@ -216,50 +225,50 @@ const MemberList = () => {
           </div>
 
           {/* Bottom Row: View Controls + Count (made more compact) */}
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-1.5">
 
             {/* Left Side: View Toggle + Sort Controls */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-1.5">
               {/* View Mode Toggle */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
-                  <span className="text-sm">👁️</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-medium text-gray-700 flex items-center gap-0.5">
+                  <span className="text-xs">👁️</span>
                   View:
                 </span>
                 <div className="flex bg-gray-100 rounded-lg p-0.5">
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${viewMode === 'list'
+                    className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-all ${viewMode === 'list'
                       ? 'bg-white shadow-sm text-purple-600'
                       : 'text-gray-600 hover:text-gray-800'
                       }`}
                   >
-                    <span className="text-sm">📋</span>
+                    <span className="text-xs">📋</span>
                     List
                   </button>
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all ${viewMode === 'grid'
+                    className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-medium transition-all ${viewMode === 'grid'
                       ? 'bg-white shadow-sm text-purple-600'
                       : 'text-gray-600 hover:text-gray-800'
                       }`}
                   >
-                    <span className="text-sm">⊞</span>
+                    <span className="text-xs">⊞</span>
                     Grid
                   </button>
                 </div>
               </div>
 
               {/* Sort Controls */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-gray-700 flex items-center gap-1">
-                  <span className="text-sm">🔤</span>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-medium text-gray-700 flex items-center gap-0.5">
+                  <span className="text-xs">🔤</span>
                   Sort:
                 </span>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-2 py-1 text-xs bg-white shadow-sm"
+                  className="border border-gray-300 rounded-lg px-1.5 py-0.5 text-[10px] bg-white shadow-sm"
                 >
                   <option value="name">Name</option>
                   <option value="location">Location</option>
@@ -267,10 +276,10 @@ const MemberList = () => {
                 </select>
                 <button
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                  className="flex items-center gap-1 px-2 py-1 border border-gray-300 rounded-lg text-xs hover:bg-gray-50 bg-white shadow-sm font-medium"
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 border border-gray-300 rounded-lg text-[10px] hover:bg-gray-50 bg-white shadow-sm font-medium"
                 >
-                  <span className="text-sm">{sortOrder === 'asc' ? '⬆️' : '⬇️'}</span>
-                  {sortBy === 'age' 
+                  <span className="text-xs">{sortOrder === 'asc' ? '⬆️' : '⬇️'}</span>
+                  {sortBy === 'age'
                     ? (sortOrder === 'asc' ? 'Young→Old' : 'Old→Young')
                     : (sortOrder === 'asc' ? 'A-Z' : 'Z-A')
                   }
@@ -279,9 +288,9 @@ const MemberList = () => {
             </div>
 
             {/* Right Side: Member Count */}
-            <div className="flex items-center gap-2 bg-gradient-to-r from-blue-50 to-purple-50 px-3 py-1.5 rounded-lg border border-blue-100">
-              <span className="text-sm">📊</span>
-              <span className="text-xs text-gray-600">
+            <div className="flex items-center gap-1 bg-gradient-to-r from-blue-50 to-purple-50 px-2 py-0.5 rounded-lg border border-blue-100">
+              <span className="text-xs">📊</span>
+              <span className="text-[10px] text-gray-600">
                 Showing <span className="font-semibold text-purple-600">{filteredMembers.length}</span> of{' '}
                 <span className="font-semibold">{allMembers.length}</span> family members
                 {searchTerm && (
