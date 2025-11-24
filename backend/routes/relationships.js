@@ -142,61 +142,109 @@ router.get('/member/:id', async (req, res) => {
   }
 });
 
+// Helper function to sync child to union_children table
+const syncChildToUnion = async (parentId, childId) => {
+  try {
+    // Find a union where this parent is a partner
+    const unionResult = await pool.query(
+      'SELECT id FROM unions WHERE partner1_id = $1 OR partner2_id = $1 LIMIT 1',
+      [parentId]
+    );
+
+    if (unionResult.rows.length === 0) {
+      console.log(`No union found for parent ${parentId} - child will not appear in tree until union is created`);
+      return false;
+    }
+
+    const unionId = unionResult.rows[0].id;
+
+    // Check if child is already in this union
+    const existingChild = await pool.query(
+      'SELECT id FROM union_children WHERE union_id = $1 AND child_id = $2',
+      [unionId, childId]
+    );
+
+    if (existingChild.rows.length > 0) {
+      console.log(`Child ${childId} already in union ${unionId}`);
+      return true;
+    }
+
+    // Get the next birth order
+    const orderResult = await pool.query(
+      'SELECT COALESCE(MAX(birth_order), 0) + 1 as next_order FROM union_children WHERE union_id = $1',
+      [unionId]
+    );
+    const nextOrder = orderResult.rows[0].next_order;
+
+    // Add child to union_children
+    await pool.query(
+      'INSERT INTO union_children (union_id, child_id, birth_order, is_biological) VALUES ($1, $2, $3, true)',
+      [unionId, childId, nextOrder]
+    );
+
+    console.log(`✅ Added child ${childId} to union ${unionId} (birth_order: ${nextOrder})`);
+    return true;
+  } catch (error) {
+    console.error('Error syncing child to union:', error);
+    return false;
+  }
+};
+
 // Add a new relationship
 router.post('/', async (req, res) => {
   try {
     const { member1_id, member2_id, relationship_type } = req.body;
-    
+
     // Validation
     if (!member1_id || !member2_id || !relationship_type) {
       return res.status(400).json({ error: 'All fields are required' });
     }
-    
+
     if (member1_id === member2_id) {
       return res.status(400).json({ error: 'Cannot create relationship with self' });
     }
-    
+
     if (!RELATIONSHIP_TYPES.includes(relationship_type)) {
       return res.status(400).json({ error: 'Invalid relationship type' });
     }
-    
+
     // Check if relationship already exists
     const existing = await pool.query(
       'SELECT id FROM relationships WHERE member1_id = $1 AND member2_id = $2 AND relationship_type = $3',
       [member1_id, member2_id, relationship_type]
     );
-    
+
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'Relationship already exists' });
     }
-    
+
     // Get member names for debugging
     const [member1Info, member2Info] = await Promise.all([
       pool.query('SELECT first_name, gender FROM members WHERE id = $1', [member1_id]),
       pool.query('SELECT first_name, gender FROM members WHERE id = $1', [member2_id])
     ]);
-    
+
     console.log(`\n=== Creating Relationship ===`);
     console.log(`${member1Info.rows[0]?.first_name} (${member1Info.rows[0]?.gender}) is ${relationship_type} of ${member2Info.rows[0]?.first_name} (${member2Info.rows[0]?.gender})`);
-    
+
     // Insert the relationship
     const result = await pool.query(
       'INSERT INTO relationships (member1_id, member2_id, relationship_type) VALUES ($1, $2, $3) RETURNING *',
       [member1_id, member2_id, relationship_type]
     );
-    
+
     // Create the inverse relationship
     const inverseType = await getInverseRelationship(relationship_type, member1_id, member2_id);
-    
+
     console.log(`Inverse: ${member2Info.rows[0]?.first_name} should be ${inverseType} of ${member1Info.rows[0]?.first_name}`);
-    
+
     if (inverseType && RELATIONSHIP_TYPES.includes(inverseType)) {
       // Check if inverse already exists
       const existingInverse = await pool.query(
         'SELECT id FROM relationships WHERE member1_id = $1 AND member2_id = $2 AND relationship_type = $3',
         [member2_id, member1_id, inverseType]
       );
-      
+
       if (existingInverse.rows.length === 0) {
         await pool.query(
           'INSERT INTO relationships (member1_id, member2_id, relationship_type) VALUES ($1, $2, $3)',
@@ -207,7 +255,18 @@ router.post('/', async (req, res) => {
         console.log(`Inverse relationship already exists`);
       }
     }
-    
+
+    // SYNC TO UNION_CHILDREN: If this is a parent-child relationship, add child to union_children
+    // Parent relationship types: father, mother (member1 is parent, member2 is child)
+    // Child relationship types: son, daughter (member1 is child, member2 is parent)
+    if (['father', 'mother'].includes(relationship_type)) {
+      // member1 is parent, member2 is child
+      await syncChildToUnion(member1_id, member2_id);
+    } else if (['son', 'daughter'].includes(relationship_type)) {
+      // member1 is child, member2 is parent
+      await syncChildToUnion(member2_id, member1_id);
+    }
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error creating relationship:', error);
