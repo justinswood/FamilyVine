@@ -297,8 +297,13 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
 
   try {
     console.log('Attempting database update...');
+    const memberId = parseInt(req.params.id);
+    const spouseIdInt = spouse_id ? parseInt(spouse_id) : null;
+    const isMarriedBool = is_married === 'true' || is_married === true;
+
+    // Update member record including marriage fields
     const result = await pool.query(
-      'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, relationship = $4, gender = $5, is_alive = $6, birth_date = $7, death_date = $8, birth_place = $9, death_place = $10, location = $11, occupation = $12, pronouns = $13, email = $14, phone = $15, photo_url = $16 WHERE id = $17 RETURNING *',
+      'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, relationship = $4, gender = $5, is_alive = $6, birth_date = $7, death_date = $8, birth_place = $9, death_place = $10, location = $11, occupation = $12, pronouns = $13, email = $14, phone = $15, photo_url = $16, is_married = $17, marriage_date = $18, spouse_id = $19 WHERE id = $20 RETURNING *',
       [
         first_name, middle_name, last_name,
         relationship, gender, is_alive === 'true',
@@ -306,11 +311,85 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
         birth_place || null, death_place || null,
         location || null, occupation || null, pronouns || null,
         email || null, phone || null, finalPhotoUrl,
-        req.params.id
+        isMarriedBool, parseDate(marriage_date), spouseIdInt,
+        memberId
       ]
     );
 
     const updatedMember = result.rows[0];
+
+    // If married with a spouse, create union and spouse relationships
+    if (isMarriedBool && spouseIdInt) {
+      console.log(`Creating/updating union for member ${memberId} and spouse ${spouseIdInt}`);
+
+      // Order partner IDs (unions table requires partner1_id < partner2_id)
+      const partner1 = Math.min(memberId, spouseIdInt);
+      const partner2 = Math.max(memberId, spouseIdInt);
+
+      // Check if union already exists
+      const existingUnion = await pool.query(
+        'SELECT id FROM unions WHERE partner1_id = $1 AND partner2_id = $2',
+        [partner1, partner2]
+      );
+
+      if (existingUnion.rows.length === 0) {
+        // Create new union
+        await pool.query(
+          'INSERT INTO unions (partner1_id, partner2_id, union_type, union_date, is_primary) VALUES ($1, $2, $3, $4, true)',
+          [partner1, partner2, 'marriage', parseDate(marriage_date)]
+        );
+        console.log(`Created union for ${partner1} and ${partner2}`);
+      } else {
+        // Update existing union date if provided
+        if (marriage_date) {
+          await pool.query(
+            'UPDATE unions SET union_date = $1 WHERE partner1_id = $2 AND partner2_id = $3',
+            [parseDate(marriage_date), partner1, partner2]
+          );
+        }
+        console.log(`Union already exists for ${partner1} and ${partner2}`);
+      }
+
+      // Get spouse gender for relationship type
+      const spouseInfo = await pool.query('SELECT gender FROM members WHERE id = $1', [spouseIdInt]);
+      const spouseGender = spouseInfo.rows[0]?.gender;
+      const memberGender = gender;
+
+      // Create spouse relationships if they don't exist
+      const memberRelType = memberGender === 'Male' ? 'husband' : 'wife';
+      const spouseRelType = spouseGender === 'Male' ? 'husband' : 'wife';
+
+      // Member -> Spouse relationship
+      const existingRel1 = await pool.query(
+        'SELECT id FROM relationships WHERE member1_id = $1 AND member2_id = $2 AND relationship_type IN ($3, $4)',
+        [memberId, spouseIdInt, 'husband', 'wife']
+      );
+      if (existingRel1.rows.length === 0) {
+        await pool.query(
+          'INSERT INTO relationships (member1_id, member2_id, relationship_type) VALUES ($1, $2, $3)',
+          [memberId, spouseIdInt, memberRelType]
+        );
+      }
+
+      // Spouse -> Member relationship
+      const existingRel2 = await pool.query(
+        'SELECT id FROM relationships WHERE member1_id = $1 AND member2_id = $2 AND relationship_type IN ($3, $4)',
+        [spouseIdInt, memberId, 'husband', 'wife']
+      );
+      if (existingRel2.rows.length === 0) {
+        await pool.query(
+          'INSERT INTO relationships (member1_id, member2_id, relationship_type) VALUES ($1, $2, $3)',
+          [spouseIdInt, memberId, spouseRelType]
+        );
+      }
+
+      // Update spouse's member record
+      await pool.query(
+        'UPDATE members SET is_married = true, spouse_id = $1, marriage_date = $2 WHERE id = $3',
+        [memberId, parseDate(marriage_date), spouseIdInt]
+      );
+      console.log(`Updated spouse ${spouseIdInt} with marriage info`);
+    }
 
     console.log('Database update successful');
     console.log('Updated member:', updatedMember);
