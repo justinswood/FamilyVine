@@ -2,9 +2,9 @@ services:
   frontend:
     build: ./frontend
     ports:
-      - "3000:80"
+      - "3030:80"  # Changed from 3000 to 3030 (AdGuard conflict)
     environment:
-      - REACT_APP_API=https://family.techwoods.cc
+      - REACT_APP_API=http://localhost:5050
       - NODE_ENV=production
     depends_on:
       - backend
@@ -13,7 +13,7 @@ services:
   backend:
     build: ./backend
     ports:
-      - "5000:5000"
+      - "5050:5000"  # Changed from 5000 to 5050 (Kavita conflict)
     environment:
       - NODE_ENV=production
       - DB_HOST=db
@@ -21,7 +21,7 @@ services:
       - DB_NAME=familytree
       - DB_USER=user
       - DB_PASSWORD=pass
-      - CORS_ORIGIN=https://family.techwoods.cc
+      - CORS_ORIGIN=http://localhost:3030
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -50,16 +50,16 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: C:/Docker-Compose/FamilyVine/db_data
+      device: /opt/familyvine/data/db_data
   uploads_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: C:/Docker-Compose/FamilyVine/uploads
+      device: /opt/familyvine/data/uploads
   gallery_uploads:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: C:/Docker-Compose/FamilyVine/uploads/gallery
+      device: /opt/familyvine/data/uploads/gallery
