@@ -1,17 +1,52 @@
-# Node dependencies
+# Environment variables
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Dependencies
 **/node_modules/
+package-lock.json.bak
+
+# Build output
 **/build/
 **/dist/
 
-# dotenv or secrets (if used later)
-.env
+# User uploads and data
+backend/uploads/
+data/
+backups/
 
-# OS junk
-.DS_Store
-Thumbs.db
+# Database files (but keep migrations)
+*.sqlite
+*.db
+*_backup.sql
+familyvine_backup.sql
+
+# Backup files
+*.backup
+*.bak
 
 # Logs
 *.log
+npm-debug.log*
+logs/
 
-# Uploads (optional if large or private)
-backend/uploads/
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test scripts
+test-*.sh
+
+# Documentation (generated)
+docs/
+APPLICATION_SUMMARY.md
+CLAUDE.md
+KNOWLEDGE_BASE.md
