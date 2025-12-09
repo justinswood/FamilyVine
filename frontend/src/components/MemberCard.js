@@ -1,6 +1,8 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
-import ProfileImage from '../components/ProfileImage'; // Make sure path is correct
+import ProfileImage from '../components/ProfileImage';
+import { calculateAge } from '../utils/dateUtils';
 
 const MemberCard = ({ member }) => {
   // Safety check: if member is undefined, don't render anything
@@ -9,42 +11,6 @@ const MemberCard = ({ member }) => {
   }
 
   const fullName = `${member.first_name || ''} ${member.middle_name ? ' ' + member.middle_name + ' ' : ' '}${member.last_name || ''}`.trim();
-  
-  const calculateAge = (birthDate, deathDate = null) => {
-    if (!birthDate) return null;
-    
-    try {
-      // Parse birth date
-      const birthOnly = birthDate.split('T')[0];
-      const [birthYear, birthMonth, birthDay] = birthOnly.split('-').map(Number);
-      const birth = new Date(birthYear, birthMonth - 1, birthDay);
-      
-      // Use death date if person is deceased, otherwise use current date
-      let endDate;
-      if (deathDate) {
-        const deathOnly = deathDate.split('T')[0];
-        const [deathYear, deathMonth, deathDay] = deathOnly.split('-').map(Number);
-        endDate = new Date(deathYear, deathMonth - 1, deathDay);
-      } else {
-        endDate = new Date();
-      }
-      
-      // Calculate age
-      let age = endDate.getFullYear() - birth.getFullYear();
-      const monthDiff = endDate.getMonth() - birth.getMonth();
-      
-      // Adjust age if birthday hasn't occurred this year
-      if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birth.getDate())) {
-        age--;
-      }
-      
-      return age;
-    } catch (error) {
-      console.error('Error calculating age:', error);
-      return null;
-    }
-  };
-
   const age = calculateAge(member.birth_date, member.death_date);
 
   // Format age display based on whether member is alive or deceased
@@ -121,4 +87,17 @@ const MemberCard = ({ member }) => {
   );
 };
 
-export default MemberCard;
+MemberCard.propTypes = {
+  member: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    first_name: PropTypes.string,
+    middle_name: PropTypes.string,
+    last_name: PropTypes.string,
+    birth_date: PropTypes.string,
+    death_date: PropTypes.string,
+    photo_url: PropTypes.string,
+    is_alive: PropTypes.bool
+  })
+};
+
+export default React.memo(MemberCard);
