@@ -1,14 +1,6 @@
 const express = require('express');
-const { Pool } = require('pg');
 const router = express.Router();
-
-const pool = new Pool({
-  user: process.env.DB_USER || 'user',
-  password: process.env.DB_PASSWORD || 'pass',
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'familytree'
-});
+const pool = require('../config/database');
 
 // Get node positions for a specific tree type
 router.get('/', async (req, res) => {

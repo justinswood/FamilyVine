@@ -1,87 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const path = require('path');
-const { Pool } = require('pg');
 const csv = require('csv-parser');
 const fs = require('fs');
-const { processImage, isImageSupported } = require('../utils/imageProcessor');
+const pool = require('../config/database');
+const { authenticateToken } = require('../middleware/auth');
+const { processImage } = require('../utils/imageProcessor');
+const { uploadConfigs } = require('../config/multer');
+const { parseDate } = require('../utils/dateUtils');
 
-const pool = new Pool({
-  user: 'user',
-  host: 'db',
-  database: 'familytree',
-  password: 'pass',
-  port: 5432,
-});
-
-// Fix: Use absolute path to ensure uploads go to backend/uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads');
-    // Ensure the uploads directory exists
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    // Create unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    // Allow image files including HEIC
-    if (isImageSupported(file)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed (JPG, PNG, GIF, WebP, HEIC)!'), false);
-    }
-  },
-  limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB limit for HEIC files
-  }
-});
-
-// Helper function to parse dates properly (fixes timezone issues)
-const parseDate = (dateStr) => {
-  if (!dateStr || dateStr === 'null' || dateStr === 'undefined') return null;
-
-  // Handle various input formats
-  let dateInput = dateStr.toString();
-
-  // If the input contains 'T' (ISO format), strip the time part
-  if (dateInput.includes('T')) {
-    dateInput = dateInput.split('T')[0];
-  }
-
-  // If the input contains 'Z' or timezone info, handle it
-  if (dateInput.includes('Z') || dateInput.match(/[+-]\d{2}:\d{2}$/)) {
-    const date = new Date(dateStr);
-    return date.toISOString().split('T')[0];
-  }
-
-  // Check if it's already in YYYY-MM-DD format
-  if (dateInput.match(/^\d{4}-\d{2}-\d{2}$/)) {
-    return dateInput;
-  }
-
-  // Try to parse as date and format
-  try {
-    const date = new Date(dateStr);
-    if (!isNaN(date.getTime())) {
-      return date.toISOString().split('T')[0];
-    }
-  } catch (e) {
-    console.warn(`Could not parse date: ${dateStr}`);
-  }
-
-  return null;
-};
+// Use centralized multer config for profile uploads
+const upload = uploadConfigs.profile;
 
 /**
  * Helper function to automatically link spouses

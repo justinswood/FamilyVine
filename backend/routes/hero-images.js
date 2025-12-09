@@ -1,48 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const path = require('path');
-const { Pool } = require('pg');
 const fs = require('fs');
+const pool = require('../config/database');
+const { validateImageMagicNumber } = require('../utils/imageProcessor');
+const { uploadConfigs } = require('../config/multer');
 
-const pool = new Pool({
-  user: 'user',
-  host: 'db',
-  database: 'familytree',
-  password: 'pass',
-  port: 5432,
-});
-
-// Configure multer for hero image uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../uploads/hero');
-    // Ensure the hero uploads directory exists
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const timestamp = Date.now();
-    const ext = path.extname(file.originalname);
-    cb(null, `hero_${timestamp}${ext}`);
-  }
-});
-
-const upload = multer({ 
-  storage,
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed!'), false);
-    }
-  },
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
-  }
-});
+// Use centralized multer config for hero image uploads
+const upload = uploadConfigs.hero;
 
 // POST - Save a cropped hero image
 router.post('/', upload.single('heroImage'), async (req, res) => {
@@ -51,6 +16,20 @@ router.post('/', upload.single('heroImage'), async (req, res) => {
 
     if (!req.file) {
       return res.status(400).json({ error: 'No image file uploaded' });
+    }
+
+    // Validate image using magic numbers
+    const isValidImage = await validateImageMagicNumber(req.file.path);
+    if (!isValidImage) {
+      // Clean up invalid file
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch (err) {
+        // File may not exist, ignore
+      }
+      return res.status(400).json({
+        error: 'Invalid image file - file type verification failed'
+      });
     }
 
     // Insert into photos table with hero flag

@@ -1,14 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Pool } = require('pg');
-
-const pool = new Pool({
-  user: 'user',
-  host: 'db',
-  database: 'familytree',
-  password: 'pass',
-  port: 5432,
-});
+const pool = require('../config/database');
 
 // Define relationships with explicit inverse mappings
 // This is much clearer than trying to calculate them

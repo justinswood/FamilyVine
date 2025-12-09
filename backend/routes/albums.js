@@ -1,52 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { Pool } = require('pg');
-const { processImage, isImageSupported } = require('../utils/imageProcessor');
+const pool = require('../config/database');
+const { processImage } = require('../utils/imageProcessor');
+const { uploadConfigs } = require('../config/multer');
 
-console.log('=== ALBUMS.JS LOADED ===');
-
-const pool = new Pool({
-  user: 'user',
-  host: 'db',
-  database: 'familytree',
-  password: 'pass',
-  port: 5432,
-});
-
-// Configure multer for photo uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'uploads/gallery/';
-    // Ensure directory exists
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const timestamp = Date.now();
-    const ext = path.extname(file.originalname);
-    cb(null, `photo_${timestamp}${ext}`);
-  }
-});
-
-const upload = multer({ 
-  storage,
-  limits: { 
-    fileSize: 50 * 1024 * 1024, // 50MB per file
-    files: 100  // Allow up to 100 files total
-  },
-  fileFilter: (req, file, cb) => {
-    if (isImageSupported(file)) {
-      cb(null, true);
-    } else {
-      cb(new Error('Only image files are allowed (JPG, PNG, GIF, WebP, HEIC)'));
-    }
-  }
-});
+// Use centralized multer config for gallery uploads
+const upload = uploadConfigs.gallery;
 
 // Get all albums
 router.get('/', async (req, res) => {
