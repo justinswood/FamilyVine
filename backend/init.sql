@@ -1,3 +1,20 @@
+-- Users table for authentication
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) UNIQUE NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(50) DEFAULT 'viewer',
+    is_active BOOLEAN DEFAULT true,
+    last_login TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create index on username and email for faster lookups
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
 -- Create members table
 CREATE TABLE IF NOT EXISTS members (
     id SERIAL PRIMARY KEY,
@@ -76,6 +93,44 @@ CREATE TABLE IF NOT EXISTS relationships (
     UNIQUE(member1_id, member2_id, relationship_type)
 );
 
+-- Unions table for tracking partnerships/marriages
+CREATE TABLE IF NOT EXISTS unions (
+    id SERIAL PRIMARY KEY,
+    partner1_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    partner2_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    relationship_id INTEGER REFERENCES relationships(id) ON DELETE SET NULL,
+    union_type VARCHAR(50) DEFAULT 'marriage',
+    union_date DATE,
+    union_location TEXT,
+    divorce_date DATE,
+    end_reason VARCHAR(100),
+    is_primary BOOLEAN DEFAULT true,
+    display_order INTEGER DEFAULT 1,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Ensure ordered partners and prevent duplicates
+    CONSTRAINT unions_ordered_partners CHECK (partner1_id < partner2_id),
+    CONSTRAINT unions_unique_partners UNIQUE (partner1_id, partner2_id)
+);
+
+-- Union children table linking children to their parents' union
+CREATE TABLE IF NOT EXISTS union_children (
+    id SERIAL PRIMARY KEY,
+    union_id INTEGER NOT NULL REFERENCES unions(id) ON DELETE CASCADE,
+    child_id INTEGER NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    birth_order INTEGER,
+    is_biological BOOLEAN DEFAULT true,
+    is_adopted BOOLEAN DEFAULT false,
+    is_step_child BOOLEAN DEFAULT false,
+    adoption_date DATE,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Prevent duplicate entries
+    UNIQUE(union_id, child_id)
+);
+
 -- Add foreign key constraints
 ALTER TABLE albums ADD CONSTRAINT fk_albums_cover_photo 
     FOREIGN KEY (cover_photo_id) REFERENCES photos(id) ON DELETE SET NULL;
@@ -86,6 +141,13 @@ CREATE INDEX IF NOT EXISTS idx_photo_tags_photo_id ON photo_tags(photo_id);
 CREATE INDEX IF NOT EXISTS idx_photo_tags_member_id ON photo_tags(member_id);
 CREATE INDEX IF NOT EXISTS idx_relationships_member1 ON relationships(member1_id);
 CREATE INDEX IF NOT EXISTS idx_relationships_member2 ON relationships(member2_id);
+CREATE INDEX IF NOT EXISTS idx_unions_partner1 ON unions(partner1_id);
+CREATE INDEX IF NOT EXISTS idx_unions_partner2 ON unions(partner2_id);
+CREATE INDEX IF NOT EXISTS idx_unions_relationship ON unions(relationship_id);
+CREATE INDEX IF NOT EXISTS idx_unions_type ON unions(union_type);
+CREATE INDEX IF NOT EXISTS idx_unions_primary ON unions(is_primary);
+CREATE INDEX IF NOT EXISTS idx_union_children_union ON union_children(union_id);
+CREATE INDEX IF NOT EXISTS idx_union_children_child ON union_children(child_id);
 
 -- Create trigger function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -96,9 +158,15 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+-- Create trigger for users table
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+CREATE TRIGGER update_users_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- Create trigger for albums table
 DROP TRIGGER IF EXISTS update_albums_updated_at ON albums;
-CREATE TRIGGER update_albums_updated_at 
+CREATE TRIGGER update_albums_updated_at
     BEFORE UPDATE ON albums
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();-- Add this to your existing init.sql file
 -- Table for storing React Flow node positions
@@ -119,6 +187,18 @@ CREATE INDEX IF NOT EXISTS idx_tree_positions_type ON tree_node_positions(tree_t
 
 -- Update trigger for tree positions
 DROP TRIGGER IF EXISTS update_tree_positions_updated_at ON tree_node_positions;
-CREATE TRIGGER update_tree_positions_updated_at 
+CREATE TRIGGER update_tree_positions_updated_at
     BEFORE UPDATE ON tree_node_positions
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Update trigger for unions table
+DROP TRIGGER IF EXISTS update_unions_updated_at ON unions;
+CREATE TRIGGER update_unions_updated_at
+    BEFORE UPDATE ON unions
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Update trigger for union_children table
+DROP TRIGGER IF EXISTS update_union_children_updated_at ON union_children;
+CREATE TRIGGER update_union_children_updated_at
+    BEFORE UPDATE ON union_children
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
