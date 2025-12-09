@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  
+  const { login } = useAuth();
+
   // State to store form data (empty by default)
   const [formData, setFormData] = useState({
-    email: '',
+    username: '',
     password: ''
   });
-  
+
   // State for loading and error messages
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -33,32 +35,22 @@ const LoginPage = () => {
     setError('');
 
     // Basic validation
-    if (!formData.email || !formData.password) {
+    if (!formData.username || !formData.password) {
       setError('Please fill in all fields');
       setLoading(false);
       return;
     }
 
-    // Check credentials
-    if (formData.email === 'admin' && formData.password === 'admin') {
-      try {
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Store login status (you can expand this later)
-        localStorage.setItem('familyVine_loggedIn', 'true');
-        localStorage.setItem('familyVine_user', 'admin');
-        
-        // Redirect to home page
-        navigate('/');
-        
-      } catch (err) {
-        setError('Login failed. Please try again.');
-      }
+    // Call the login function from AuthContext
+    const result = await login(formData.username, formData.password);
+
+    if (result.success) {
+      // Redirect to home page
+      navigate('/');
     } else {
-      setError('Invalid credentials. Try username: admin, password: admin');
+      setError(result.error || 'Invalid username or password');
     }
-    
+
     setLoading(false);
   };
 
@@ -101,8 +93,8 @@ const LoginPage = () => {
               <div className="relative">
                 <input
                   type="text"
-                  name="email"
-                  value={formData.email}
+                  name="username"
+                  value={formData.username}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors hover:border-blue-300"
                   placeholder="Enter username"
@@ -149,7 +141,7 @@ const LoginPage = () => {
               </div>
             </div>
 
-            {/* Remember Me */}
+            {/* Remember Me & Forgot Password */}
             <div className="flex items-center justify-between">
               <label className="flex items-center">
                 <input
@@ -158,6 +150,9 @@ const LoginPage = () => {
                 />
                 <span className="ml-2 text-sm text-gray-600">Remember me</span>
               </label>
+              <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                Forgot Password?
+              </Link>
             </div>
 
             {/* Login Button */}
@@ -178,6 +173,16 @@ const LoginPage = () => {
                 'Sign In'
               )}
             </button>
+
+            {/* Register Link */}
+            <div className="text-center mt-4">
+              <p className="text-sm text-gray-600">
+                Don't have an account?{' '}
+                <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
+                  Sign up
+                </Link>
+              </p>
+            </div>
           </div>
         </form>
         </div>

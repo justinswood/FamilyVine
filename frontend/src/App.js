@@ -1,138 +1,55 @@
-import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
-import { Settings as SettingsIcon } from 'lucide-react';
-import HomePage from './pages/HomePage';
-import AddMember from './pages/AddMember';
-import EditMember from './pages/EditMember';
-import MemberPage from './pages/MemberPage';
-import MemberList from './pages/MemberList';
-import MapPage from './pages/MapPage';
-import CSVImport from './pages/CSVImport';
-import Gallery from './pages/Gallery';
-import AlbumView from './pages/AlbumView';
-import Settings from './pages/Settings';
-import TimelinePage from './pages/TimelinePage';
-import CalendarPage from './pages/CalendarPage';
-import LoginPage from './pages/LoginPage';
-import FamilyTreePage from './pages/FamilyTreePage';
-import VineLogoCompact from './components/VineLogoCompact';
-import GlobalSearch from './components/GlobalSearch';
+import React, { useEffect, useState, lazy, Suspense } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Navigation from './components/Navigation';
 import OfflineIndicator from './components/OfflineIndicator';
 import InstallPrompt from './components/InstallPrompt';
 import ScrollToTop from './components/ScrollToTop';
 
+// Lazy load all page components for better performance
+const HomePage = lazy(() => import('./pages/HomePage'));
+const AddMember = lazy(() => import('./pages/AddMember'));
+const EditMember = lazy(() => import('./pages/EditMember'));
+const MemberPage = lazy(() => import('./pages/MemberPage'));
+const MemberList = lazy(() => import('./pages/MemberList'));
+const MapPage = lazy(() => import('./pages/MapPage'));
+const CSVImport = lazy(() => import('./pages/CSVImport'));
+const Gallery = lazy(() => import('./pages/Gallery'));
+const AlbumView = lazy(() => import('./pages/AlbumView'));
+const Settings = lazy(() => import('./pages/Settings'));
+const TimelinePage = lazy(() => import('./pages/TimelinePage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const FamilyTreePage = lazy(() => import('./pages/FamilyTreePage'));
+const StoriesPage = lazy(() => import('./pages/StoriesPage'));
+const StoryView = lazy(() => import('./pages/StoryView'));
+const AddEditStory = lazy(() => import('./pages/AddEditStory'));
+
 // Component to protect routes - redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
-  const isLoggedIn = localStorage.getItem('familyVine_loggedIn') === 'true';
-  
-  if (!isLoggedIn) {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     // Redirect to login page if not authenticated
     return <Navigate to="/login" replace />;
   }
-  
+
   // If authenticated, show the requested page
   return children;
-};
-
-// Navigation Component - UPDATED with thinner design
-const Navigation = () => {
-  const location = useLocation();
-  
-  // Hide navigation on login page
-  if (location.pathname === '/login') {
-    return null;
-  }
-
-  const handleLogout = () => {
-    // Clear login status
-    localStorage.removeItem('familyVine_loggedIn');
-    localStorage.removeItem('familyVine_user');
-    // Page will automatically redirect to login due to ProtectedRoute
-    window.location.reload();
-  };
-
-  return (
-    <nav className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-700 shadow-sm transition-colors duration-200 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-50">
-      <div className="w-full px-3 py-2 flex items-center justify-between min-w-0">
-        {/* Left section - Logo (fixed) */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Link to="/">
-            <VineLogoCompact />
-          </Link>
-        </div>
-        
-        {/* Center section - Scrollable Navigation Links */}
-        <div className="flex-1 mx-4 min-w-0">
-          <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide pb-1">
-            <Link
-              to="/tree"
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Tree
-            </Link>
-
-            <Link
-              to="/members"
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Members
-            </Link>
-            
-            <Link 
-              to="/add" 
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Add
-            </Link>
-            
-            <Link 
-              to="/gallery" 
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Gallery
-            </Link>
-            
-            <Link 
-              to="/map" 
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Map
-            </Link>
-            
-            
-            <Link 
-              to="/timeline" 
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Timeline
-            </Link>
-            
-            <Link 
-              to="/calendar" 
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Calendar
-            </Link>
-          </div>
-        </div>
-
-        {/* Right section - Search and Settings (fixed) */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <GlobalSearch />
-          <Link
-            to="/settings"
-            className="p-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 
-                       hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r 
-                       dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 rounded-full transition-all duration-300
-                       hover:scale-110"
-            title="Settings"
-          >
-            <SettingsIcon className="w-5 h-5" />
-          </Link>
-        </div>
-      </div>
-    </nav>
-  );
 };
 
 function App() {
@@ -192,21 +109,34 @@ function App() {
 
   return (
     <BrowserRouter>
-      <ScrollToTop />
-      {/* REMOVED: mb-6 class to eliminate gap between navbar and content */}
-      <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200 main-content">
-        {/* Navigation will automatically hide on login page */}
-        <Navigation />
-        
-        {/* PWA Components */}
-        <OfflineIndicator />
-        <InstallPrompt />
+      <AuthProvider>
+        <ScrollToTop />
+        {/* REMOVED: mb-6 class to eliminate gap between navbar and content */}
+        <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200 main-content">
+          {/* Navigation will automatically hide on login page */}
+          <Navigation />
 
-        <Routes>
-          {/* Login route - accessible without authentication */}
-          <Route path="/login" element={<LoginPage />} />
-          
-          {/* All other routes are protected */}
+          {/* PWA Components */}
+          <OfflineIndicator />
+          <InstallPrompt />
+
+          {/* Suspense boundary for lazy-loaded routes */}
+          <Suspense fallback={
+            <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+              </div>
+            </div>
+          }>
+            <Routes>
+              {/* Public routes - accessible without authentication */}
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+            {/* All other routes are protected */}
           <Route path="/" element={
             <ProtectedRoute>
               <HomePage />
@@ -272,8 +202,30 @@ function App() {
               <CalendarPage />
             </ProtectedRoute>
           } />
-        </Routes>
-      </div>
+          <Route path="/stories" element={
+            <ProtectedRoute>
+              <StoriesPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/stories/new" element={
+            <ProtectedRoute>
+              <AddEditStory />
+            </ProtectedRoute>
+          } />
+          <Route path="/stories/:id" element={
+            <ProtectedRoute>
+              <StoryView />
+            </ProtectedRoute>
+          } />
+          <Route path="/stories/:id/edit" element={
+            <ProtectedRoute>
+              <AddEditStory />
+            </ProtectedRoute>
+          } />
+            </Routes>
+          </Suspense>
+        </div>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
