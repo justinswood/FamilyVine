@@ -5,7 +5,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import MemberCard from '../MemberCard';
 
 // Mock the ProfileImage component
 jest.mock('../ProfileImage', () => {
@@ -14,14 +13,8 @@ jest.mock('../ProfileImage', () => {
   };
 });
 
-// Mock the date utils
-jest.mock('../../utils/dateUtils', () => ({
-  calculateAge: jest.fn((birthDate, deathDate) => {
-    if (!birthDate) return null;
-    if (deathDate) return 70; // Mock deceased age
-    return 33; // Mock living age
-  })
-}));
+// Import the component
+import MemberCard from '../MemberCard';
 
 // Helper to render with Router
 const renderWithRouter = (component) => {
@@ -29,11 +22,13 @@ const renderWithRouter = (component) => {
 };
 
 describe('MemberCard', () => {
+  // Use dates that will calculate to specific ages
   const mockLivingMember = {
     id: 1,
     first_name: 'John',
     last_name: 'Doe',
     birth_date: '1990-01-15',
+    death_date: null,
     location: 'New York, NY',
     is_alive: true
   };
@@ -42,8 +37,8 @@ describe('MemberCard', () => {
     id: 2,
     first_name: 'Jane',
     last_name: 'Smith',
-    birth_date: '1950-03-20',
-    death_date: '2020-06-15',
+    birth_date: '1950-01-01',
+    death_date: '2020-01-01',
     location: 'Los Angeles, CA',
     is_alive: false
   };
@@ -53,7 +48,8 @@ describe('MemberCard', () => {
 
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('New York, NY')).toBeInTheDocument();
-    expect(screen.getByText('33 years old')).toBeInTheDocument();
+    // Check for "years old" text (actual age will vary based on current date)
+    expect(screen.getByText(/\d+ years old/)).toBeInTheDocument();
   });
 
   it('should render deceased member with correct styling', () => {
@@ -128,10 +124,6 @@ describe('MemberCard', () => {
   });
 
   it('should handle member without age gracefully', () => {
-    // Mock calculateAge to return null
-    const { calculateAge } = require('../../utils/dateUtils');
-    calculateAge.mockReturnValueOnce(null);
-
     const memberWithoutBirthDate = {
       ...mockLivingMember,
       birth_date: null
@@ -165,6 +157,7 @@ describe('MemberCard', () => {
       id: 1,
       first_name: '',
       last_name: '',
+      death_date: null,
       location: 'Test Location'
     };
 
