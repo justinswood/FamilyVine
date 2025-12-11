@@ -59,7 +59,7 @@ const StoryView = () => {
     return (
       <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">Loading story...</p>
         </div>
       </div>
@@ -79,7 +79,7 @@ const StoryView = () => {
           </p>
           <Link
             to="/stories"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />
             Back to Stories
@@ -90,14 +90,14 @@ const StoryView = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 p-6">
+    <div className="min-h-screen bg-[#fcf7ee] dark:bg-gray-900 p-6">
       <div className="max-w-4xl mx-auto">
 
         {/* Header */}
         <div className="mb-6">
           <Link
             to="/stories"
-            className="inline-flex items-center gap-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mb-4"
+            className="inline-flex items-center gap-2 text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 mb-4"
           >
             <ArrowLeft className="w-5 h-5" />
             Back to Stories
@@ -118,7 +118,7 @@ const StoryView = () => {
               <div className="flex gap-2 ml-4">
                 <Link
                   to={`/stories/${id}/edit`}
-                  className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                  className="p-2 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-lg transition-colors"
                   title="Edit Story"
                 >
                   <Edit className="w-5 h-5" />
@@ -178,7 +178,7 @@ const StoryView = () => {
                   <Link
                     key={member.id}
                     to={`/members/${member.id}`}
-                    className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                    className="px-4 py-2 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 rounded-lg hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-colors"
                   >
                     {member.first_name} {member.last_name}
                   </Link>

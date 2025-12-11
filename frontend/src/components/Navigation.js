@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, User, LogOut } from 'lucide-react';
+import { Settings as SettingsIcon, User, LogOut, ChevronDown, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import VineLogoCompact from './VineLogoCompact';
 import GlobalSearch from './GlobalSearch';
@@ -10,13 +10,20 @@ const Navigation = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMembersMenu, setShowMembersMenu] = useState(false);
+  const [membersButtonRect, setMembersButtonRect] = useState(null);
   const menuRef = useRef(null);
+  const membersMenuRef = useRef(null);
+  const membersButtonRef = useRef(null);
 
-  // Close menu when clicking outside
+  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         setShowUserMenu(false);
+      }
+      if (membersMenuRef.current && !membersMenuRef.current.contains(event.target)) {
+        setShowMembersMenu(false);
       }
     };
 
@@ -32,6 +39,14 @@ const Navigation = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleMembersClick = () => {
+    if (membersButtonRef.current) {
+      const rect = membersButtonRef.current.getBoundingClientRect();
+      setMembersButtonRect(rect);
+    }
+    setShowMembersMenu(!showMembersMenu);
   };
 
   return (
@@ -54,19 +69,17 @@ const Navigation = () => {
               Tree
             </Link>
 
-            <Link
-              to="/members"
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Members
-            </Link>
-
-            <Link
-              to="/add"
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Add
-            </Link>
+            {/* Members Dropdown */}
+            <div className="flex-shrink-0">
+              <button
+                ref={membersButtonRef}
+                onClick={handleMembersClick}
+                className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex items-center gap-1"
+              >
+                Members
+                <ChevronDown className="w-3 h-3" />
+              </button>
+            </div>
 
             <Link
               to="/gallery"
@@ -155,6 +168,35 @@ const Navigation = () => {
           )}
         </div>
       </div>
+
+      {/* Members Dropdown Menu - Fixed positioning outside scrollable container */}
+      {showMembersMenu && membersButtonRect && (
+        <div
+          ref={membersMenuRef}
+          className="fixed w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-[100]"
+          style={{
+            top: `${membersButtonRect.bottom + 8}px`,
+            left: `${membersButtonRect.left}px`
+          }}
+        >
+          <Link
+            to="/members"
+            onClick={() => setShowMembersMenu(false)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Users className="w-4 h-4" />
+            View Members
+          </Link>
+          <Link
+            to="/add"
+            onClick={() => setShowMembersMenu(false)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <UserPlus className="w-4 h-4" />
+            Add Member
+          </Link>
+        </div>
+      )}
     </nav>
   );
 };

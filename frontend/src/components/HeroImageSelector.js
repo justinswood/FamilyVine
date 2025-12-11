@@ -1,96 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import PhotoCropper from './PhotoCropper'; // We'll use your existing cropper
+import PhotoCropper from './PhotoCropper';
 
 const HeroImageSelector = () => {
-  const [allPhotos, setAllPhotos] = useState([]);
+  const [albums, setAlbums] = useState([]);
+  const [selectedAlbum, setSelectedAlbum] = useState(null);
+  const [albumPhotos, setAlbumPhotos] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingPhotos, setLoadingPhotos] = useState(false);
   const [saving, setSaving] = useState(false);
-  
-  // NEW: States for cropping
+
+  // Cropping states
   const [showCropper, setShowCropper] = useState(false);
   const [selectedPhotoForCrop, setSelectedPhotoForCrop] = useState(null);
   const [cropImageFile, setCropImageFile] = useState(null);
 
   useEffect(() => {
-    fetchAllPhotos();
+    fetchAlbums();
     loadSelectedImages();
   }, []);
 
-  const fetchAllPhotos = async () => {
+  const fetchAlbums = async () => {
     try {
       setLoading(true);
-      
-      // Get all albums
-      const albumsResponse = await axios.get(`${process.env.REACT_APP_API}/api/albums`);
-      const albums = albumsResponse.data;
-      
-      // Get photos from each album
-      const allPhotosArray = [];
-      
-      for (const album of albums) {
-        try {
-          const albumResponse = await axios.get(`${process.env.REACT_APP_API}/api/albums/${album.id}`);
-          if (albumResponse.data.photos && albumResponse.data.photos.length > 0) {
-            const photosWithAlbum = albumResponse.data.photos.map(photo => ({
-              ...photo,
-              albumTitle: album.title,
-              albumId: album.id
-            }));
-            allPhotosArray.push(...photosWithAlbum);
-          }
-        } catch (error) {
-          console.error(`Error fetching photos from album ${album.id}:`, error);
-        }
-      }
-      
-      setAllPhotos(allPhotosArray);
+      const response = await axios.get(`${process.env.REACT_APP_API}/api/albums`);
+      setAlbums(response.data);
     } catch (error) {
-      console.error('Error fetching photos:', error);
+      console.error('Error fetching albums:', error);
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchAlbumPhotos = async (albumId) => {
+    try {
+      setLoadingPhotos(true);
+      const response = await axios.get(`${process.env.REACT_APP_API}/api/albums/${albumId}`);
+      const album = albums.find(a => a.id === albumId);
+
+      if (response.data.photos) {
+        const photosWithAlbum = response.data.photos.map(photo => ({
+          ...photo,
+          albumTitle: album?.title || 'Unknown Album',
+          albumId: album?.id
+        }));
+        setAlbumPhotos(photosWithAlbum);
+      }
+    } catch (error) {
+      console.error('Error fetching album photos:', error);
+    } finally {
+      setLoadingPhotos(false);
+    }
+  };
+
   const loadSelectedImages = async () => {
     try {
-      // Load selected images from database instead of localStorage
       const response = await axios.get(`${process.env.REACT_APP_API}/api/hero-images`);
       setSelectedImages(response.data);
     } catch (error) {
-      console.error('Error loading hero images from database:', error);
-      // Fallback to localStorage if API fails
+      console.error('Error loading hero images:', error);
+      // Fallback to localStorage
       const saved = localStorage.getItem('familyVine_heroImages');
       if (saved) {
         try {
-          const parsedImages = JSON.parse(saved);
-          setSelectedImages(parsedImages);
-        } catch (localError) {
-          console.error('Error loading saved hero images:', localError);
+          setSelectedImages(JSON.parse(saved));
+        } catch (e) {
+          console.error('Error parsing saved hero images:', e);
         }
       }
     }
   };
 
-  const saveSelectedImages = async () => {
-    setSaving(true);
-    try {
-      // Save to localStorage for consistency
-      localStorage.setItem('familyVine_heroImages', JSON.stringify(selectedImages));
-      
-      // Since images are already saved to database individually, just confirm
-      alert('Hero images are already saved! The homepage will show these images.');
-      
-    } catch (error) {
-      console.error('Error saving hero images:', error);
-      alert('Failed to save hero images');
-    } finally {
-      setSaving(false);
-    }
+  const handleAlbumClick = (album) => {
+    setSelectedAlbum(album);
+    fetchAlbumPhotos(album.id);
   };
 
-  // NEW: Function to convert image URL to File object for cropping
+  const handleBackToAlbums = () => {
+    setSelectedAlbum(null);
+    setAlbumPhotos([]);
+  };
+
   const urlToFile = async (url, filename) => {
     try {
       const response = await fetch(url);
@@ -102,15 +93,13 @@ const HeroImageSelector = () => {
     }
   };
 
-  // NEW: Handle crop button click
   const handleCropPhoto = async (photo) => {
     try {
       const imageUrl = `${process.env.REACT_APP_API}/${photo.file_path}`;
       const filename = photo.filename || 'hero-image.jpg';
-      
-      // Convert the URL to a File object for the cropper
+
       const file = await urlToFile(imageUrl, filename);
-      
+
       if (file) {
         setSelectedPhotoForCrop(photo);
         setCropImageFile(file);
@@ -124,25 +113,21 @@ const HeroImageSelector = () => {
     }
   };
 
-  // Handle crop completion - save to server
   const handleCropComplete = async (croppedFile) => {
     try {
       setSaving(true);
-      
-      // Create FormData to send the cropped image to server
+
       const formData = new FormData();
       formData.append('heroImage', croppedFile);
       formData.append('caption', `Hero image from ${selectedPhotoForCrop.albumTitle}`);
       formData.append('albumTitle', selectedPhotoForCrop.albumTitle || 'gallery');
 
-      // Send to backend
-      const response = await axios.post(`${process.env.REACT_APP_API}/api/hero-images`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await axios.post(
+        `${process.env.REACT_APP_API}/api/hero-images`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
 
-      // Add the saved image to selected images
       const savedImage = response.data;
       setSelectedImages(prev => {
         if (prev.length >= 8) {
@@ -156,13 +141,17 @@ const HeroImageSelector = () => {
         }];
       });
 
-      alert('Hero image saved successfully!');
+      // Update localStorage
+      localStorage.setItem('familyVine_heroImages', JSON.stringify([
+        ...selectedImages,
+        { ...savedImage, albumTitle: selectedPhotoForCrop.albumTitle, isCropped: true }
+      ]));
 
-      // Close cropper
+      alert('Hero image saved successfully!');
       setShowCropper(false);
       setSelectedPhotoForCrop(null);
       setCropImageFile(null);
-      
+
     } catch (error) {
       console.error('Error saving cropped image:', error);
       alert('Failed to save cropped image');
@@ -171,121 +160,118 @@ const HeroImageSelector = () => {
     }
   };
 
-  // NEW: Handle crop cancellation
   const handleCropCancel = () => {
     setShowCropper(false);
     setSelectedPhotoForCrop(null);
     setCropImageFile(null);
   };
 
-  const toggleImageSelection = async (photo) => {
-    const isSelected = selectedImages.some(img => img.id === photo.id);
-    
-    if (isSelected) {
-      // Remove from selection - delegate to removeImage function
-      await removeImage(photo);
-    } else {
-      // Add to selection (max 8 images)
-      if (selectedImages.length >= 8) {
-        alert('You can select a maximum of 8 images for the hero slideshow');
-        return;
-      }
-      
-      try {
-        // Add to database by copying the photo and marking as hero image
-        const formData = new FormData();
-        
-        // Fetch the original image and convert to blob
-        const imageResponse = await fetch(`${process.env.REACT_APP_API}/${photo.file_path}`);
-        const imageBlob = await imageResponse.blob();
-        const imageFile = new File([imageBlob], photo.filename, { type: photo.mime_type });
-        
-        formData.append('heroImage', imageFile);
-        formData.append('caption', photo.caption || `Hero image from ${photo.albumTitle}`);
-        formData.append('albumTitle', photo.albumTitle || 'gallery');
-
-        // Send to backend
-        const response = await axios.post(`${process.env.REACT_APP_API}/api/hero-images`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-
-        // Update local state
-        const savedImage = response.data;
-        setSelectedImages(prev => [...prev, {
-          ...savedImage,
-          albumTitle: photo.albumTitle
-        }]);
-        
-      } catch (error) {
-        console.error('Error adding hero image:', error);
-        alert('Failed to add hero image');
-      }
+  const addPhotoDirectly = async (photo) => {
+    if (selectedImages.length >= 8) {
+      alert('You can select a maximum of 8 images for the hero slideshow');
+      return;
     }
-  };
 
-  const isImageSelected = (photo) => {
-    return selectedImages.some(img => img.id === photo.id);
-  };
+    try {
+      setSaving(true);
 
-  const moveImageUp = (index) => {
-    if (index === 0) return;
-    
-    setSelectedImages(prev => {
-      const newArray = [...prev];
-      [newArray[index - 1], newArray[index]] = [newArray[index], newArray[index - 1]];
-      return newArray;
-    });
-  };
+      // Fetch and convert the image
+      const imageResponse = await fetch(`${process.env.REACT_APP_API}/${photo.file_path}`);
+      const imageBlob = await imageResponse.blob();
+      const imageFile = new File([imageBlob], photo.filename, { type: photo.mime_type });
 
-  const moveImageDown = (index) => {
-    if (index === selectedImages.length - 1) return;
-    
-    setSelectedImages(prev => {
-      const newArray = [...prev];
-      [newArray[index], newArray[index + 1]] = [newArray[index + 1], newArray[index]];
-      return newArray;
-    });
+      const formData = new FormData();
+      formData.append('heroImage', imageFile);
+      formData.append('caption', photo.caption || `Hero image from ${photo.albumTitle}`);
+      formData.append('albumTitle', photo.albumTitle || 'gallery');
+
+      const response = await axios.post(
+        `${process.env.REACT_APP_API}/api/hero-images`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+
+      const savedImage = response.data;
+      const newImage = { ...savedImage, albumTitle: photo.albumTitle };
+      setSelectedImages(prev => [...prev, newImage]);
+
+      // Update localStorage
+      localStorage.setItem('familyVine_heroImages', JSON.stringify([...selectedImages, newImage]));
+
+    } catch (error) {
+      console.error('Error adding hero image:', error);
+      alert('Failed to add hero image');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const removeImage = async (photo) => {
     try {
-      // Remove from database
       await axios.delete(`${process.env.REACT_APP_API}/api/hero-images/${photo.id}`);
-      
-      // Update local state
-      setSelectedImages(prev => prev.filter(img => img.id !== photo.id));
-      
-      // Update localStorage for consistency
+
       const updatedImages = selectedImages.filter(img => img.id !== photo.id);
+      setSelectedImages(updatedImages);
       localStorage.setItem('familyVine_heroImages', JSON.stringify(updatedImages));
-      
+
     } catch (error) {
       console.error('Error removing hero image:', error);
       alert('Failed to remove hero image');
     }
   };
 
+  const moveImageUp = (index) => {
+    if (index === 0) return;
+
+    setSelectedImages(prev => {
+      const newArray = [...prev];
+      [newArray[index - 1], newArray[index]] = [newArray[index], newArray[index - 1]];
+      localStorage.setItem('familyVine_heroImages', JSON.stringify(newArray));
+      return newArray;
+    });
+  };
+
+  const moveImageDown = (index) => {
+    if (index === selectedImages.length - 1) return;
+
+    setSelectedImages(prev => {
+      const newArray = [...prev];
+      [newArray[index], newArray[index + 1]] = [newArray[index + 1], newArray[index]];
+      localStorage.setItem('familyVine_heroImages', JSON.stringify(newArray));
+      return newArray;
+    });
+  };
+
+  const isPhotoSelected = (photo) => {
+    return selectedImages.some(img => {
+      // Check if it's the same photo from the same album
+      return img.albumTitle === photo.albumTitle &&
+             (img.caption === photo.caption || img.filename === photo.filename);
+    });
+  };
+
   if (loading) {
     return (
       <div className="text-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-        <p>Loading photos...</p>
+        <p>Loading albums...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Info Banner */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
         <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
           Homepage Hero Images
         </h3>
-        <p className="text-blue-700 dark:text-blue-300 text-sm mb-4">
-          Select 6-8 images to display in the rotating hero slideshow on your homepage. 
-          Choose images that look good in landscape format and have good visual impact.
-          <strong className="text-green-700"> NEW: You can now crop images to fit perfectly!</strong>
+        <p className="text-blue-700 dark:text-blue-300 text-sm mb-2">
+          Select 6-8 images to display in the rotating hero slideshow on your homepage.
+        </p>
+        <p className="text-blue-600 dark:text-blue-400 text-sm mb-2">
+          <strong>Important:</strong> Images are displayed in <strong>3:2 landscape format</strong> (wider than tall).
+          Use "Crop & Add" to crop photos to this format for best results.
         </p>
         <p className="text-blue-600 dark:text-blue-400 text-xs">
           Selected: {selectedImages.length}/8 images
@@ -296,142 +282,197 @@ const HeroImageSelector = () => {
       {selectedImages.length > 0 && (
         <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
-            Selected Hero Images (in display order)
+            Selected Hero Images (Display Order)
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {selectedImages.map((photo, index) => (
               <div key={photo.id} className="relative border border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
-                <img
-                  src={photo.isCropped ? `${process.env.REACT_APP_API}/${photo.file_path}` : `${process.env.REACT_APP_API}/${photo.file_path}`}
-                  alt={photo.caption || 'Hero image'}
-                  className="w-full h-32 object-cover"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-30 transition-opacity">
-                  <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
-                    #{index + 1}
-                    {photo.isCropped && <span className="ml-1">✂️</span>}
-                  </div>
-                  <div className="absolute top-2 right-2 flex space-x-1">
-                    <button
-                      onClick={() => moveImageUp(index)}
-                      disabled={index === 0}
-                      className="bg-white text-gray-700 p-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Move up"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      onClick={() => moveImageDown(index)}
-                      disabled={index === selectedImages.length - 1}
-                      className="bg-white text-gray-700 p-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Move down"
-                    >
-                      ↓
-                    </button>
-                    <button
-                      onClick={() => removeImage(photo)}
-                      className="bg-red-600 text-white p-1 rounded text-xs hover:bg-red-700"
-                      title="Remove"
-                    >
-                      ×
-                    </button>
-                  </div>
+                {/* 3:2 aspect ratio preview - matches homepage */}
+                <div className="relative w-full" style={{ paddingBottom: '66.67%' }}>
+                  <img
+                    src={`${process.env.REACT_APP_API}/${photo.file_path}`}
+                    alt={photo.caption || 'Hero image'}
+                    className="absolute top-0 left-0 w-full h-full object-cover"
+                  />
+                </div>
+                <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded">
+                  #{index + 1}
+                  {photo.isCropped && <span className="ml-1">✂️</span>}
+                </div>
+                <div className="absolute top-2 right-2 flex space-x-1">
+                  <button
+                    onClick={() => moveImageUp(index)}
+                    disabled={index === 0}
+                    className="bg-white text-gray-700 p-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                    title="Move up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={() => moveImageDown(index)}
+                    disabled={index === selectedImages.length - 1}
+                    className="bg-white text-gray-700 p-1 rounded text-xs disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+                    title="Move down"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    onClick={() => removeImage(photo)}
+                    className="bg-red-600 text-white p-1 rounded text-xs hover:bg-red-700"
+                    title="Remove"
+                  >
+                    ×
+                  </button>
                 </div>
                 <div className="p-2 bg-gray-50 dark:bg-gray-700">
                   <p className="text-xs text-gray-600 dark:text-gray-400 truncate">
                     From: {photo.albumTitle}
-                    {photo.isCropped && <span className="text-green-600 ml-2">(Cropped)</span>}
+                    {photo.isCropped && <span className="text-green-600 ml-2">(Cropped to 3:2)</span>}
                   </p>
                 </div>
               </div>
             ))}
           </div>
-          
-          <button
-            onClick={saveSelectedImages}
-            disabled={saving || selectedImages.length === 0}
-            className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            {saving ? 'Saving...' : 'Save Hero Images'}
-          </button>
         </div>
       )}
 
-      {/* All Available Photos */}
+      {/* Album Selection or Photo Selection */}
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
-          Available Photos ({allPhotos.length} total)
-        </h4>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-          Click "Add" to select photos as-is, or "Crop & Add" to crop them first for better hero display.
-        </p>
-        
-        {allPhotos.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500">No photos found in your gallery.</p>
-            <p className="text-gray-400 text-sm mt-2">
-              Upload photos to albums first to use them as hero images.
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {allPhotos.map((photo) => (
-              <div
-                key={photo.id}
-                className={`relative rounded-lg overflow-hidden border-2 transition-all ${
-                  isImageSelected(photo)
-                    ? 'border-green-500 ring-2 ring-green-200'
-                    : 'border-gray-200 hover:border-blue-300'
-                }`}
-              >
-                <img
-                  src={`${process.env.REACT_APP_API}/${photo.file_path}`}
-                  alt={photo.caption || 'Gallery photo'}
-                  className="w-full h-24 object-cover"
-                  loading="lazy"
-                />
-                
-                {/* Selection indicator */}
-                {isImageSelected(photo) && (
-                  <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
-                    ✓
-                  </div>
-                )}
-                
-                {/* Action buttons */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-50 transition-opacity flex items-center justify-center opacity-0 hover:opacity-100">
-                  <div className="flex flex-col space-y-1">
-                    <button
-                      onClick={() => toggleImageSelection(photo)}
-                      className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700"
-                    >
-                      {isImageSelected(photo) ? 'Remove' : 'Add'}
-                    </button>
-                    <button
-                      onClick={() => handleCropPhoto(photo)}
-                      className="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700"
-                    >
-                      Crop & Add
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Photo info */}
-                <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white p-1">
-                  <p className="text-xs truncate">{photo.albumTitle}</p>
-                </div>
+        {!selectedAlbum ? (
+          <>
+            <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-4">
+              Select an Album
+            </h4>
+            {albums.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No albums found.</p>
+                <p className="text-gray-400 text-sm mt-2">
+                  Create albums and upload photos first.
+                </p>
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {albums.map((album) => (
+                  <button
+                    key={album.id}
+                    onClick={() => handleAlbumClick(album)}
+                    className="text-left bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center text-white text-xl">
+                        📁
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h5 className="font-semibold text-gray-800 dark:text-gray-200 truncate">
+                          {album.title}
+                        </h5>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          Click to browse
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-2 mb-4">
+              <button
+                onClick={handleBackToAlbums}
+                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+              >
+                ← Back to Albums
+              </button>
+              <span className="text-gray-400">/</span>
+              <span className="text-gray-700 dark:text-gray-300 font-medium">
+                {selectedAlbum.title}
+              </span>
+            </div>
+
+            {/* Photos in Album */}
+            {loadingPhotos ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p>Loading photos...</p>
+              </div>
+            ) : albumPhotos.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No photos in this album.</p>
+              </div>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  Click "Add" to use the photo as-is, or "Crop to 3:2" to crop it for better display.
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {albumPhotos.map((photo) => {
+                    const alreadySelected = isPhotoSelected(photo);
+                    return (
+                      <div
+                        key={photo.id}
+                        className={`relative rounded-lg overflow-hidden border-2 transition-all ${
+                          alreadySelected
+                            ? 'border-green-500 ring-2 ring-green-200'
+                            : 'border-gray-200 hover:border-blue-300'
+                        }`}
+                      >
+                        <img
+                          src={`${process.env.REACT_APP_API}/${photo.file_path}`}
+                          alt={photo.caption || 'Gallery photo'}
+                          className="w-full h-24 object-cover"
+                          loading="lazy"
+                        />
+
+                        {alreadySelected && (
+                          <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs">
+                            ✓
+                          </div>
+                        )}
+
+                        <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-50 transition-opacity flex items-center justify-center opacity-0 hover:opacity-100">
+                          <div className="flex flex-col space-y-1">
+                            {!alreadySelected && (
+                              <>
+                                <button
+                                  onClick={() => addPhotoDirectly(photo)}
+                                  disabled={saving}
+                                  className="bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 disabled:opacity-50"
+                                >
+                                  Add
+                                </button>
+                                <button
+                                  onClick={() => handleCropPhoto(photo)}
+                                  disabled={saving}
+                                  className="bg-purple-600 text-white px-2 py-1 rounded text-xs hover:bg-purple-700 disabled:opacity-50"
+                                >
+                                  Crop to 3:2
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </>
         )}
       </div>
 
-      {/* Photo Cropper Modal */}
+      {/* Photo Cropper Modal - with 3:2 aspect ratio */}
       {showCropper && cropImageFile && selectedPhotoForCrop && (
         <PhotoCropper
           imageFile={cropImageFile}
           onCropComplete={handleCropComplete}
           onCancel={handleCropCancel}
+          aspectRatio={3/2}
+          title="Crop Hero Image (3:2 Landscape)"
+          description="Crop the image to a 3:2 landscape format to match the homepage display."
         />
       )}
     </div>

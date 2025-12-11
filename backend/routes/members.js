@@ -8,6 +8,7 @@ const { authenticateToken } = require('../middleware/auth');
 const { processImage } = require('../utils/imageProcessor');
 const { uploadConfigs } = require('../config/multer');
 const { parseDate } = require('../utils/dateUtils');
+const logger = require('../config/logger');
 
 // Use centralized multer config for profile uploads
 const upload = uploadConfigs.profile;
@@ -21,7 +22,7 @@ const linkSpouses = async (memberId, spouseId, marriageDate) => {
     // Only proceed if we have both member IDs
     if (!memberId || !spouseId) return;
 
-    console.log(`Linking spouses: Member ${memberId} ↔ Member ${spouseId}`);
+    logger.debug(`Linking spouses: Member ${memberId} ↔ Member ${spouseId}`);
 
     // Update the spouse to also show they're married to this member
     const updateSpouseQuery = `
@@ -33,10 +34,10 @@ const linkSpouses = async (memberId, spouseId, marriageDate) => {
     `;
 
     await pool.query(updateSpouseQuery, [memberId, marriageDate, spouseId]);
-    console.log(`Successfully linked spouse ${spouseId} to member ${memberId}`);
+    logger.debug(`Successfully linked spouse ${spouseId} to member ${memberId}`);
 
   } catch (error) {
-    console.error('Error linking spouses:', error);
+    logger.error('Error linking spouses:', error);
     // Don't throw the error - we want the main operation to succeed even if spouse linking fails
   }
 };
@@ -48,7 +49,7 @@ const unlinkSpouses = async (memberId, oldSpouseId) => {
   try {
     if (!oldSpouseId) return;
 
-    console.log(`Unlinking spouse: removing marriage link from member ${oldSpouseId}`);
+    logger.debug(`Unlinking spouse: removing marriage link from member ${oldSpouseId}`);
 
     // Remove the marriage link from the old spouse
     const unlinkQuery = `
@@ -60,10 +61,10 @@ const unlinkSpouses = async (memberId, oldSpouseId) => {
     `;
 
     await pool.query(unlinkQuery, [oldSpouseId, memberId]);
-    console.log(`Successfully unlinked spouse ${oldSpouseId}`);
+    logger.debug(`Successfully unlinked spouse ${oldSpouseId}`);
 
   } catch (error) {
-    console.error('Error unlinking spouse:', error);
+    logger.error('Error unlinking spouse:', error);
   }
 };
 
@@ -107,7 +108,7 @@ router.get('/search', async (req, res) => {
     
     res.json(result.rows);
   } catch (error) {
-    console.error('Search error:', error);
+    logger.error('Search error:', error);
     res.status(500).json({ error: 'Search failed' });
   }
 });
@@ -132,16 +133,16 @@ router.post('/', upload.single('photo'), async (req, res) => {
   try {
     // Process uploaded photo if present
     if (req.file) {
-      console.log(`Processing profile photo for ${first_name} ${last_name}`);
+      logger.info(`Processing profile photo for ${first_name} ${last_name}`);
       
       const finalPath = path.join('uploads/', `profile_${Date.now()}`);
       const processResult = await processImage(req.file, finalPath);
       
       if (processResult.success) {
         photo_url = `uploads/${processResult.filename}`;
-        console.log(`Profile photo processed: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
+        logger.info(`Profile photo processed: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
       } else {
-        console.error('Failed to process profile photo:', processResult.error);
+        logger.error('Failed to process profile photo:', { error: processResult.error });
         // Continue without photo rather than failing the entire request
       }
     }
@@ -162,19 +163,17 @@ router.post('/', upload.single('photo'), async (req, res) => {
     res.status(201).json(newMember);
 
   } catch (err) {
-    console.error(err);
+    logger.error('Error adding member:', err);
     res.status(500).json({ error: 'Failed to add member.' });
   }
 });
 
 // UPDATED PUT route with marriage fields and automatic spouse linking
 router.put('/:id', upload.single('photo'), async (req, res) => {
-  console.log('=== MEMBER UPDATE DEBUG ===');
-  console.log('Request body:', req.body);
-  console.log('Uploaded file:', req.file ? req.file.filename : 'No file uploaded');
-  console.log('All form fields:');
-  Object.keys(req.body).forEach(key => {
-    console.log(`  ${key}: "${req.body[key]}" (type: ${typeof req.body[key]})`);
+  logger.debug('Member update request', {
+    body: req.body,
+    hasFile: !!req.file,
+    fileName: req.file ? req.file.filename : null
   });
 
   const {
@@ -185,24 +184,23 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
     is_married, marriage_date, spouse_id  // NEW: Add marriage fields
   } = req.body;
 
-  console.log('Extracted first_name:', first_name);
-  console.log('Extracted last_name:', last_name);
+  logger.debug('Extracted member data', { first_name, last_name });
 
   // Add better validation with detailed error messages
   if (!first_name || first_name.trim() === '') {
-    console.log('ERROR: first_name is missing or empty');
+    logger.warn('Member update validation failed: first_name missing or empty');
     return res.status(400).json({ error: 'First name is required and cannot be empty.' });
   }
 
   if (!last_name || last_name.trim() === '') {
-    console.log('ERROR: last_name is missing or empty');
+    logger.warn('Member update validation failed: last_name missing or empty');
     return res.status(400).json({ error: 'Last name is required and cannot be empty.' });
   }
 
   // Handle photo during update
   let finalPhotoUrl = photo_url || null;
   if (req.file) {
-    console.log(`Processing updated profile photo for member ${req.params.id}`);
+    logger.info(`Processing updated profile photo for member ${req.params.id}`);
     
     try {
       const finalPath = path.join('uploads/', `profile_update_${Date.now()}`);
@@ -210,22 +208,22 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
       
       if (processResult.success) {
         finalPhotoUrl = `uploads/${processResult.filename}`;
-        console.log(`Profile photo updated: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
+        logger.info(`Profile photo updated: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
       } else {
-        console.error('Failed to process updated profile photo:', processResult.error);
+        logger.error('Failed to process updated profile photo:', { error: processResult.error });
         // Keep existing photo if processing fails
-        console.log('Keeping existing photo due to processing error');
+        logger.debug('Keeping existing photo due to processing error');
       }
     } catch (photoError) {
-      console.error('Error processing profile photo:', photoError);
+      logger.error('Error processing profile photo:', photoError);
       // Keep existing photo if processing fails
     }
   } else {
-    console.log('Using existing photo_url:', finalPhotoUrl);
+    logger.debug('Using existing photo_url', { photo_url: finalPhotoUrl });
   }
 
   try {
-    console.log('Attempting database update...');
+    logger.debug('Attempting database update', { memberId: req.params.id });
     const memberId = parseInt(req.params.id);
     const spouseIdInt = spouse_id ? parseInt(spouse_id) : null;
     const isMarriedBool = is_married === 'true' || is_married === true;
@@ -249,7 +247,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
 
     // If married with a spouse, create union and spouse relationships
     if (isMarriedBool && spouseIdInt) {
-      console.log(`Creating/updating union for member ${memberId} and spouse ${spouseIdInt}`);
+      logger.debug(`Creating/updating union for member ${memberId} and spouse ${spouseIdInt}`);
 
       // Order partner IDs (unions table requires partner1_id < partner2_id)
       const partner1 = Math.min(memberId, spouseIdInt);
@@ -267,7 +265,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
           'INSERT INTO unions (partner1_id, partner2_id, union_type, union_date, is_primary) VALUES ($1, $2, $3, $4, true)',
           [partner1, partner2, 'marriage', parseDate(marriage_date)]
         );
-        console.log(`Created union for ${partner1} and ${partner2}`);
+        logger.debug(`Created union for ${partner1} and ${partner2}`);
       } else {
         // Update existing union date if provided
         if (marriage_date) {
@@ -276,7 +274,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
             [parseDate(marriage_date), partner1, partner2]
           );
         }
-        console.log(`Union already exists for ${partner1} and ${partner2}`);
+        logger.debug(`Union already exists for ${partner1} and ${partner2}`);
       }
 
       // Get spouse gender for relationship type
@@ -317,14 +315,13 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
         'UPDATE members SET is_married = true, spouse_id = $1, marriage_date = $2 WHERE id = $3',
         [memberId, parseDate(marriage_date), spouseIdInt]
       );
-      console.log(`Updated spouse ${spouseIdInt} with marriage info`);
+      logger.debug(`Updated spouse ${spouseIdInt} with marriage info`);
     }
 
-    console.log('Database update successful');
-    console.log('Updated member:', updatedMember);
+    logger.info('Member update successful', { memberId: updatedMember.id });
     res.json(updatedMember);
   } catch (err) {
-    console.error('Database update error:', err);
+    logger.error('Database update error:', err);
     res.status(500).json({ error: 'Failed to update member.' });
   }
 });
@@ -337,7 +334,7 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'Member deleted successfully' });
   } catch (err) {
-    console.error(err);
+    logger.error('Error deleting member:', err);
     res.status(500).json({ error: 'Failed to delete member' });
   }
 });
@@ -441,7 +438,7 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
 
     // Delete the uploaded file
     fs.unlink(req.file.path, (err) => {
-      if (err) console.error('Error deleting temp file:', err);
+      if (err) logger.error('Error deleting temp file:', err);
     });
 
     if (errors.length > 0) {
@@ -495,7 +492,7 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
           name: `${member.first_name} ${member.last_name}`
         });
       } catch (error) {
-        console.error('Database insert error:', error);
+        logger.error('Database insert error:', error);
         insertErrors.push({
           member: `${member.first_name} ${member.last_name}`,
           error: error.message
@@ -512,7 +509,7 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('CSV import error:', error);
+    logger.error('CSV import error:', error);
     res.status(500).json({ error: 'Failed to process CSV file' });
   }
 });
@@ -563,7 +560,7 @@ router.put('/:id/profile-photo/:photoId', async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error setting profile photo:', error);
+    logger.error('Error setting profile photo:', error);
     res.status(500).json({ error: 'Failed to set profile photo' });
   }
 });

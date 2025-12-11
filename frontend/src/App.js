@@ -115,6 +115,8 @@ function App() {
         <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200 main-content">
           {/* Navigation will automatically hide on login page */}
           <Navigation />
+          {/* Global gradient bar - appears on all pages */}
+          <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 dark:from-blue-600 dark:via-purple-600 dark:to-pink-600"></div>
 
           {/* PWA Components */}
           <OfflineIndicator />

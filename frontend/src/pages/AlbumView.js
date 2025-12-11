@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { RotateCw } from 'lucide-react';
 import PhotoTagging from '../components/PhotoTagging';
 import PhotoCropper from '../components/PhotoCropper'; // Add this import
 
@@ -254,6 +255,42 @@ const AlbumView = () => {
     setShowCropper(false);
     setSelectedImageForCrop(null);
     setCropImageFile(null);
+  };
+
+  // Function to rotate a photo 90° clockwise
+  const handleRotatePhoto = async (photo) => {
+    if (!window.confirm('Rotate this photo 90° clockwise?')) {
+      return;
+    }
+
+    setUploading(true); // Reuse existing loading state
+
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_API || 'http://localhost:5050'}/api/albums/${id}/photos/${photo.id}/rotate`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({ degrees: 90 })
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to rotate photo');
+      }
+
+      // Refresh photos to show rotated image
+      await fetchPhotos();
+
+    } catch (error) {
+      console.error('Error rotating photo:', error);
+      alert('Failed to rotate photo. Please try again.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   // NEW: Handler for when member is selected
@@ -607,6 +644,19 @@ const AlbumView = () => {
                       title="Crop image"
                     >
                       Crop
+                    </button>
+                    {/* NEW: Rotate Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRotatePhoto(photo);
+                      }}
+                      disabled={uploading || deleting}
+                      className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-2 py-1 rounded-full text-xs hover:from-teal-600 hover:to-cyan-600 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                      title="Rotate photo 90° clockwise"
+                    >
+                      <RotateCw className="w-3 h-3" />
+                      Rotate
                     </button>
                     <button
                       onClick={(e) => {

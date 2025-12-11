@@ -16,9 +16,9 @@ const BeautifulRotatingText = () => {
 
   return (
     <div className="text-center max-w-4xl mx-auto">
-      <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-white mb-2 leading-tight">
+      <h1 className="text-lg md:text-xl lg:text-2xl font-bold text-white mb-1.5 leading-tight">
         Explore Your Family's{' '}
-        <div className="relative inline-block min-w-[120px] md:min-w-[160px] lg:min-w-[200px]">
+        <div className="relative inline-block min-w-[100px] md:min-w-[140px] lg:min-w-[180px]">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentIndex}
@@ -68,31 +68,31 @@ const BeautifulRotatingText = () => {
           </AnimatePresence>
         </div>
       </h1>
-      
-      <p className="text-sm md:text-base text-white/90 mb-2 max-w-xl mx-auto leading-relaxed" 
+
+      <p className="text-xs md:text-sm text-white/90 mb-1.5 max-w-xl mx-auto leading-relaxed"
          style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
         Build, explore, and preserve your family tree with photos and relationships.
       </p>
-      
-      <div className="flex flex-col sm:flex-row gap-2 justify-center mb-2">
-        <motion.button 
+
+      <div className="flex flex-col sm:flex-row gap-1.5 justify-center mb-1.5">
+        <motion.button
           whileHover={{ scale: 1.05, boxShadow: "0 10px 25px rgba(255, 255, 255, 0.2)" }}
           whileTap={{ scale: 0.95 }}
-          className="px-4 py-1.5 bg-white text-purple-600 rounded-md font-semibold shadow-lg transition-all hover:bg-gray-50 text-xs"
+          className="px-3 py-1 bg-white text-purple-600 rounded-md font-semibold shadow-lg transition-all hover:bg-gray-50 text-xs"
         >
           Start Exploring
         </motion.button>
-        <motion.button 
+        <motion.button
           whileHover={{ scale: 1.05, borderColor: "#ffffff" }}
           whileTap={{ scale: 0.95 }}
-          className="px-4 py-1.5 border-2 border-white/70 text-white rounded-md font-semibold hover:bg-white/10 transition-all text-xs"
+          className="px-3 py-1 border-2 border-white/70 text-white rounded-md font-semibold hover:bg-white/10 transition-all text-xs"
         >
           Learn More
         </motion.button>
       </div>
-      
+
       {/* Progress indicators */}
-      <div className="flex justify-center mt-2 space-x-1">
+      <div className="flex justify-center mt-1.5 space-x-1">
         {words.map((_, index) => (
           <motion.div
             key={index}

@@ -5,6 +5,7 @@ const fs = require('fs');
 const pool = require('../config/database');
 const { validateImageMagicNumber } = require('../utils/imageProcessor');
 const { uploadConfigs } = require('../config/multer');
+const logger = require('../config/logger');
 
 // Use centralized multer config for hero image uploads
 const upload = uploadConfigs.hero;
@@ -55,7 +56,7 @@ router.post('/', upload.single('heroImage'), async (req, res) => {
     res.status(201).json(result.rows[0]);
 
   } catch (error) {
-    console.error('Error saving hero image:', error);
+    logger.error('Error saving hero image:', error);
     res.status(500).json({ error: 'Failed to save hero image' });
   }
 });
@@ -72,7 +73,7 @@ router.get('/', async (req, res) => {
     const result = await pool.query(query);
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching hero images:', error);
+    logger.error('Error fetching hero images:', error);
     res.status(500).json({ error: 'Failed to fetch hero images' });
   }
 });
@@ -93,7 +94,7 @@ router.delete('/:id', async (req, res) => {
     
     res.json({ message: 'Hero image deleted successfully' });
   } catch (error) {
-    console.error('Error deleting hero image:', error);
+    logger.error('Error deleting hero image:', error);
     res.status(500).json({ error: 'Failed to delete hero image' });
   }
 });

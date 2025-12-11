@@ -61,7 +61,16 @@ export const AuthProvider = ({ children }) => {
         body: JSON.stringify({ username, password })
       });
 
-      const data = await response.json();
+      // Handle rate limiting (429) and other non-JSON responses
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Plain text response (e.g., rate limit message)
+        const text = await response.text();
+        data = { error: text };
+      }
 
       if (response.ok) {
         // Store token and user
@@ -83,17 +92,27 @@ export const AuthProvider = ({ children }) => {
   };
 
   // Register function
-  const register = async (username, email, password, role = 'viewer') => {
+  // Note: All new users are assigned 'viewer' role by backend
+  const register = async (username, email, password) => {
     try {
       const response = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ username, email, password, role })
+        body: JSON.stringify({ username, email, password })
       });
 
-      const data = await response.json();
+      // Handle rate limiting (429) and other non-JSON responses
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        // Plain text response (e.g., rate limit message)
+        const text = await response.text();
+        data = { error: text };
+      }
 
       if (response.ok) {
         // Store token and user

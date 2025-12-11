@@ -5,9 +5,11 @@
  * Usage: Add at the end of middleware chain in app.js
  */
 
+const logger = require('../config/logger');
+
 const errorHandler = (err, req, res, next) => {
   // Log error for debugging
-  console.error('Error:', {
+  logger.error('Error:', {
     message: err.message,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
     path: req.path,

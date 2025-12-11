@@ -48,8 +48,9 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
     volumes:
-      - ./backend:/app
-      - /app/node_modules
+      # Commented out for production - use code from image instead of local mount
+      # - ./backend:/app
+      # - /app/node_modules
       - uploads_data:/app/uploads
       - gallery_uploads:/app/uploads/gallery
     depends_on:

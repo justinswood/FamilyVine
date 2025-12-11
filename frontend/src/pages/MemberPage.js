@@ -182,9 +182,6 @@ const MemberPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Subtle top accent */}
-      <div className="h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500" />
-
       <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* Back Button */}

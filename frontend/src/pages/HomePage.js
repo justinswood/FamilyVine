@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Github } from 'lucide-react';
 import BeautifulRotatingText from '../components/BeautifulRotatingText';
 import QuickActions from '../components/QuickActions';
+import SiteMetrics from '../components/SiteMetrics';
 
 // Vine Animation Component (inline for simplicity)
 const VineAnimation = ({ side = 'left', className = '' }) => {
@@ -265,7 +266,7 @@ const HomePage = () => {
       `}</style>
 
       {/* Updated Header Section with Textured Background - 20% smaller */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 relative overflow-hidden z-20">
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white relative overflow-hidden z-20">
         {/* GitHub Link in Top Right Corner */}
         <div className="absolute top-3 right-4 z-20">
           <a
@@ -312,14 +313,14 @@ const HomePage = () => {
           boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(0,0,0,0.1)'
         }}></div>
 
-        <div className="max-w-7xl mx-auto px-4 text-center relative z-10 py-1">
+        <div className="max-w-7xl mx-auto px-4 text-center relative z-10">
           {/* Beautiful Rotating Text Animation */}
           <BeautifulRotatingText />
         </div>
       </div>
 
       {/* Photo Showcase Section - MOVED CLOSER TO HEADER */}
-      <div className="max-w-7xl mx-auto px-4 py-3 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 py-2 relative z-10">
         <div className="text-center mb-4">
           <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-2">
             Family Memories
@@ -354,17 +355,9 @@ const HomePage = () => {
           </div>
         )}
 
-        {/* View More Photos Button - COMPACTED */}
-        <div className="text-center mb-4">
-          <Link
-            to="/gallery"
-            className="inline-flex items-center px-5 py-2.5 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition-colors"
-          >
-            View All Photos
-            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
+        {/* Family Metrics Section */}
+        <div className="mb-4">
+          <SiteMetrics />
         </div>
       </div>
 

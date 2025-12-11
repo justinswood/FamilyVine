@@ -3,6 +3,7 @@
  */
 
 const { body, validationResult } = require('express-validator');
+const logger = require('../config/logger');
 
 /**
  * Handle validation errors
@@ -10,6 +11,7 @@ const { body, validationResult } = require('express-validator');
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    logger.error('Validation errors:', { errors: errors.array(), body: req.body });
     return res.status(400).json({
       error: 'Validation failed',
       details: errors.array().map(err => err.msg)
@@ -100,7 +102,7 @@ const validateStory = [
     .escape(),
 
   body('story_date')
-    .optional()
+    .optional({ checkFalsy: true })
     .isISO8601()
     .withMessage('Invalid date format'),
 
@@ -113,6 +115,16 @@ const validateStory = [
     .optional()
     .isInt({ min: 1 })
     .withMessage('Each member_id must be a positive integer'),
+
+  body('photo_ids')
+    .optional()
+    .isArray()
+    .withMessage('photo_ids must be an array'),
+
+  body('photo_ids.*')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Each photo_id must be a positive integer'),
 
   handleValidationErrors
 ];

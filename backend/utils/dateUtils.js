@@ -3,6 +3,8 @@
  * Fixes timezone issues and provides standard date formatting
  */
 
+const logger = require('../config/logger');
+
 /**
  * Parse date string to YYYY-MM-DD format, handling various input formats
  * @param {string|Date} dateStr - Date string or Date object to parse
@@ -37,7 +39,7 @@ function parseDate(dateStr) {
       return date.toISOString().split('T')[0];
     }
   } catch (e) {
-    console.warn(`Could not parse date: ${dateStr}`);
+    logger.warn(`Could not parse date: ${dateStr}`);
   }
 
   return null;
@@ -62,7 +64,7 @@ function formatDate(dateStr, locale = 'en-US') {
       day: 'numeric'
     });
   } catch (e) {
-    console.warn(`Could not format date: ${dateStr}`);
+    logger.warn(`Could not format date: ${dateStr}`);
     return null;
   }
 }
@@ -102,7 +104,7 @@ function calculateAge(birthDate, deathDate = null) {
 
     return age >= 0 ? age : null;
   } catch (e) {
-    console.warn(`Could not calculate age: ${birthDate}`);
+    logger.warn(`Could not calculate age: ${birthDate}`);
     return null;
   }
 }

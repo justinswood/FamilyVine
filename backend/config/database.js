@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const logger = require('./logger');
 
 // Centralized database connection pool
 // Uses environment variables with fallback defaults for development
@@ -17,14 +18,14 @@ const pool = new Pool({
 
 // Handle pool errors
 pool.on('error', (err, client) => {
-  console.error('Unexpected error on idle client', err);
+  logger.error('Unexpected error on idle client', err);
   process.exit(-1);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
   pool.end(() => {
-    console.log('Database pool has ended');
+    logger.info('Database pool has ended');
   });
 });
 

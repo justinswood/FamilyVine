@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
+const logger = require('../config/logger');
 
 // ============================================================================
 // GET /api/tree/root-union
@@ -8,7 +9,7 @@ const pool = require('../config/database');
 // ============================================================================
 router.get('/root-union', async (req, res) => {
   try {
-    console.log('📍 Fetching root union...');
+    logger.debug('Fetching root union');
 
     const result = await pool.query(`
       SELECT
@@ -60,11 +61,11 @@ router.get('/root-union', async (req, res) => {
       return res.status(404).json({ error: 'Root union not found' });
     }
 
-    console.log(`✅ Root union found: ID ${result.rows[0].union_id}`);
+    logger.info(`Root union found: ID ${result.rows[0].union_id}`);
     res.json(result.rows[0]);
 
   } catch (error) {
-    console.error('Error fetching root union:', error);
+    logger.error('Error fetching root union:', error);
     res.status(500).json({ error: 'Failed to fetch root union' });
   }
 });
@@ -76,7 +77,7 @@ router.get('/root-union', async (req, res) => {
 router.get('/union/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`📍 Fetching union ${id}...`);
+    logger.debug(`Fetching union ${id}`);
 
     // Get union details
     const unionResult = await pool.query(`
@@ -163,11 +164,11 @@ router.get('/union/:id', async (req, res) => {
       children: childrenResult.rows
     };
 
-    console.log(`✅ Union ${id} fetched with ${childrenResult.rows.length} children`);
+    logger.info(`Union ${id} fetched with ${childrenResult.rows.length} children`);
     res.json(response);
 
   } catch (error) {
-    console.error('Error fetching union:', error);
+    logger.error('Error fetching union:', error);
     res.status(500).json({ error: 'Failed to fetch union details' });
   }
 });
@@ -185,7 +186,7 @@ router.get('/descendants', async (req, res) => {
       include_positions = false
     } = req.query;
 
-    console.log(`📍 Fetching descendants: union_id=${union_id}, max_generations=${max_generations}`);
+    logger.debug('Fetching descendants', { union_id, max_generations });
 
     // If no union_id provided, get root union
     let startUnionId = union_id;
@@ -343,7 +344,7 @@ router.get('/descendants', async (req, res) => {
     const totalMembers = processedMembers.size;
     const totalUnions = processedUnions.size;
 
-    console.log(`✅ Fetched ${generations.length} generations with ${totalUnions} unions and ${totalMembers} members`);
+    logger.info(`Fetched ${generations.length} generations with ${totalUnions} unions and ${totalMembers} members`);
 
     res.json({
       root_union_id: parseInt(startUnionId),
@@ -354,7 +355,7 @@ router.get('/descendants', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching descendants:', error);
+    logger.error('Error fetching descendants:', error);
     res.status(500).json({ error: 'Failed to fetch descendants' });
   }
 });
@@ -366,7 +367,7 @@ router.get('/descendants', async (req, res) => {
 router.get('/member/:id/unions', async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`📍 Fetching unions for member ${id}...`);
+    logger.debug(`Fetching unions for member ${id}`);
 
     // Get member details
     const memberResult = await pool.query(`
@@ -454,7 +455,7 @@ router.get('/member/:id/unions', async (req, res) => {
       })
     );
 
-    console.log(`✅ Found ${unionsWithChildren.length} unions for member ${id}`);
+    logger.info(`Found ${unionsWithChildren.length} unions for member ${id}`);
 
     res.json({
       member: memberResult.rows[0],
@@ -462,7 +463,7 @@ router.get('/member/:id/unions', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching member unions:', error);
+    logger.error('Error fetching member unions:', error);
     res.status(500).json({ error: 'Failed to fetch member unions' });
   }
 });
@@ -475,7 +476,7 @@ router.get('/member/:id/unions', async (req, res) => {
 router.get('/breadcrumbs', async (req, res) => {
   try {
     const { union_id, member_id } = req.query;
-    console.log(`📍 Fetching breadcrumbs: union_id=${union_id}, member_id=${member_id}`);
+    logger.debug('Fetching breadcrumbs', { union_id, member_id });
 
     const breadcrumbs = [];
 
@@ -542,11 +543,11 @@ router.get('/breadcrumbs', async (req, res) => {
       }
     }
 
-    console.log(`✅ Generated ${breadcrumbs.length} breadcrumbs`);
+    logger.debug(`Generated ${breadcrumbs.length} breadcrumbs`);
     res.json({ breadcrumbs });
 
   } catch (error) {
-    console.error('Error fetching breadcrumbs:', error);
+    logger.error('Error fetching breadcrumbs:', error);
     res.status(500).json({ error: 'Failed to fetch breadcrumbs' });
   }
 });
@@ -563,7 +564,7 @@ router.post('/union-positions', async (req, res) => {
       return res.status(400).json({ error: 'Invalid positions data' });
     }
 
-    console.log(`💾 Saving ${Object.keys(positions).length} positions for tree type: ${tree_type}`);
+    logger.info(`Saving ${Object.keys(positions).length} positions for tree type: ${tree_type}`);
 
     const client = await pool.connect();
 
@@ -603,7 +604,7 @@ router.post('/union-positions', async (req, res) => {
       }
 
       await client.query('COMMIT');
-      console.log('✅ Positions saved successfully');
+      logger.info('Positions saved successfully', { count: Object.keys(positions).length });
 
       res.json({
         success: true,
@@ -618,7 +619,7 @@ router.post('/union-positions', async (req, res) => {
     }
 
   } catch (error) {
-    console.error('Error saving positions:', error);
+    logger.error('Error saving positions:', error);
     res.status(500).json({ error: 'Failed to save positions' });
   }
 });

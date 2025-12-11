@@ -14,6 +14,7 @@ const treePositionsRoute = require('./routes/tree-positions');
 const treeRoute = require('./routes/tree');
 const storiesRoute = require('./routes/stories');
 const heroImagesRoute = require('./routes/hero-images');
+const usersRoute = require('./routes/users');
 const app = express();
 
 // CORS configuration for production
@@ -133,6 +134,7 @@ app.use('/api/albums', apiLimiter, authenticateToken, albumsRoute);
 app.use('/api/members', apiLimiter, authenticateToken, membersRoute);
 app.use('/api/hero-images', apiLimiter, authenticateToken, heroImagesRoute);
 app.use('/api/stories', apiLimiter, authenticateToken, storiesRoute);
+app.use('/api/users', apiLimiter, usersRoute); // User management (admin only, auth handled in route)
 
 // 404 handler for undefined routes (must come after all route definitions)
 app.use(notFoundHandler);

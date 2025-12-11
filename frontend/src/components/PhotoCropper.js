@@ -1,14 +1,23 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { RotateCcw, RotateCw } from 'lucide-react';
 
-const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
+const PhotoCropper = ({
+  onCropComplete,
+  onCancel,
+  imageFile,
+  aspectRatio = 1, // Default to square (1:1), can be overridden (e.g., 3/2 for landscape)
+  title = "Crop Profile Photo",
+  description = "Adjust the crop area to focus on the person's face."
+}) => {
   const [crop, setCrop] = useState();
   const [completedCrop, setCompletedCrop] = useState();
   const [imageSrc, setImageSrc] = useState(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [rotation, setRotation] = useState(0);
   const imgRef = useRef(null);
   const canvasRef = useRef(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
@@ -108,14 +117,25 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
         const displayHeight = height || imageElement.offsetHeight;
         
         if (displayWidth && displayHeight) {
-          const cropSize = Math.min(displayWidth, displayHeight) * 0.6;
+          // Calculate crop size based on aspect ratio
+          let cropWidth, cropHeight;
+          if (aspectRatio >= 1) {
+            // Landscape or square
+            cropWidth = Math.min(displayWidth, displayHeight * aspectRatio) * 0.8;
+            cropHeight = cropWidth / aspectRatio;
+          } else {
+            // Portrait
+            cropHeight = Math.min(displayHeight, displayWidth / aspectRatio) * 0.8;
+            cropWidth = cropHeight * aspectRatio;
+          }
+
           const initialCrop = {
             unit: 'px',
-            x: (displayWidth - cropSize) / 2,
-            y: (displayHeight - cropSize) / 2,
-            width: cropSize,
-            height: cropSize,
-            aspect: 1,
+            x: (displayWidth - cropWidth) / 2,
+            y: (displayHeight - cropHeight) / 2,
+            width: cropWidth,
+            height: cropHeight,
+            aspect: aspectRatio,
           };
           setCrop(initialCrop);
           setCompletedCrop(initialCrop);
@@ -126,19 +146,29 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
       
       const displayWidth = rect.width;
       const displayHeight = rect.height;
-      
-      // Calculate initial crop based on displayed size
-      const cropSize = Math.min(displayWidth, displayHeight) * 0.6;
-      const x = (displayWidth - cropSize) / 2;
-      const y = (displayHeight - cropSize) / 2;
-      
+
+      // Calculate initial crop based on displayed size and aspect ratio
+      let cropWidth, cropHeight;
+      if (aspectRatio >= 1) {
+        // Landscape or square
+        cropWidth = Math.min(displayWidth, displayHeight * aspectRatio) * 0.8;
+        cropHeight = cropWidth / aspectRatio;
+      } else {
+        // Portrait
+        cropHeight = Math.min(displayHeight, displayWidth / aspectRatio) * 0.8;
+        cropWidth = cropHeight * aspectRatio;
+      }
+
+      const x = (displayWidth - cropWidth) / 2;
+      const y = (displayHeight - cropHeight) / 2;
+
       const initialCrop = {
         unit: 'px',
         x: x,
         y: y,
-        width: cropSize,
-        height: cropSize,
-        aspect: 1,
+        width: cropWidth,
+        height: cropHeight,
+        aspect: aspectRatio,
       };
       
       console.log('Image dimensions:', { displayWidth, displayHeight, naturalWidth, naturalHeight });
@@ -146,9 +176,17 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
       setCrop(initialCrop);
       setCompletedCrop(initialCrop);
     }, 200); // Increased timeout to 200ms for better reliability
-  }, []);
+  }, [aspectRatio]);
 
-  const getCroppedImage = useCallback(async (image, cropPixels) => {
+  const handleRotateLeft = () => {
+    setRotation((prev) => (prev - 90) % 360);
+  };
+
+  const handleRotateRight = () => {
+    setRotation((prev) => (prev + 90) % 360);
+  };
+
+  const getCroppedImage = useCallback(async (image, cropPixels, rotationDegrees) => {
     if (!image || !cropPixels || !cropPixels.width || !cropPixels.height) {
       console.error('Invalid parameters for cropping');
       return null;
@@ -166,29 +204,62 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
     const scaleX = image.naturalWidth / image.width;
     const scaleY = image.naturalHeight / image.height;
 
-    // Set canvas size to crop size (in natural image pixels)
+    // Calculate crop size (in natural image pixels)
     const cropWidth = cropPixels.width * scaleX;
     const cropHeight = cropPixels.height * scaleY;
-    
-    canvas.width = cropWidth;
-    canvas.height = cropHeight;
+
+    // For 90 or 270 degree rotations, swap width and height
+    const rotationRad = (rotationDegrees * Math.PI) / 180;
+    const is90or270 = rotationDegrees % 180 !== 0;
+
+    if (is90or270) {
+      canvas.width = cropHeight;
+      canvas.height = cropWidth;
+    } else {
+      canvas.width = cropWidth;
+      canvas.height = cropHeight;
+    }
 
     // Configure canvas for high quality
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
+    // Save context state
+    ctx.save();
+
+    // Apply rotation around the center of the canvas
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(rotationRad);
+
     // Draw the cropped part of the image
-    ctx.drawImage(
-      image,
-      cropPixels.x * scaleX,
-      cropPixels.y * scaleY,
-      cropWidth,
-      cropHeight,
-      0,
-      0,
-      cropWidth,
-      cropHeight
-    );
+    if (is90or270) {
+      ctx.drawImage(
+        image,
+        cropPixels.x * scaleX,
+        cropPixels.y * scaleY,
+        cropWidth,
+        cropHeight,
+        -cropHeight / 2,
+        -cropWidth / 2,
+        cropHeight,
+        cropWidth
+      );
+    } else {
+      ctx.drawImage(
+        image,
+        cropPixels.x * scaleX,
+        cropPixels.y * scaleY,
+        cropWidth,
+        cropHeight,
+        -cropWidth / 2,
+        -cropHeight / 2,
+        cropWidth,
+        cropHeight
+      );
+    }
+
+    // Restore context state
+    ctx.restore();
 
     return new Promise((resolve) => {
       canvas.toBlob(
@@ -221,9 +292,9 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
     setProcessing(true);
 
     try {
-      console.log('Cropping with:', completedCrop);
-      const croppedFile = await getCroppedImage(imgRef.current, completedCrop);
-      
+      console.log('Cropping with:', completedCrop, 'rotation:', rotation);
+      const croppedFile = await getCroppedImage(imgRef.current, completedCrop, rotation);
+
       if (croppedFile) {
         console.log('Crop successful, file size:', croppedFile.size);
         onCropComplete(croppedFile);
@@ -242,9 +313,9 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-6xl w-full max-h-[95vh] overflow-auto shadow-2xl">
         <div className="p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800">Crop Profile Photo</h2>
+          <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
           <p className="text-gray-600 mt-1">
-            Adjust the crop area to focus on the person's face. 
+            {description}
             {imageSize.width > 0 && ` Original size: ${imageSize.width} × ${imageSize.height} pixels`}
           </p>
         </div>
@@ -270,7 +341,7 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
                   onComplete={(c) => {
                     setCompletedCrop(c);
                   }}
-                  aspect={1}
+                  aspect={aspectRatio}
                   circularCrop={false}
                   minWidth={50}
                   minHeight={50}
@@ -288,6 +359,8 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
                       maxWidth: '100%',
                       maxHeight: '70vh',
                       display: imageLoaded ? 'block' : 'none',
+                      transform: `rotate(${rotation}deg)`,
+                      transition: 'transform 0.3s ease',
                     }}
                   />
                 </ReactCrop>
@@ -310,19 +383,42 @@ const PhotoCropper = ({ onCropComplete, onCancel, imageFile }) => {
 
         <div className="p-6 border-t border-gray-200 bg-gray-50">
           <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              {completedCrop && completedCrop.width && completedCrop.height && (
-                <span>
-                  Crop size: {Math.round(completedCrop.width)} × {Math.round(completedCrop.height)} pixels
-                </span>
-              )}
-              {imageFile && (
-                <span className="ml-4">
-                  Original file: {(imageFile.size / 1024 / 1024).toFixed(1)}MB
-                </span>
-              )}
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-600">
+                {completedCrop && completedCrop.width && completedCrop.height && (
+                  <span>
+                    Crop size: {Math.round(completedCrop.width)} × {Math.round(completedCrop.height)} pixels
+                  </span>
+                )}
+                {imageFile && (
+                  <span className="ml-4">
+                    Original file: {(imageFile.size / 1024 / 1024).toFixed(1)}MB
+                  </span>
+                )}
+              </div>
+
+              {/* Rotation buttons */}
+              <div className="flex items-center space-x-2 pl-4 border-l border-gray-300">
+                <button
+                  onClick={handleRotateLeft}
+                  disabled={processing}
+                  className="p-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  title="Rotate left 90°"
+                >
+                  <RotateCcw className="w-5 h-5" />
+                </button>
+                <span className="text-sm text-gray-600">{rotation}°</span>
+                <button
+                  onClick={handleRotateRight}
+                  disabled={processing}
+                  className="p-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  title="Rotate right 90°"
+                >
+                  <RotateCw className="w-5 h-5" />
+                </button>
+              </div>
             </div>
-            
+
             <div className="flex space-x-3">
               <button
                 onClick={onCancel}

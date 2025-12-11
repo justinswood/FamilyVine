@@ -86,7 +86,7 @@ const RESET_TOKEN_EXPIRES_IN = 60 * 60 * 1000; // 1 hour in milliseconds
  */
 router.post('/register', validateRegister, async (req, res) => {
   try {
-    const { username, email, password, role = 'viewer' } = req.body;
+    const { username, email, password } = req.body;
 
     // Validation
     if (!username || !email || !password) {
@@ -111,12 +111,13 @@ router.post('/register', validateRegister, async (req, res) => {
     const saltRounds = 10;
     const password_hash = await bcrypt.hash(password, saltRounds);
 
-    // Insert new user
+    // Insert new user with default 'viewer' role
+    // Only admins can change user roles after registration
     const result = await pool.query(
       `INSERT INTO users (username, email, password_hash, role)
-       VALUES ($1, $2, $3, $4)
+       VALUES ($1, $2, $3, 'viewer')
        RETURNING id, username, email, role, created_at`,
-      [username, email, password_hash, role]
+      [username, email, password_hash]
     );
 
     const newUser = result.rows[0];
@@ -153,7 +154,7 @@ router.post('/register', validateRegister, async (req, res) => {
       token
     });
   } catch (error) {
-    console.error('Error registering user:', error);
+    logger.error('Error registering user:', error);
     res.status(500).json({ error: 'Failed to register user' });
   }
 });
@@ -283,7 +284,7 @@ router.post('/login', validateLogin, async (req, res) => {
       token
     });
   } catch (error) {
-    console.error('Error logging in:', error);
+    logger.error('Error logging in:', error);
     res.status(500).json({ error: 'Failed to login' });
   }
 });
@@ -317,7 +318,7 @@ router.get('/me', async (req, res) => {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
-    console.error('Error fetching user:', error);
+    logger.error('Error fetching user:', error);
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
@@ -368,7 +369,7 @@ router.post('/refresh', async (req, res) => {
 
     res.json({ token: newToken });
   } catch (error) {
-    console.error('Error refreshing token:', error);
+    logger.error('Error refreshing token:', error);
     res.status(500).json({ error: 'Failed to refresh token' });
   }
 });

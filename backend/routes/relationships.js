@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
+const logger = require('../config/logger');
 
 // Define relationships with explicit inverse mappings
 // This is much clearer than trying to calculate them
@@ -56,7 +57,7 @@ const getInverseRelationship = async (sourceType, member1_id, member2_id) => {
     // Fallback to generic inverse if gender is not specified or mapping doesn't exist
     return mapping.inverse;
   } catch (error) {
-    console.error('Error getting inverse relationship:', error);
+    logger.error('Error getting inverse relationship:', error);
     return mapping.inverse;
   }
 };
@@ -88,7 +89,7 @@ router.get('/', async (req, res) => {
     const result = await pool.query(query, [RELATIONSHIP_TYPES]);
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching all relationships:', error);
+    logger.error('Error fetching all relationships:', error);
     res.status(500).json({ error: 'Failed to fetch relationships' });
   }
 });
@@ -129,7 +130,7 @@ router.get('/member/:id', async (req, res) => {
     const result = await pool.query(query, [id, RELATIONSHIP_TYPES]);
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching relationships:', error);
+    logger.error('Error fetching relationships:', error);
     res.status(500).json({ error: 'Failed to fetch relationships' });
   }
 });
@@ -144,7 +145,7 @@ const syncChildToUnion = async (parentId, childId) => {
     );
 
     if (unionResult.rows.length === 0) {
-      console.log(`No union found for parent ${parentId} - child will not appear in tree until union is created`);
+      logger.debug(`No union found for parent ${parentId} - child will not appear in tree until union is created`);
       return false;
     }
 
@@ -157,7 +158,7 @@ const syncChildToUnion = async (parentId, childId) => {
     );
 
     if (existingChild.rows.length > 0) {
-      console.log(`Child ${childId} already in union ${unionId}`);
+      logger.debug(`Child ${childId} already in union ${unionId}`);
       return true;
     }
 
@@ -174,10 +175,10 @@ const syncChildToUnion = async (parentId, childId) => {
       [unionId, childId, nextOrder]
     );
 
-    console.log(`✅ Added child ${childId} to union ${unionId} (birth_order: ${nextOrder})`);
+    logger.info(`Added child ${childId} to union ${unionId}`, { birth_order: nextOrder });
     return true;
   } catch (error) {
-    console.error('Error syncing child to union:', error);
+    logger.error('Error syncing child to union:', error);
     return false;
   }
 };
@@ -216,8 +217,11 @@ router.post('/', async (req, res) => {
       pool.query('SELECT first_name, gender FROM members WHERE id = $1', [member2_id])
     ]);
 
-    console.log(`\n=== Creating Relationship ===`);
-    console.log(`${member1Info.rows[0]?.first_name} (${member1Info.rows[0]?.gender}) is ${relationship_type} of ${member2Info.rows[0]?.first_name} (${member2Info.rows[0]?.gender})`);
+    logger.debug('Creating relationship', {
+      member1: `${member1Info.rows[0]?.first_name} (${member1Info.rows[0]?.gender})`,
+      relationshipType: relationship_type,
+      member2: `${member2Info.rows[0]?.first_name} (${member2Info.rows[0]?.gender})`
+    });
 
     // Insert the relationship
     const result = await pool.query(
@@ -228,7 +232,11 @@ router.post('/', async (req, res) => {
     // Create the inverse relationship
     const inverseType = await getInverseRelationship(relationship_type, member1_id, member2_id);
 
-    console.log(`Inverse: ${member2Info.rows[0]?.first_name} should be ${inverseType} of ${member1Info.rows[0]?.first_name}`);
+    logger.debug('Creating inverse relationship', {
+      member2: member2Info.rows[0]?.first_name,
+      inverseType,
+      member1: member1Info.rows[0]?.first_name
+    });
 
     if (inverseType && RELATIONSHIP_TYPES.includes(inverseType)) {
       // Check if inverse already exists
@@ -242,9 +250,9 @@ router.post('/', async (req, res) => {
           'INSERT INTO relationships (member1_id, member2_id, relationship_type) VALUES ($1, $2, $3)',
           [member2_id, member1_id, inverseType]
         );
-        console.log(`Created inverse relationship: ${inverseType}`);
+        logger.debug(`Created inverse relationship: ${inverseType}`);
       } else {
-        console.log(`Inverse relationship already exists`);
+        logger.debug('Inverse relationship already exists');
       }
     }
 
@@ -261,7 +269,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating relationship:', error);
+    logger.error('Error creating relationship:', error);
     res.status(500).json({ error: 'Failed to create relationship' });
   }
 });
@@ -297,7 +305,7 @@ router.delete('/:id', async (req, res) => {
     
     res.json({ message: 'Relationship deleted successfully' });
   } catch (error) {
-    console.error('Error deleting relationship:', error);
+    logger.error('Error deleting relationship:', error);
     res.status(500).json({ error: 'Failed to delete relationship' });
   }
 });
@@ -354,7 +362,7 @@ router.get('/tree/:id', async (req, res) => {
     
     res.json({ nodes, edges });
   } catch (error) {
-    console.error('Error generating family tree:', error);
+    logger.error('Error generating family tree:', error);
     res.status(500).json({ error: 'Failed to generate family tree' });
   }
 });

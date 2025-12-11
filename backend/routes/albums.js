@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 const pool = require('../config/database');
 const { processImage } = require('../utils/imageProcessor');
 const { uploadConfigs } = require('../config/multer');
+const logger = require('../config/logger');
 
 // Use centralized multer config for gallery uploads
 const upload = uploadConfigs.gallery;
@@ -25,7 +27,7 @@ router.get('/', async (req, res) => {
     const result = await pool.query(query);
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching albums:', error);
+    logger.error('Error fetching albums:', error);
     res.status(500).json({ error: 'Failed to fetch albums' });
   }
 });
@@ -61,7 +63,7 @@ router.get('/:id', async (req, res) => {
     
     res.json(album);
   } catch (error) {
-    console.error('Error fetching album:', error);
+    logger.error('Error fetching album:', error);
     res.status(500).json({ error: 'Failed to fetch album' });
   }
 });
@@ -84,7 +86,7 @@ router.post('/', async (req, res) => {
     const result = await pool.query(query, [title, description, event_date || null, is_public]);
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error creating album:', error);
+    logger.error('Error creating album:', error);
     res.status(500).json({ error: 'Failed to create album' });
   }
 });
@@ -110,7 +112,7 @@ router.put('/:id', async (req, res) => {
     
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error updating album:', error);
+    logger.error('Error updating album:', error);
     res.status(500).json({ error: 'Failed to update album' });
   }
 });
@@ -128,7 +130,7 @@ router.delete('/:id', async (req, res) => {
     
     res.json({ message: 'Album deleted successfully' });
   } catch (error) {
-    console.error('Error deleting album:', error);
+    logger.error('Error deleting album:', error);
     res.status(500).json({ error: 'Failed to delete album' });
   }
 });
@@ -138,10 +140,8 @@ router.post('/:id/photos', upload.array('photos', 100), async (req, res) => {
   try {
     const { id } = req.params;
     const { captions = [] } = req.body;
-    
-    console.log('=== PROCESSING UPLOAD ===');
-    console.log('Album ID:', id);
-    console.log('Number of files:', req.files ? req.files.length : 0);
+
+    logger.info('Processing upload', { albumId: id, fileCount: req.files ? req.files.length : 0 });
     
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'No photos uploaded' });
@@ -153,8 +153,8 @@ router.post('/:id/photos', upload.array('photos', 100), async (req, res) => {
     for (let i = 0; i < req.files.length; i++) {
       const file = req.files[i];
       const caption = Array.isArray(captions) ? captions[i] : captions;
-      
-      console.log(`Processing file ${i + 1}/${req.files.length}: ${file.originalname}`);
+
+      logger.debug(`Processing file ${i + 1}/${req.files.length}: ${file.originalname}`);
       
       try {
         // Process the image (handles HEIC conversion and optimization)
@@ -162,12 +162,12 @@ router.post('/:id/photos', upload.array('photos', 100), async (req, res) => {
         const processResult = await processImage(file, finalPath);
         
         if (!processResult.success) {
-          console.error(`Failed to process ${file.originalname}:`, processResult.error);
+          logger.error(`Failed to process ${file.originalname}:`, { error: processResult.error });
           errors.push(`Failed to process ${file.originalname}: ${processResult.error}`);
           continue;
         }
-        
-        console.log(`File processed successfully: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
+
+        logger.info(`File processed successfully: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
         
         const query = `
           INSERT INTO photos (
@@ -193,15 +193,12 @@ router.post('/:id/photos', upload.array('photos', 100), async (req, res) => {
         uploadedPhotos.push(result.rows[0]);
         
       } catch (fileError) {
-        console.error(`Error processing file ${file.originalname}:`, fileError);
+        logger.error(`Error processing file ${file.originalname}:`, fileError);
         errors.push(`Error processing ${file.originalname}: ${fileError.message}`);
       }
     }
-    
-    console.log(`Successfully uploaded ${uploadedPhotos.length} photos`);
-    if (errors.length > 0) {
-      console.log(`Errors: ${errors.length}`);
-    }
+
+    logger.info(`Successfully uploaded ${uploadedPhotos.length} photos`, { errorCount: errors.length });
     
     const response = {
       message: `Successfully uploaded ${uploadedPhotos.length} photos`,
@@ -215,7 +212,7 @@ router.post('/:id/photos', upload.array('photos', 100), async (req, res) => {
     
     res.status(201).json(response);
   } catch (error) {
-    console.error('Error uploading photos:', error);
+    logger.error('Error uploading photos:', error);
     res.status(500).json({ error: 'Failed to upload photos: ' + error.message });
   }
 });
@@ -250,7 +247,7 @@ router.get('/:albumId/photos/:photoId', async (req, res) => {
     
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching photo:', error);
+    logger.error('Error fetching photo:', error);
     res.status(500).json({ error: 'Failed to fetch photo' });
   }
 });
@@ -268,7 +265,7 @@ router.delete('/:albumId/photos/:photoId', async (req, res) => {
     
     res.json({ message: 'Photo deleted successfully' });
   } catch (error) {
-    console.error('Error deleting photo:', error);
+    logger.error('Error deleting photo:', error);
     res.status(500).json({ error: 'Failed to delete photo' });
   }
 });
@@ -293,7 +290,7 @@ router.put('/:id/cover/:photoId', async (req, res) => {
     
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error setting cover photo:', error);
+    logger.error('Error setting cover photo:', error);
     res.status(500).json({ error: 'Failed to set cover photo' });
   }
 });
@@ -357,7 +354,7 @@ router.post('/:albumId/photos/:photoId/tags', async (req, res) => {
       confidence: result.rows[0].confidence ? parseFloat(result.rows[0].confidence) : null
     });
   } catch (error) {
-    console.error('Error adding photo tag:', error);
+    logger.error('Error adding photo tag:', error);
     res.status(500).json({ error: 'Failed to add tag' });
   }
 });
@@ -399,7 +396,7 @@ router.get('/:albumId/photos/:photoId/tags', async (req, res) => {
     
     res.json(tags);
   } catch (error) {
-    console.error('Error fetching photo tags:', error);
+    logger.error('Error fetching photo tags:', error);
     res.status(500).json({ error: 'Failed to fetch photo tags' });
   }
 });
@@ -481,7 +478,7 @@ router.put('/:albumId/photos/:photoId/tags/:tagId', async (req, res) => {
       confidence: updatedTag.confidence ? parseFloat(updatedTag.confidence) : null
     });
   } catch (error) {
-    console.error('Error updating tag:', error);
+    logger.error('Error updating tag:', error);
     res.status(500).json({ error: 'Failed to update tag' });
   }
 });
@@ -499,7 +496,7 @@ router.delete('/:albumId/photos/:photoId/tags/:tagId', async (req, res) => {
     
     res.json({ message: 'Tag removed successfully' });
   } catch (error) {
-    console.error('Error removing photo tag:', error);
+    logger.error('Error removing photo tag:', error);
     res.status(500).json({ error: 'Failed to remove tag' });
   }
 });
@@ -508,7 +505,7 @@ router.delete('/:albumId/photos/:photoId/tags/:tagId', async (req, res) => {
 router.get('/tagged/:memberId', async (req, res) => {
   try {
     const { memberId } = req.params;
-    
+
     const query = `
       SELECT p.*, a.title as album_title, a.id as album_id
       FROM photos p
@@ -517,12 +514,70 @@ router.get('/tagged/:memberId', async (req, res) => {
       WHERE pt.member_id = $1
       ORDER BY p.uploaded_at DESC
     `;
-    
+
     const result = await pool.query(query, [memberId]);
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching tagged photos:', error);
+    logger.error('Error fetching tagged photos:', error);
     res.status(500).json({ error: 'Failed to fetch tagged photos' });
+  }
+});
+
+// PUT /:albumId/photos/:photoId/rotate - Rotate a photo 90° clockwise
+router.put('/:albumId/photos/:photoId/rotate', async (req, res) => {
+  const { albumId, photoId } = req.params;
+  const { degrees = 90 } = req.body; // Default to 90° clockwise
+
+  try {
+    // Validate degrees (only allow 90, 180, 270, -90)
+    const validDegrees = [90, 180, 270, -90];
+    if (!validDegrees.includes(degrees)) {
+      return res.status(400).json({ error: 'Invalid rotation degrees' });
+    }
+
+    // Get photo details from database
+    const photoQuery = await pool.query(
+      'SELECT * FROM photos WHERE id = $1 AND album_id = $2',
+      [photoId, albumId]
+    );
+
+    if (photoQuery.rows.length === 0) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+
+    const photo = photoQuery.rows[0];
+    const filePath = path.join(__dirname, '..', photo.file_path);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Photo file not found on disk' });
+    }
+
+    // Rotate image using Sharp
+    const buffer = await sharp(filePath)
+      .rotate(degrees) // Rotate by specified degrees
+      .toBuffer();
+
+    // Write rotated image back to same path
+    await sharp(buffer).toFile(filePath);
+
+    // Get new metadata (width/height may have swapped for 90/270 rotations)
+    const metadata = await sharp(filePath).metadata();
+
+    // Update photo dimensions in database
+    await pool.query(
+      'UPDATE photos SET width = $1, height = $2, file_size = $3 WHERE id = $4',
+      [metadata.width, metadata.height, metadata.size, photoId]
+    );
+
+    res.json({
+      message: 'Photo rotated successfully',
+      photo: { id: photoId, width: metadata.width, height: metadata.height }
+    });
+
+  } catch (error) {
+    logger.error('Error rotating photo:', error);
+    res.status(500).json({ error: 'Failed to rotate photo' });
   }
 });
 

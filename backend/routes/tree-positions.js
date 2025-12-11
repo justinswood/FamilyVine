@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
+const logger = require('../config/logger');
 
 // Get node positions for a specific tree type
 router.get('/', async (req, res) => {
@@ -20,11 +21,11 @@ router.get('/', async (req, res) => {
         y: parseFloat(row.y_position)
       };
     });
-    
-    console.log(`📍 Loaded ${result.rows.length} saved node positions for ${tree_type}`);
+
+    logger.info(`Loaded ${result.rows.length} saved node positions for ${tree_type}`);
     res.json(positions);
   } catch (error) {
-    console.error('Error fetching node positions:', error);
+    logger.error('Error fetching node positions:', error);
     res.status(500).json({ error: 'Failed to fetch node positions' });
   }
 });
@@ -37,8 +38,8 @@ router.post('/', async (req, res) => {
     if (!positions || typeof positions !== 'object') {
       return res.status(400).json({ error: 'Invalid positions data' });
     }
-    
-    console.log(`💾 Saving ${Object.keys(positions).length} node positions for ${tree_type}`);
+
+    logger.info(`Saving ${Object.keys(positions).length} node positions for ${tree_type}`);
     
     // Use transaction to ensure consistency
     const client = await pool.connect();
@@ -60,13 +61,13 @@ router.post('/', async (req, res) => {
             updated_at = CURRENT_TIMESTAMP
         `, [parseInt(memberId), position.x, position.y, tree_type]);
       }
-      
+
       await client.query('COMMIT');
-      console.log('✅ Node positions saved successfully');
-      
-      res.json({ 
-        success: true, 
-        message: `Saved ${Object.keys(positions).length} node positions` 
+      logger.info('Node positions saved successfully', { count: Object.keys(positions).length });
+
+      res.json({
+        success: true,
+        message: `Saved ${Object.keys(positions).length} node positions`
       });
       
     } catch (error) {
@@ -75,9 +76,9 @@ router.post('/', async (req, res) => {
     } finally {
       client.release();
     }
-    
+
   } catch (error) {
-    console.error('Error saving node positions:', error);
+    logger.error('Error saving node positions:', error);
     res.status(500).json({ error: 'Failed to save node positions' });
   }
 });
@@ -101,12 +102,12 @@ router.put('/:memberId', async (req, res) => {
         y_position = EXCLUDED.y_position,
         updated_at = CURRENT_TIMESTAMP
     `, [parseInt(memberId), x, y, tree_type]);
-    
-    console.log(`📌 Updated position for member ${memberId}: (${x}, ${y})`);
+
+    logger.debug(`Updated position for member ${memberId}`, { x, y });
     res.json({ success: true });
-    
+
   } catch (error) {
-    console.error('Error updating node position:', error);
+    logger.error('Error updating node position:', error);
     res.status(500).json({ error: 'Failed to update node position' });
   }
 });
@@ -120,15 +121,15 @@ router.delete('/', async (req, res) => {
       'DELETE FROM tree_node_positions WHERE tree_type = $1',
       [tree_type]
     );
-    
-    console.log(`🗑️ Deleted ${result.rowCount} positions for ${tree_type}`);
-    res.json({ 
-      success: true, 
-      message: `Reset ${result.rowCount} node positions` 
+
+    logger.info(`Deleted ${result.rowCount} positions for ${tree_type}`);
+    res.json({
+      success: true,
+      message: `Reset ${result.rowCount} node positions`
     });
-    
+
   } catch (error) {
-    console.error('Error resetting node positions:', error);
+    logger.error('Error resetting node positions:', error);
     res.status(500).json({ error: 'Failed to reset node positions' });
   }
 });

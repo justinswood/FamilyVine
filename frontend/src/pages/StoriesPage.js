@@ -173,11 +173,11 @@ const StoriesPage = () => {
             )}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredStories.map((story) => (
               <div
                 key={story.id}
-                className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all border border-white/50 overflow-hidden group w-[484px] h-[425px]"
+                className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all border border-white/50 overflow-hidden group h-[425px]"
               >
                 <div className="p-6">
                   <div className="mb-4">

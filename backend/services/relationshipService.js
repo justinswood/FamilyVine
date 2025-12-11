@@ -10,6 +10,7 @@ const {
   getInverseRelationshipType,
   isValidRelationshipType
 } = require('../constants/relationships');
+const logger = require('../config/logger');
 
 /**
  * Get the inverse relationship based on gender
@@ -35,7 +36,7 @@ async function getInverseRelationship(sourceType, member1_id, member2_id) {
     // Fallback to generic inverse if gender is not specified or mapping doesn't exist
     return mapping.inverse;
   } catch (error) {
-    console.error('Error getting inverse relationship:', error);
+    logger.error('Error getting inverse relationship:', error);
     return mapping.inverse;
   }
 }
@@ -151,7 +152,7 @@ async function syncChildToUnion(parentId, childId) {
     );
 
     if (unionResult.rows.length === 0) {
-      console.log(`No union found for parent ${parentId} - child will not appear in tree until union is created`);
+      logger.debug(`No union found for parent ${parentId} - child will not appear in tree until union is created`);
       return false;
     }
 
@@ -164,7 +165,7 @@ async function syncChildToUnion(parentId, childId) {
     );
 
     if (existingChild.rows.length > 0) {
-      console.log(`Child ${childId} already exists in union ${unionId}`);
+      logger.debug(`Child ${childId} already exists in union ${unionId}`);
       return true;
     }
 
@@ -174,10 +175,10 @@ async function syncChildToUnion(parentId, childId) {
       [unionId, childId]
     );
 
-    console.log(`Added child ${childId} to union ${unionId}`);
+    logger.info(`Added child ${childId} to union ${unionId}`);
     return true;
   } catch (error) {
-    console.error('Error syncing child to union:', error);
+    logger.error('Error syncing child to union:', error);
     return false;
   }
 }

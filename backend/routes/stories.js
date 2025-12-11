@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const { validateStory } = require('../middleware/authValidators');
+const logger = require('../config/logger');
 
 // GET all stories with members and photos
 router.get('/', async (req, res) => {
@@ -40,7 +41,7 @@ router.get('/', async (req, res) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('Error fetching stories:', error);
+    logger.error('Error fetching stories:', error);
     res.status(500).json({ error: 'Failed to fetch stories' });
   }
 });
@@ -70,8 +71,7 @@ router.get('/:id', async (req, res) => {
             DISTINCT jsonb_build_object(
               'id', p.id,
               'file_path', p.file_path,
-              'caption', p.caption,
-              'photo_date', p.photo_date
+              'caption', p.caption
             )
           ) FILTER (WHERE p.id IS NOT NULL),
           '[]'
@@ -91,7 +91,7 @@ router.get('/:id', async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching story:', error);
+    logger.error('Error fetching story:', error);
     res.status(500).json({ error: 'Failed to fetch story' });
   }
 });
@@ -184,7 +184,7 @@ router.post('/', validateStory, async (req, res) => {
     res.status(201).json(completeStory.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Error creating story:', error);
+    logger.error('Error creating story:', error);
     res.status(500).json({ error: 'Failed to create story' });
   } finally {
     client.release();
@@ -290,7 +290,7 @@ router.put('/:id', validateStory, async (req, res) => {
     res.json(completeStory.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Error updating story:', error);
+    logger.error('Error updating story:', error);
     res.status(500).json({ error: 'Failed to update story' });
   } finally {
     client.release();
@@ -325,7 +325,7 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Story deleted successfully', story: result.rows[0] });
   } catch (error) {
     await client.query('ROLLBACK');
-    console.error('Error deleting story:', error);
+    logger.error('Error deleting story:', error);
     res.status(500).json({ error: 'Failed to delete story' });
   } finally {
     client.release();
