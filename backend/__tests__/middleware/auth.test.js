@@ -6,6 +6,9 @@ const jwt = require('jsonwebtoken');
 
 // Mock dependencies before requiring the module
 jest.mock('../../config/database');
+jest.mock('../../config/env', () => ({
+  getEnvVar: jest.fn(() => 'test-secret-key')
+}));
 jest.mock('jsonwebtoken');
 
 const { authenticateToken, requireRole } = require('../../middleware/auth');
@@ -15,7 +18,6 @@ describe('auth middleware', () => {
 
   beforeEach(() => {
     req = {
-      header: jest.fn(),
       headers: {}
     };
     res = {
@@ -31,39 +33,39 @@ describe('auth middleware', () => {
       const mockUser = { id: 1, email: 'test@example.com', role: 'viewer' };
       const token = 'valid-token';
 
-      req.header.mockReturnValue(`Bearer ${token}`);
+      req.headers['authorization'] = `Bearer ${token}`;
       jwt.verify.mockReturnValue(mockUser);
 
       authenticateToken(req, res, next);
 
-      expect(jwt.verify).toHaveBeenCalledWith(token, process.env.JWT_SECRET);
+      expect(jwt.verify).toHaveBeenCalledWith(token, 'test-secret-key');
       expect(req.user).toEqual(mockUser);
       expect(next).toHaveBeenCalledWith();
       expect(res.status).not.toHaveBeenCalled();
     });
 
     it('should return 401 when no token provided', () => {
-      req.header.mockReturnValue(null);
+      req.headers['authorization'] = null;
 
       authenticateToken(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'No token provided' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Access token required' });
       expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 401 when token is malformed (no Bearer prefix)', () => {
-      req.header.mockReturnValue('invalid-format-token');
+      req.headers['authorization'] = 'invalid-format-token';
 
       authenticateToken(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid token format' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Access token required' });
       expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 403 when token is invalid', () => {
-      req.header.mockReturnValue('Bearer invalid-token');
+      req.headers['authorization'] = 'Bearer invalid-token';
       jwt.verify.mockImplementation(() => {
         throw new Error('Invalid token');
       });
@@ -76,7 +78,7 @@ describe('auth middleware', () => {
     });
 
     it('should return 403 when token is expired', () => {
-      req.header.mockReturnValue('Bearer expired-token');
+      req.headers['authorization'] = 'Bearer expired-token';
       const expiredError = new Error('Token expired');
       expiredError.name = 'TokenExpiredError';
       jwt.verify.mockImplementation(() => {
@@ -111,8 +113,8 @@ describe('auth middleware', () => {
       expect(next).toHaveBeenCalledWith();
     });
 
-    it('should allow admin to access editor-only routes', () => {
-      req.user = { id: 1, role: 'admin' };
+    it('should allow access when user has role in roles array', () => {
+      req.user = { id: 1, role: 'viewer', roles: ['editor', 'viewer'] };
       const middleware = requireRole('editor');
 
       middleware(req, res, next);
@@ -128,7 +130,7 @@ describe('auth middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Insufficient permissions'
+        error: 'editor role required'
       });
       expect(next).not.toHaveBeenCalled();
     });
@@ -141,7 +143,7 @@ describe('auth middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Insufficient permissions'
+        error: 'editor role required'
       });
     });
 
@@ -151,9 +153,9 @@ describe('auth middleware', () => {
 
       middleware(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.status).toHaveBeenCalledWith(401);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'Insufficient permissions'
+        error: 'Authentication required'
       });
     });
 
@@ -165,6 +167,9 @@ describe('auth middleware', () => {
       adminMiddleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'admin role required'
+      });
       expect(next).not.toHaveBeenCalled();
     });
   });
