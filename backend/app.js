@@ -15,6 +15,7 @@ const treeRoute = require('./routes/tree');
 const storiesRoute = require('./routes/stories');
 const heroImagesRoute = require('./routes/hero-images');
 const usersRoute = require('./routes/users');
+const recipesRoute = require('./routes/recipes');
 const app = express();
 
 // CORS configuration for production
@@ -91,7 +92,7 @@ const authLimiter = rateLimit({
 // General API rate limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // 100 requests per window
+  max: 1000, // 1000 requests per window (increased for normal usage)
   message: 'Too many requests, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
@@ -134,6 +135,7 @@ app.use('/api/albums', apiLimiter, authenticateToken, albumsRoute);
 app.use('/api/members', apiLimiter, authenticateToken, membersRoute);
 app.use('/api/hero-images', apiLimiter, authenticateToken, heroImagesRoute);
 app.use('/api/stories', apiLimiter, authenticateToken, storiesRoute);
+app.use('/api/recipes', apiLimiter, authenticateToken, recipesRoute);
 app.use('/api/users', apiLimiter, usersRoute); // User management (admin only, auth handled in route)
 
 // 404 handler for undefined routes (must come after all route definitions)

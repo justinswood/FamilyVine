@@ -86,6 +86,14 @@ const uploadConfigs = {
     destination: 'uploads/hero/',
     filenamePrefix: 'hero',
     maxFileSize: 10 * 1024 * 1024
+  }),
+
+  // For recipe photos
+  recipes: createUploadConfig({
+    destination: 'uploads/recipes/',
+    filenamePrefix: 'recipe',
+    maxFileSize: 10 * 1024 * 1024,
+    maxFiles: 1  // Single photo per recipe
   })
 };
 

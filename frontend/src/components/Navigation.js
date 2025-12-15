@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, User, LogOut, ChevronDown, UserPlus, Users } from 'lucide-react';
+import { Settings as SettingsIcon, User, LogOut, ChevronDown, UserPlus, Users, Image, Book, Clock, UtensilsCrossed } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import VineLogoCompact from './VineLogoCompact';
 import GlobalSearch from './GlobalSearch';
 
 const Navigation = () => {
@@ -11,10 +11,14 @@ const Navigation = () => {
   const { user, logout } = useAuth();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMembersMenu, setShowMembersMenu] = useState(false);
+  const [showMemoriesMenu, setShowMemoriesMenu] = useState(false);
   const [membersButtonRect, setMembersButtonRect] = useState(null);
+  const [memoriesButtonRect, setMemoriesButtonRect] = useState(null);
   const menuRef = useRef(null);
   const membersMenuRef = useRef(null);
+  const memoriesMenuRef = useRef(null);
   const membersButtonRef = useRef(null);
+  const memoriesButtonRef = useRef(null);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -24,6 +28,9 @@ const Navigation = () => {
       }
       if (membersMenuRef.current && !membersMenuRef.current.contains(event.target)) {
         setShowMembersMenu(false);
+      }
+      if (memoriesMenuRef.current && !memoriesMenuRef.current.contains(event.target)) {
+        setShowMemoriesMenu(false);
       }
     };
 
@@ -49,13 +56,26 @@ const Navigation = () => {
     setShowMembersMenu(!showMembersMenu);
   };
 
+  const handleMemoriesClick = () => {
+    if (memoriesButtonRef.current) {
+      const rect = memoriesButtonRef.current.getBoundingClientRect();
+      setMemoriesButtonRect(rect);
+    }
+    setShowMemoriesMenu(!showMemoriesMenu);
+  };
+
   return (
     <nav className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-700 shadow-sm transition-colors duration-200 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-50">
-      <div className="w-full px-3 py-2 flex items-center justify-between min-w-0">
+      <div className="w-full px-3 py-0.5 flex items-center justify-between min-w-0">
         {/* Left section - Logo (fixed) */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <Link to="/">
-            <VineLogoCompact />
+          <Link to="/" className="block">
+            <img
+              src="/logo.png"
+              alt="FamilyVine"
+              className="h-16 w-auto object-contain hover:opacity-90 transition-opacity duration-200"
+              style={{ maxWidth: '250px' }}
+            />
           </Link>
         </div>
 
@@ -81,12 +101,17 @@ const Navigation = () => {
               </button>
             </div>
 
-            <Link
-              to="/gallery"
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Gallery
-            </Link>
+            {/* Memories Dropdown */}
+            <div className="flex-shrink-0">
+              <button
+                ref={memoriesButtonRef}
+                onClick={handleMemoriesClick}
+                className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex items-center gap-1"
+              >
+                Memories
+                <ChevronDown className="w-3 h-3" />
+              </button>
+            </div>
 
             <Link
               to="/map"
@@ -95,26 +120,11 @@ const Navigation = () => {
               Map
             </Link>
 
-
-            <Link
-              to="/timeline"
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Timeline
-            </Link>
-
             <Link
               to="/calendar"
               className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
             >
               Calendar
-            </Link>
-
-            <Link
-              to="/stories"
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Stories
             </Link>
           </div>
         </div>
@@ -170,13 +180,14 @@ const Navigation = () => {
       </div>
 
       {/* Members Dropdown Menu - Fixed positioning outside scrollable container */}
-      {showMembersMenu && membersButtonRect && (
+      {showMembersMenu && membersButtonRect && createPortal(
         <div
           ref={membersMenuRef}
-          className="fixed w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-[100]"
+          className="fixed w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2"
           style={{
             top: `${membersButtonRect.bottom + 8}px`,
-            left: `${membersButtonRect.left}px`
+            left: `${membersButtonRect.left}px`,
+            zIndex: 10000
           }}
         >
           <Link
@@ -195,7 +206,55 @@ const Navigation = () => {
             <UserPlus className="w-4 h-4" />
             Add Member
           </Link>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Memories Dropdown Menu - Fixed positioning outside scrollable container */}
+      {showMemoriesMenu && memoriesButtonRect && createPortal(
+        <div
+          ref={memoriesMenuRef}
+          className="fixed w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2"
+          style={{
+            top: `${memoriesButtonRect.bottom + 8}px`,
+            left: `${memoriesButtonRect.left}px`,
+            zIndex: 10000
+          }}
+        >
+          <Link
+            to="/gallery"
+            onClick={() => setShowMemoriesMenu(false)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Image className="w-4 h-4" />
+            Gallery
+          </Link>
+          <Link
+            to="/recipes"
+            onClick={() => setShowMemoriesMenu(false)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <UtensilsCrossed className="w-4 h-4" />
+            Recipes
+          </Link>
+          <Link
+            to="/stories"
+            onClick={() => setShowMemoriesMenu(false)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Book className="w-4 h-4" />
+            Stories
+          </Link>
+          <Link
+            to="/timeline"
+            onClick={() => setShowMemoriesMenu(false)}
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          >
+            <Clock className="w-4 h-4" />
+            Timeline
+          </Link>
+        </div>,
+        document.body
       )}
     </nav>
   );

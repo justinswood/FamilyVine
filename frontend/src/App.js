@@ -27,6 +27,8 @@ const FamilyTreePage = lazy(() => import('./pages/FamilyTreePage'));
 const StoriesPage = lazy(() => import('./pages/StoriesPage'));
 const StoryView = lazy(() => import('./pages/StoryView'));
 const AddEditStory = lazy(() => import('./pages/AddEditStory'));
+const RecipesPage = lazy(() => import('./pages/RecipesPage'));
+const RecipeView = lazy(() => import('./pages/RecipeView'));
 
 // Component to protect routes - redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
@@ -222,6 +224,16 @@ function App() {
           <Route path="/stories/:id/edit" element={
             <ProtectedRoute>
               <AddEditStory />
+            </ProtectedRoute>
+          } />
+          <Route path="/recipes" element={
+            <ProtectedRoute>
+              <RecipesPage />
+            </ProtectedRoute>
+          } />
+          <Route path="/recipes/:id" element={
+            <ProtectedRoute>
+              <RecipeView />
             </ProtectedRoute>
           } />
             </Routes>
