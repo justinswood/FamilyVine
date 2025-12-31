@@ -24,12 +24,21 @@ const MemberList = () => {
       .then(res => {
         console.log('Members loaded:', res.data);
         const membersData = res.data || [];
-        const sortedMembers = [...membersData].sort((a, b) => {
+
+        // Filter out Unknown Parent/Mother/Father placeholder members
+        const filteredData = membersData.filter(member => {
+          const fullName = `${member.first_name || ''} ${member.last_name || ''}`.trim();
+          return fullName !== 'Unknown Parent' &&
+                 fullName !== 'Unknown Mother' &&
+                 fullName !== 'Unknown Father';
+        });
+
+        const sortedMembers = [...filteredData].sort((a, b) => {
           const nameA = `${a.first_name || ''} ${a.last_name || ''}`.toLowerCase();
           const nameB = `${b.first_name || ''} ${b.last_name || ''}`.toLowerCase();
           return nameB > nameA ? 1 : -1;
         });
-        setAllMembers(membersData);
+        setAllMembers(filteredData);
         setFilteredMembers(sortedMembers);
       })
       .catch(err => {
@@ -135,7 +144,7 @@ const MemberList = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#fee440' }}>
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: '#c6b05c' }}>
       {/* Animated SVG Background */}
       <svg style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100vh' }} xmlns="http://www.w3.org/2000/svg">
         <defs>

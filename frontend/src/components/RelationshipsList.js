@@ -254,9 +254,25 @@ const RelationshipsList = ({ memberId }) => {
     );
   }
 
+  // Filter out Unknown Parent/Mother/Father relationships before rendering
+  const filteredRelationships = relationships.filter((relationship) => {
+    if (relationship.isCombined) {
+      return true; // Keep combined relationships
+    }
+
+    const firstName = relationship.related_first_name || '';
+    const lastName = relationship.related_last_name || '';
+    const relatedName = `${firstName} ${lastName}`.trim();
+
+    // Filter out Unknown relationships
+    return relatedName !== 'Unknown Parent' &&
+           relatedName !== 'Unknown Mother' &&
+           relatedName !== 'Unknown Father';
+  });
+
   return (
     <div className="space-y-3">
-      {relationships.map((relationship) => {
+      {filteredRelationships.map((relationship) => {
         // Handle combined parent relationship
         if (relationship.isCombined) {
           return (
