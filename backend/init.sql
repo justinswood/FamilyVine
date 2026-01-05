@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS members (
     id SERIAL PRIMARY KEY,
     first_name VARCHAR(255) NOT NULL,
     middle_name VARCHAR(255),
+    nickname VARCHAR(100),
     last_name VARCHAR(255) NOT NULL,
     relationship VARCHAR(255),
     gender VARCHAR(50),

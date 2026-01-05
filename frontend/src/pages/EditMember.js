@@ -11,6 +11,7 @@ const EditMember = () => {
     first_name: '',
     middle_name: '',
     last_name: '',
+    nickname: '',
     birth_date: '',
     birth_place: '',
     location: '',
@@ -238,12 +239,15 @@ const EditMember = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-4">
+      {/* Subtle top accent */}
+      <div className="h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500" />
       <h1 className="text-2xl font-bold mb-4">Edit Family Member</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         {[
           { label: 'First Name', name: 'first_name' },
           { label: 'Middle Name', name: 'middle_name' },
           { label: 'Last Name', name: 'last_name' },
+          { label: 'Nickname', name: 'nickname', placeholder: 'e.g., "Johnny", "Beth", etc.' },
           { label: 'Birth Date', name: 'birth_date', type: 'date' },
           { label: 'Birth Place', name: 'birth_place' },
           { label: 'Current Location', name: 'location', placeholder: 'e.g., New York, NY or 123 Main St, City, State' },
