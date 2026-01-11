@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FamilyVine Tree - Vanilla JS Example</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background-color: #1a1a1a;
+      color: #ffffff;
+    }
+
+    .wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .controls {
+      padding: 20px;
+      background-color: rgba(26, 26, 26, 0.95);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    select, button {
+      padding: 8px 12px;
+      font-size: 14px;
+      background-color: rgba(50, 50, 50, 0.9);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background-color: rgba(70, 70, 70, 0.9);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    .stats {
+      display: flex;
+      gap: 20px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    #tree-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #minimap-container {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+    }
+
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <!-- Controls -->
+    <div class="controls">
+      <div class="control-group">
+        <label for="maxGen">Generations:</label>
+        <select id="maxGen">
+          <option value="2">2 Generations</option>
+          <option value="3">3 Generations</option>
+          <option value="4" selected>4 Generations</option>
+          <option value="5">5 Generations</option>
+        </select>
+
+        <button id="fitBtn">Fit to View</button>
+        <button id="resetBtn">Reset Zoom</button>
+      </div>
+
+      <div class="stats">
+        <span id="nodeCount">-</span>
+        <span id="genCount">-</span>
+      </div>
+    </div>
+
+    <!-- Tree -->
+    <div id="tree-container">
+      <div class="loading" id="loading">Loading family tree...</div>
+    </div>
+
+    <!-- Mini-map will be appended here -->
+    <div id="minimap-container"></div>
+  </div>
+
+  <script type="module">
+    // Import the library (adjust path as needed)
+    import FamilyTree from '../core/FamilyTree.js';
+
+    const API_URL = 'http://localhost:5050';
+    let treeInstance = null;
+    let currentData = null;
+
+    // Get elements
+    const container = document.getElementById('tree-container');
+    const minimapContainer = document.getElementById('minimap-container');
+    const maxGenSelect = document.getElementById('maxGen');
+    const fitBtn = document.getElementById('fitBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const loading = document.getElementById('loading');
+    const nodeCount = document.getElementById('nodeCount');
+    const genCount = document.getElementById('genCount');
+
+    // Initialize tree
+    function initTree() {
+      treeInstance = new FamilyTree(container, {
+        apiUrl: API_URL,
+        miniMapContainer: minimapContainer,
+        onNodeClick: (memberId) => {
+          console.log('Clicked member:', memberId);
+          alert(`Clicked member ${memberId}`);
+          // In real app: window.location.href = `/member/${memberId}`;
+        }
+      });
+
+      // Subscribe to events
+      treeInstance.on('dataLoaded', (stats) => {
+        nodeCount.textContent = `${stats.nodeCount} members`;
+        genCount.textContent = `${stats.maxGeneration} generations`;
+        loading.style.display = 'none';
+      });
+    }
+
+    // Load data from API
+    async function loadData() {
+      try {
+        loading.style.display = 'block';
+        const response = await fetch(`${API_URL}/api/tree/generations`);
+
+        if (!response.ok) {
+          throw new Error('Failed to load tree data');
+        }
+
+        const result = await response.json();
+        currentData = result.generations || [];
+
+        if (currentData.length === 0) {
+          throw new Error('No tree data available');
+        }
+
+        // Render tree
+        const maxGen = parseInt(maxGenSelect.value);
+        treeInstance.setData(currentData, maxGen);
+
+      } catch (error) {
+        console.error('Error loading tree:', error);
+        loading.textContent = `Error: ${error.message}`;
+        loading.style.color = '#ef4444';
+      }
+    }
+
+    // Event handlers
+    maxGenSelect.addEventListener('change', () => {
+      if (currentData && treeInstance) {
+        const maxGen = parseInt(maxGenSelect.value);
+        treeInstance.setData(currentData, maxGen);
+      }
+    });
+
+    fitBtn.addEventListener('click', () => {
+      if (treeInstance) {
+        treeInstance.fitToView();
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      if (treeInstance) {
+        treeInstance.reset();
+      }
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      if (treeInstance) {
+        treeInstance.handleResize();
+      }
+    });
+
+    // Initialize on load
+    initTree();
+    loadData();
+
+    // Cleanup on unload
+    window.addEventListener('beforeunload', () => {
+      if (treeInstance) {
+        treeInstance.destroy();
+      }
+    });
+  </script>
+</body>
+</html>

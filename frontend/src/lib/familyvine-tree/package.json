@@ -1,0 +1,69 @@
+{
+  "name": "@familyvine/tree",
+  "version": "1.0.0",
+  "description": "Custom family tree visualization library for FamilyVine",
+  "main": "index.js",
+  "module": "index.js",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.js"
+    },
+    "./core": {
+      "import": "./core/index.js"
+    },
+    "./react": {
+      "import": "./react/index.js"
+    },
+    "./styles": {
+      "import": "./styles/family-tree.css"
+    }
+  },
+  "files": [
+    "core/",
+    "react/",
+    "styles/",
+    "index.js",
+    "README.md"
+  ],
+  "keywords": [
+    "family-tree",
+    "genealogy",
+    "visualization",
+    "svg",
+    "react",
+    "walker-algorithm"
+  ],
+  "author": "FamilyVine Team",
+  "license": "UNLICENSED",
+  "private": true,
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "sideEffects": [
+    "*.css"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/familyvine/familyvine.git",
+    "directory": "frontend/src/lib/familyvine-tree"
+  },
+  "bugs": {
+    "url": "https://github.com/familyvine/familyvine/issues"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
