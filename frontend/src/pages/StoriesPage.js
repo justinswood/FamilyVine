@@ -1,6 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Plus, User, Edit, Trash2 } from 'lucide-react';
+import { BookOpen, Plus, User, Edit, Trash2, Search, Filter, Volume2, Users } from 'lucide-react';
+import ProfileImage from '../components/ProfileImage';
+
+/* ── Decorative leaf icon matching Chronicle motif ── */
+const LeafIcon = ({ className = "w-4 h-4" }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89-.82L7 22l1-3.5C10.5 14 15 11 17 8z" />
+    <path d="M17 8C17 8 21 4 21 3c-1 0-5 4-5 4" />
+  </svg>
+);
 
 const StoriesPage = () => {
   const navigate = useNavigate();
@@ -9,6 +18,9 @@ const StoriesPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterPerson, setFilterPerson] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedDecade, setSelectedDecade] = useState('all');
+  const [showDeleteModal, setShowDeleteModal] = useState(null);
 
   useEffect(() => {
     fetchStories();
@@ -17,12 +29,8 @@ const StoriesPage = () => {
 
   const fetchStories = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API || 'http://localhost:5050'}/api/stories`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch stories');
-      }
-
+      const response = await fetch(`${process.env.REACT_APP_API ?? ''}/api/stories`);
+      if (!response.ok) throw new Error('Failed to fetch stories');
       const data = await response.json();
       setStories(data);
       setLoading(false);
@@ -35,7 +43,7 @@ const StoriesPage = () => {
 
   const fetchMembers = async () => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API || 'http://localhost:5050'}/api/members`);
+      const response = await fetch(`${process.env.REACT_APP_API ?? ''}/api/members`);
       const data = await response.json();
       setMembers(data);
     } catch (error) {
@@ -43,44 +51,111 @@ const StoriesPage = () => {
     }
   };
 
-  const handleDelete = async (id, title) => {
-    if (!window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      return;
-    }
-
+  const handleDelete = async (id) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API || 'http://localhost:5050'}/api/stories/${id}`, {
+      const response = await fetch(`${process.env.REACT_APP_API ?? ''}/api/stories/${id}`, {
         method: 'DELETE',
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete story');
-      }
-
+      if (!response.ok) throw new Error('Failed to delete story');
       setStories(stories.filter(s => s.id !== id));
+      setShowDeleteModal(null);
     } catch (error) {
       console.error('Error deleting story:', error);
       alert('Failed to delete story: ' + error.message);
     }
   };
 
-  const truncateContent = (content, maxLength = 120) => {
+  const truncateContent = (content, maxLength = 150) => {
+    if (!content) return '';
     if (content.length <= maxLength) return content;
-    return content.substring(0, maxLength) + '...';
+    return content.substring(0, maxLength).replace(/\s+\S*$/, '') + '...';
   };
 
-  const filteredStories = filterPerson === 'all'
-    ? stories
-    : stories.filter(story =>
+  // Helper to extract year from date string without timezone issues
+  const getYearFromDate = (dateString) => {
+    if (!dateString) return null;
+    return parseInt(dateString.split('T')[0].split('-')[0], 10);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return null;
+    // Parse date parts manually to avoid timezone shifts
+    // (new Date("2025-05-07") is parsed as UTC, which shifts to previous day in US timezones)
+    const [year, month, day] = dateString.split('T')[0].split('-');
+    const date = new Date(year, month - 1, day); // months are 0-indexed
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
+
+  /* ── Decade extraction for Time-Travel Navigation ── */
+  const decades = useMemo(() => {
+    const decadeSet = new Set();
+    stories.forEach(story => {
+      if (story.story_date) {
+        const year = getYearFromDate(story.story_date);
+        const decade = Math.floor(year / 10) * 10;
+        decadeSet.add(decade);
+      }
+    });
+    return Array.from(decadeSet).sort((a, b) => a - b);
+  }, [stories]);
+
+  /* ── Filtered & searched stories ── */
+  const filteredStories = useMemo(() => {
+    let result = stories;
+
+    // Filter by person
+    if (filterPerson !== 'all') {
+      result = result.filter(story =>
         story.members && story.members.some(m => m.id === parseInt(filterPerson))
       );
+    }
+
+    // Filter by decade
+    if (selectedDecade !== 'all') {
+      const decadeStart = parseInt(selectedDecade);
+      result = result.filter(story => {
+        if (!story.story_date) return false;
+        const year = getYearFromDate(story.story_date);
+        return year >= decadeStart && year < decadeStart + 10;
+      });
+    }
+
+    // Search query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(story =>
+        story.title.toLowerCase().includes(q) ||
+        (story.content && story.content.toLowerCase().includes(q)) ||
+        (story.author_name && story.author_name.toLowerCase().includes(q))
+      );
+    }
+
+    return result;
+  }, [stories, filterPerson, selectedDecade, searchQuery]);
+
+  /* ── Members who appear in stories (for filter dropdown) ── */
+  const storyMembers = useMemo(() => {
+    return members.filter(member =>
+      stories.some(s => s.members && s.members.some(m => m.id === member.id))
+    );
+  }, [members, stories]);
+
+  /* ── Find member object to deep link author ── */
+  const findAuthorMember = (authorName) => {
+    if (!authorName) return null;
+    const lower = authorName.toLowerCase();
+    return members.find(m => {
+      const fullName = `${m.first_name} ${m.last_name}`.toLowerCase();
+      return fullName === lower || m.first_name.toLowerCase() === lower;
+    });
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-white/80 dark:bg-secondary-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading stories...</p>
+          <div className="w-16 h-16 border-4 border-vine-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-vine-sage dark:text-secondary-400">Loading the Family Anthology...</p>
         </div>
       </div>
     );
@@ -88,7 +163,7 @@ const StoriesPage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white/80 dark:bg-secondary-900 flex items-center justify-center p-4">
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-md">
           <p className="text-red-600 dark:text-red-400">Error: {error}</p>
         </div>
@@ -97,154 +172,360 @@ const StoriesPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fcf7ee] dark:bg-gray-900 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-transparent dark:bg-secondary-900 p-4">
+      <div className="max-w-6xl mx-auto">
 
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 mb-4">
-          <div className="flex items-start justify-between mb-3">
+        {/* ── Gilded Vellum Header ── */}
+        <div className="anthology-header">
+          <div className="flex items-start justify-between mb-1">
             <div>
-              <h1 className="text-2xl font-bold text-orange-600 dark:text-orange-500 flex items-center gap-2 mb-1">
-                <BookOpen className="w-6 h-6" />
-                Family Stories
+              <h1 className="anthology-header-title flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" />
+                Family Anthology
               </h1>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Memories, anecdotes, and stories that bring your family history to life
+              <p className="anthology-header-subtitle">
+                The collected stories, memories &amp; oral histories of our family
               </p>
             </div>
-
             <button
               onClick={() => navigate('/stories/new')}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors"
+              style={{
+                backgroundColor: 'var(--vine-green, #2E5A2E)',
+                color: '#fff',
+              }}
+              onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--vine-dark, #2D4F1E)'}
+              onMouseLeave={e => e.currentTarget.style.backgroundColor = 'var(--vine-green, #2E5A2E)'}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3 h-3" />
               New Story
             </button>
           </div>
 
-          {/* Filter */}
-          <div className="mt-3">
-            <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Filter by person:
-            </label>
-            <select
-              value={filterPerson}
-              onChange={(e) => setFilterPerson(e.target.value)}
-              className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-            >
-              <option value="all">All Stories ({stories.length})</option>
-              {members.map((member) => {
-                const count = stories.filter(s =>
-                  s.members && s.members.some(m => m.id === member.id)
-                ).length;
-                if (count > 0) {
-                  return (
-                    <option key={member.id} value={member.id}>
-                      {member.first_name} {member.last_name} ({count})
-                    </option>
-                  );
-                }
-                return null;
-              })}
-            </select>
+          {/* Gold divider */}
+          <div style={{
+            height: '1px',
+            background: 'linear-gradient(to right, rgba(212,175,55,0) 0%, rgba(212,175,55,0.6) 50%, rgba(212,175,55,0) 100%)',
+            margin: '6px 0 8px',
+          }} />
+
+          {/* ── Decade Timeline Navigation (30% reduced) ── */}
+          {decades.length > 0 && (
+            <div className="decade-timeline">
+              <div className="time-travel-label">
+                <LeafIcon className="w-2 h-2" />
+                <span>Time-Travel</span>
+              </div>
+              <div className="era-button-group">
+                <button
+                  onClick={() => setSelectedDecade('all')}
+                  className={`decade-pill ${selectedDecade === 'all' ? 'decade-pill-active' : ''}`}
+                >
+                  All Eras
+                </button>
+                {decades.map(decade => (
+                  <button
+                    key={decade}
+                    onClick={() => setSelectedDecade(decade === selectedDecade ? 'all' : String(decade))}
+                    className={`decade-pill ${String(decade) === selectedDecade ? 'decade-pill-active' : ''}`}
+                  >
+                    {decade}s
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Filter Bar (30% reduced) ── */}
+          <div className="story-filter-bar">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {/* Search */}
+              <div className="relative flex-1 min-w-[112px]">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2" style={{ color: 'var(--vine-sage, #86A789)' }} />
+                <input
+                  type="text"
+                  placeholder="Search stories..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full border bg-white/60 dark:bg-secondary-700 dark:border-secondary-600 focus:ring-2 focus:ring-vine-500 focus:border-transparent"
+                  style={{ borderColor: 'rgba(128, 0, 128, 0.1)' }}
+                />
+              </div>
+
+              {/* Person Filter */}
+              <div className="flex items-center gap-1">
+                <Filter className="w-2 h-2" style={{ color: 'var(--vine-sage, #86A789)' }} />
+                <select
+                  value={filterPerson}
+                  onChange={(e) => setFilterPerson(e.target.value)}
+                  className="border bg-white/60 dark:bg-secondary-700 dark:border-secondary-600 focus:ring-2 focus:ring-vine-500 focus:border-transparent"
+                  style={{ borderColor: 'rgba(128, 0, 128, 0.1)', color: 'var(--vine-dark, #2D4F1E)' }}
+                >
+                  <option value="all">All People ({stories.length})</option>
+                  {storyMembers.map((member) => {
+                    const count = stories.filter(s =>
+                      s.members && s.members.some(m => m.id === member.id)
+                    ).length;
+                    return (
+                      <option key={member.id} value={member.id}>
+                        {member.first_name} {member.last_name} ({count})
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+
+            {/* Active filter indicators */}
+            {(filterPerson !== 'all' || selectedDecade !== 'all' || searchQuery.trim()) && (
+              <div className="flex flex-wrap items-center gap-2 mt-3 pt-3" style={{ borderTop: '1px solid rgba(128, 0, 128, 0.06)' }}>
+                <span className="text-xs" style={{ color: 'var(--vine-sage, #86A789)' }}>Active filters:</span>
+                {searchQuery.trim() && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                    style={{ backgroundColor: 'rgba(46, 90, 46, 0.1)', color: 'var(--vine-green, #2E5A2E)' }}>
+                    "{searchQuery}"
+                    <button onClick={() => setSearchQuery('')} className="ml-1 hover:opacity-70">&times;</button>
+                  </span>
+                )}
+                {selectedDecade !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                    style={{ backgroundColor: 'rgba(46, 90, 46, 0.1)', color: 'var(--vine-green, #2E5A2E)' }}>
+                    {selectedDecade}s
+                    <button onClick={() => setSelectedDecade('all')} className="ml-1 hover:opacity-70">&times;</button>
+                  </span>
+                )}
+                {filterPerson !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
+                    style={{ backgroundColor: 'rgba(46, 90, 46, 0.1)', color: 'var(--vine-green, #2E5A2E)' }}>
+                    {members.find(m => m.id === parseInt(filterPerson))?.first_name || 'Person'}
+                    <button onClick={() => setFilterPerson('all')} className="ml-1 hover:opacity-70">&times;</button>
+                  </span>
+                )}
+                <button
+                  onClick={() => { setSearchQuery(''); setFilterPerson('all'); setSelectedDecade('all'); }}
+                  className="text-xs underline hover:opacity-70"
+                  style={{ color: 'var(--vine-sage, #86A789)' }}
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Stories List */}
+        {/* ── Story Count ── */}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs" style={{ color: 'var(--vine-sage, #86A789)' }}>
+            {filteredStories.length} {filteredStories.length === 1 ? 'story' : 'stories'}
+            {filteredStories.length !== stories.length && ` of ${stories.length} total`}
+          </span>
+        </div>
+
+        {/* ── Stories Masonry Grid ── */}
         {filteredStories.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-12 text-center">
-            <BookOpen className="w-24 h-24 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-              {filterPerson === 'all' ? 'No stories yet' : 'No stories for this person'}
+          <div className="story-empty-state">
+            <BookOpen className="w-20 h-20 mx-auto mb-4" style={{ color: 'var(--vine-sage, #86A789)', opacity: 0.4 }} />
+            <h2 style={{
+              fontFamily: 'var(--font-header, "Playfair Display", serif)',
+              fontSize: '1.5rem',
+              color: 'var(--vine-dark, #2D4F1E)',
+              marginBottom: '0.5rem',
+            }}>
+              {filterPerson === 'all' && selectedDecade === 'all' && !searchQuery.trim()
+                ? 'No stories yet'
+                : 'No stories match your filters'}
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              {filterPerson === 'all'
-                ? 'Start building your family history by adding your first story'
-                : 'This person is not mentioned in any stories yet'}
+            <p style={{ color: 'var(--vine-sage, #86A789)', marginBottom: '1.5rem' }}>
+              {filterPerson === 'all' && selectedDecade === 'all' && !searchQuery.trim()
+                ? 'Begin your family anthology by recording the first story'
+                : 'Try adjusting your filters or search term'}
             </p>
-            {filterPerson === 'all' && (
+            {filterPerson === 'all' && selectedDecade === 'all' && !searchQuery.trim() && (
               <button
                 onClick={() => navigate('/stories/new')}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-colors"
+                style={{
+                  backgroundColor: 'var(--vine-green, #2E5A2E)',
+                  color: '#fff',
+                  fontFamily: 'var(--font-header, "Playfair Display", serif)',
+                }}
               >
                 <Plus className="w-5 h-5" />
-                Add First Story
+                Record First Story
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredStories.map((story) => (
-              <div
-                key={story.id}
-                className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all border border-white/50 overflow-hidden group h-[425px]"
-              >
-                <div className="p-6">
-                  <div className="mb-4">
-                    <h3 className="text-xl font-semibold text-gray-800 dark:text-white mb-2 line-clamp-2 group-hover:text-orange-600 transition-colors">
+          <div className="story-masonry">
+            {filteredStories.map((story) => {
+              const authorMember = findAuthorMember(story.author_name);
+              const storyYear = getYearFromDate(story.story_date);
+
+              return (
+                <div key={story.id} className="story-manuscript">
+                  {/* Manuscript header with date & actions */}
+                  <div className="flex items-start justify-between mb-2">
+                    {storyYear && (
+                      <span className="story-manuscript-year">{storyYear}</span>
+                    )}
+                    <div className="flex gap-0.5 ml-auto">
+                      <button
+                        onClick={() => navigate(`/stories/${story.id}/edit`)}
+                        className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                        title="Edit story"
+                        style={{ color: 'var(--vine-sage, #86A789)' }}
+                      >
+                        <Edit className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteModal(story)}
+                        className="p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-red-400 hover:text-red-600"
+                        title="Delete story"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Serif title */}
+                  <Link to={`/stories/${story.id}`} className="block group">
+                    <h3 className="story-manuscript-title group-hover:opacity-80 transition-opacity">
                       {story.title}
                     </h3>
-                    <div className="flex flex-wrap gap-3 text-sm text-gray-600 dark:text-gray-400">
-                      {story.author_name && (
-                        <div className="flex items-center gap-1">
-                          <User className="w-4 h-4" />
-                          {story.author_name}
+                  </Link>
+
+                  {/* Gold divider */}
+                  <div style={{
+                    height: '1px',
+                    background: 'linear-gradient(to right, rgba(212,175,55,0) 0%, rgba(212,175,55,0.4) 50%, rgba(212,175,55,0) 100%)',
+                    margin: '7px 0',
+                  }} />
+
+                  {/* Typewriter excerpt */}
+                  <Link to={`/stories/${story.id}`} className="block">
+                    <p className="story-manuscript-excerpt">
+                      {truncateContent(story.content)}
+                    </p>
+                  </Link>
+
+                  {/* Author attribution */}
+                  {story.author_name && (
+                    <div className="flex items-center gap-1.5 mt-2.5" style={{ color: 'var(--vine-sage, #86A789)' }}>
+                      {authorMember ? (
+                        <Link
+                          to={`/members/${authorMember.id}`}
+                          className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                          style={{ color: 'var(--vine-sage, #86A789)' }}
+                        >
+                          <ProfileImage member={authorMember} size="small" className="w-4 h-4" />
+                          <span className="italic" style={{ fontFamily: 'var(--font-body, "Inter", sans-serif)', fontSize: '0.6rem' }}>Told by {story.author_name}</span>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <User className="w-3 h-3" />
+                          <span className="italic" style={{ fontFamily: 'var(--font-body, "Inter", sans-serif)', fontSize: '0.6rem' }}>Told by {story.author_name}</span>
                         </div>
                       )}
                     </div>
-                  </div>
+                  )}
 
-                  {/* Content Preview */}
-                  <div className="text-gray-700 dark:text-gray-300 mb-4 line-clamp-4 text-sm">
-                    {truncateContent(story.content)}
-                  </div>
-
-                  {/* Related Members Tags */}
-                  {story.members && story.members.length > 0 && (
-                    <div className="mb-4">
-                      <div className="flex flex-wrap gap-2">
-                        {story.members.map((member) => (
-                          <Link
-                            key={member.id}
-                            to={`/members/${member.id}`}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs hover:bg-orange-200 dark:hover:bg-orange-900/50 transition-colors"
-                          >
-                            {member.first_name} {member.last_name}
-                          </Link>
-                        ))}
-                      </div>
+                  {/* Date */}
+                  {story.story_date && (
+                    <div className="flex items-center gap-1 mt-1.5" style={{ color: 'var(--vine-sage, #86A789)', fontSize: '0.5rem' }}>
+                      <LeafIcon className="w-2.5 h-2.5" />
+                      <span>{formatDate(story.story_date)}</span>
                     </div>
                   )}
 
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <button
-                      onClick={() => navigate(`/stories/${story.id}`)}
-                      className="flex-1 text-center bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-lg hover:from-orange-600 hover:to-red-600 transition-all text-sm"
-                    >
-                      Read Story
-                    </button>
-                    <button
-                      onClick={() => navigate(`/stories/${story.id}/edit`)}
-                      className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                      title="Edit story"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(story.id, story.title)}
-                      className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                      title="Delete story"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                  {/* Indicator badges */}
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                    {/* Audio Story indicator */}
+                    {story.audio_recordings && story.audio_recordings.length > 0 && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                        style={{
+                          backgroundColor: 'rgba(134, 167, 137, 0.1)',
+                          color: 'var(--vine-green, #2E5A2E)',
+                          border: '1px solid rgba(134, 167, 137, 0.2)',
+                          fontSize: '0.65rem',
+                        }}>
+                        <Volume2 className="w-3 h-3" />
+                        Audio Story
+                      </div>
+                    )}
+
+                    {/* People mentioned indicator */}
+                    {story.members && story.members.length > 0 && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                        style={{
+                          backgroundColor: 'rgba(134, 167, 137, 0.1)',
+                          color: 'var(--vine-green, #2E5A2E)',
+                          border: '1px solid rgba(134, 167, 137, 0.2)',
+                          fontSize: '0.65rem',
+                        }}>
+                        <Users className="w-3 h-3" />
+                        {story.members.length} {story.members.length === 1 ? 'person' : 'people'} mentioned
+                      </div>
+                    )}
+
+                    {/* Photo count indicator */}
+                    {story.photos && story.photos.length > 0 && (
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+                        style={{
+                          backgroundColor: 'rgba(134, 167, 137, 0.1)',
+                          color: 'var(--vine-green, #2E5A2E)',
+                          border: '1px solid rgba(134, 167, 137, 0.2)',
+                          fontSize: '0.65rem',
+                        }}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <circle cx="8.5" cy="8.5" r="1.5" />
+                          <path d="M21 15l-5-5L5 21" />
+                        </svg>
+                        {story.photos.length} {story.photos.length === 1 ? 'photo' : 'photos'}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
+
+      {/* ── Delete Confirmation Modal ── */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="story-delete-modal">
+            <h3 style={{
+              fontFamily: 'var(--font-header, "Playfair Display", serif)',
+              fontSize: '1.25rem',
+              color: 'var(--vine-dark, #2D4F1E)',
+              marginBottom: '0.75rem',
+            }}>
+              Remove from Anthology?
+            </h3>
+            <p style={{ color: 'var(--vine-sage, #86A789)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+              Are you sure you want to remove &ldquo;{showDeleteModal.title}&rdquo; from the family anthology?
+              This cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteModal(null)}
+                className="px-4 py-2 text-sm rounded-lg transition-colors"
+                style={{ color: 'var(--vine-dark, #2D4F1E)' }}
+              >
+                Keep Story
+              </button>
+              <button
+                onClick={() => handleDelete(showDeleteModal.id)}
+                className="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

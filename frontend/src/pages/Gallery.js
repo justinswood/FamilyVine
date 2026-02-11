@@ -1,6 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import ProfileImage from '../components/ProfileImage';
+
+/* ── Tagged Members Ribbon ── */
+const TaggedMembersRibbon = ({ members }) => {
+  if (!members || members.length === 0) {
+    return (
+      <div className="gallery-tagged-ribbon">
+        <span className="gallery-tag-prompt">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <line x1="19" y1="8" x2="19" y2="14" />
+            <line x1="22" y1="11" x2="16" y2="11" />
+          </svg>
+          Tag Family Members
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="gallery-tagged-ribbon">
+      <div className="avatar-stack">
+        {members.slice(0, 5).map((member) => (
+          <ProfileImage
+            key={member.id}
+            member={member}
+            size="w-8 h-8"
+            className="rounded-full border-2 border-white shadow-sm ring-1 ring-black/5 dark:border-gray-800 dark:ring-white/10"
+          />
+        ))}
+        {members.length > 5 && (
+          <div className="avatar-overflow">
+            +{members.length - 5}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── Leaf SVG Icon (matches Chronicle leaf motif) ── */
+const LeafIcon = ({ className = 'w-5 h-5' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 19 2c1 2 2 4.5 2 8 0 5.5-3.5 10-10 10Z" />
+    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+  </svg>
+);
 
 const Gallery = () => {
   const [albums, setAlbums] = useState([]);
@@ -48,12 +96,21 @@ const Gallery = () => {
     }));
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return null;
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+      <div className="min-h-screen bg-transparent">
         <div className="max-w-7xl mx-auto p-4">
           <div className="flex justify-center items-center h-64">
-            <div className="text-xl text-gray-600">Loading photo albums...</div>
+            <div className="w-10 h-10 border-3 border-vine-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>
       </div>
@@ -61,52 +118,49 @@ const Gallery = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-30">
+    <div className="min-h-screen relative overflow-hidden bg-transparent">
+      {/* Subtle background pattern */}
+      <div className="absolute inset-0 opacity-20 pointer-events-none">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <pattern id="gallery-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M8,8 L32,8 L32,32 L8,32 Z M12,12 L28,12 L28,28 L12,28 Z M16,16 L24,16 L24,24 L16,24 Z"
-                stroke="currentColor" strokeWidth="0.5" className="text-blue-200" fill="none" />
+            <pattern id="gallery-archival-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
+              <circle cx="30" cy="30" r="1" className="text-vine-300 dark:text-gray-700" fill="currentColor" opacity="0.4" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#gallery-pattern)" />
+          <rect width="100%" height="100%" fill="url(#gallery-archival-pattern)" />
         </svg>
       </div>
 
-      {/* Floating decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-5 -left-5 w-20 h-20 bg-gradient-to-br from-pink-200/20 to-purple-200/20 rounded-full blur-lg"></div>
-        <div className="absolute -top-10 -right-10 w-30 h-30 bg-gradient-to-bl from-blue-200/20 to-cyan-200/20 rounded-full blur-lg"></div>
-        <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 w-40 h-20 bg-gradient-to-t from-purple-200/20 to-pink-200/20 rounded-full blur-lg"></div>
-      </div>
-
       {/* Main content */}
-      <div className="relative z-10 max-w-7xl mx-auto p-4">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-6">
 
-        {/* Header Section */}
-        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-4 mb-6 border border-white/50">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  Photo Gallery
-                </h1>
-                <p className="text-gray-600">Organize and share your family memories</p>
-              </div>
+        {/* Gallery Header — Gilded Vellum Ribbon */}
+        <div className="gallery-header mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <div>
+              <h1 className="recipe-header-title">Family Archive</h1>
+              <p className="mt-0.5 tracking-widest uppercase" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)', fontSize: '0.65rem' }}>
+                Preserving memories across generations
+              </p>
             </div>
 
             <button
               onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-3 rounded-full hover:from-green-600 hover:to-emerald-600 transform hover:scale-105 transition-all shadow-lg font-medium"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all"
+              style={{
+                fontFamily: 'var(--font-body)',
+                color: '#fffdf9',
+                background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))',
+                boxShadow: '0 2px 8px rgba(45, 79, 30, 0.25)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(45, 79, 30, 0.35)'; e.currentTarget.style.transform = 'scale(1.03)'; }}
+              onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(45, 79, 30, 0.25)'; e.currentTarget.style.transform = 'scale(1)'; }}
             >
-              <span className="text-lg">📷</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
               Create Album
             </button>
           </div>
@@ -114,41 +168,52 @@ const Gallery = () => {
 
         {/* Create Album Modal */}
         {showCreateForm && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white/95 backdrop-blur-sm p-6 rounded-xl max-w-md w-full shadow-2xl border border-white/50">
-              <h2 className="text-xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-6 rounded-xl max-w-md w-full shadow-2xl border border-white/50 dark:border-gray-700">
+              <h2 className="text-xl font-bold mb-4" style={{ fontFamily: 'var(--font-header)', color: 'var(--vine-dark)' }}>
                 Create New Album
               </h2>
               <form onSubmit={handleCreateAlbum} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Album Title</label>
+                  <label className="block text-sm font-medium mb-2 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
+                    Album Title
+                  </label>
                   <input
                     type="text"
                     name="title"
                     value={newAlbum.title}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all"
+                    placeholder="e.g., Christmas 1952"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Description</label>
+                  <label className="block text-sm font-medium mb-2 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
+                    Description
+                  </label>
                   <textarea
                     name="description"
                     value={newAlbum.description}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 h-24 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-4 py-2.5 h-24 bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all resize-none"
+                    placeholder="Historical context for this collection..."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700">Event Date (optional)</label>
+                  <label className="block text-sm font-medium mb-2 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
+                    Historical Date
+                  </label>
                   <input
                     type="date"
                     name="event_date"
                     value={newAlbum.event_date}
                     onChange={handleInputChange}
-                    className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all"
                   />
+                  <p className="text-xs mt-1" style={{ color: 'var(--vine-sage)' }}>
+                    When were these photos taken? Links to the Chronicle timeline.
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -156,21 +221,25 @@ const Gallery = () => {
                     name="is_public"
                     checked={newAlbum.is_public}
                     onChange={handleInputChange}
-                    className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                    className="w-4 h-4 text-vine-600 bg-white border-vine-200 rounded focus:ring-vine-500 focus:ring-2"
                   />
-                  <label className="text-sm text-gray-700">Make album public</label>
+                  <label className="text-sm text-vine-dark dark:text-gray-300">Make album public</label>
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button
                     type="submit"
-                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transform hover:scale-105 transition-all shadow-lg font-medium"
+                    className="flex-1 px-4 py-2.5 rounded-lg text-white text-sm font-medium transition-all"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))',
+                      boxShadow: '0 2px 8px rgba(45, 79, 30, 0.25)',
+                    }}
                   >
                     Create Album
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowCreateForm(false)}
-                    className="flex-1 bg-gradient-to-r from-gray-400 to-gray-500 text-white px-4 py-2 rounded-lg hover:from-gray-500 hover:to-gray-600 transform hover:scale-105 transition-all shadow-lg font-medium"
+                    className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border border-vine-200 dark:border-gray-600 text-vine-dark dark:text-gray-300 hover:bg-vine-50 dark:hover:bg-gray-700 transition-all"
                   >
                     Cancel
                   </button>
@@ -180,140 +249,99 @@ const Gallery = () => {
           </div>
         )}
 
-        {/* Albums Grid */}
+        {/* Albums — Masonry Grid */}
         {albums.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="bg-white/60 backdrop-blur-sm rounded-xl p-8 shadow-lg border border-white/50 max-w-md mx-auto">
-              <div className="text-6xl mb-4">📷</div>
-              <h3 className="text-xl font-semibold text-gray-700 mb-2">No Albums Yet</h3>
-              <p className="text-gray-600 mb-4">Create your first album to start organizing your family photos!</p>
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-full hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all shadow-lg font-medium"
-              >
-                Create First Album
-              </button>
+          <div className="gallery-empty-state max-w-md mx-auto">
+            <div className="flex justify-center mb-4">
+              <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--vine-sage)' }}>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
             </div>
+            <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'var(--font-header)', color: 'var(--vine-dark)' }}>
+              No Albums Yet
+            </h3>
+            <p className="text-sm mb-5" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)' }}>
+              Create your first album to start preserving your family's visual history.
+            </p>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all"
+              style={{
+                fontFamily: 'var(--font-body)',
+                color: '#fffdf9',
+                background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))',
+                boxShadow: '0 2px 8px rgba(45, 79, 30, 0.25)',
+              }}
+            >
+              Create First Album
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {albums.map((album, index) => {
-              // Create unique gradient combinations for each album
-              const gradients = [
-                'from-pink-400 via-purple-400 to-indigo-500',
-                'from-blue-400 via-cyan-400 to-teal-500', 
-                'from-green-400 via-emerald-400 to-blue-500',
-                'from-yellow-400 via-orange-400 to-red-500',
-                'from-purple-400 via-pink-400 to-rose-500',
-                'from-indigo-400 via-blue-400 to-cyan-500',
-                'from-emerald-400 via-green-400 to-lime-500',
-                'from-rose-400 via-pink-400 to-purple-500',
-                'from-cyan-400 via-blue-400 to-indigo-500',
-                'from-orange-400 via-red-400 to-pink-500'
-              ];
-              
-              const borderGradients = [
-                'from-pink-500 to-indigo-600',
-                'from-blue-500 to-teal-600',
-                'from-green-500 to-blue-600', 
-                'from-yellow-500 to-red-600',
-                'from-purple-500 to-rose-600',
-                'from-indigo-500 to-cyan-600',
-                'from-emerald-500 to-lime-600',
-                'from-rose-500 to-purple-600',
-                'from-cyan-500 to-indigo-600',
-                'from-orange-500 to-pink-600'
-              ];
+          <div className="gallery-masonry">
+            {albums.map((album) => (
+              <Link
+                key={album.id}
+                to={`/gallery/${album.id}`}
+                className="gallery-album-card block"
+              >
+                {/* Cover image with heirloom filter */}
+                <div className="gallery-cover-container">
+                  {album.cover_photo_path ? (
+                    <img
+                      src={`${process.env.REACT_APP_API}/${album.cover_photo_path}`}
+                      alt={album.title}
+                      className={`heirloom-img${album.cover_photo_rotation === 90 ? ' rotated-90' : ''}${album.cover_photo_rotation === 180 ? ' rotated-180' : ''}${album.cover_photo_rotation === 270 ? ' rotated-270' : ''}`}
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="gallery-no-cover">
+                      <LeafIcon className="w-10 h-10 mb-2 opacity-40" />
+                      <span className="text-xs font-medium opacity-50" style={{ fontFamily: 'var(--font-body)' }}>
+                        No cover photo
+                      </span>
+                    </div>
+                  )}
 
-              const albumGradient = gradients[index % gradients.length];
-              const albumBorder = borderGradients[index % borderGradients.length];
-
-              return (
-                <Link
-                  key={album.id}
-                  to={`/gallery/${album.id}`}
-                  className="group relative bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden transform hover:-translate-y-2 hover:rotate-1"
-                >
-                  {/* Animated border gradient */}
-                  <div className={`absolute inset-0 bg-gradient-to-r ${albumBorder} opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl p-0.5`}>
-                    <div className="bg-white rounded-2xl h-full w-full"></div>
+                  {/* Photo count badge */}
+                  <div className="gallery-photo-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                    {album.photo_count || 0}
                   </div>
-                  
-                  {/* Content container */}
-                  <div className="relative z-10">
-                    {/* Image/thumbnail section with gradient overlay */}
-                    <div className="relative aspect-w-4 aspect-h-3">
-                      {album.cover_photo_path ? (
-                        <>
-                          <img
-                            src={`${process.env.REACT_APP_API}/${album.cover_photo_path}`}
-                            alt={album.title}
-                            className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500 rounded-t-2xl"
-                          />
-                          {/* Gradient overlay on hover */}
-                          <div className={`absolute inset-0 bg-gradient-to-t ${albumGradient} opacity-0 group-hover:opacity-30 transition-opacity duration-300 rounded-t-2xl`}></div>
-                        </>
-                      ) : (
-                        <div className={`flex items-center justify-center h-48 bg-gradient-to-br ${albumGradient} rounded-t-2xl relative overflow-hidden`}>
-                          {/* Animated background pattern */}
-                          <div className="absolute inset-0 opacity-20">
-                            <div className="absolute -top-4 -left-4 w-8 h-8 bg-white/30 rounded-full animate-bounce delay-100"></div>
-                            <div className="absolute top-8 right-8 w-6 h-6 bg-white/20 rounded-full animate-bounce delay-300"></div>
-                            <div className="absolute bottom-6 left-1/3 w-4 h-4 bg-white/25 rounded-full animate-bounce delay-500"></div>
-                          </div>
-                          {/* Camera icon with animation */}
-                          <div className="relative">
-                            <svg className="w-20 h-20 text-white/80 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            {/* Pulse effect */}
-                            <div className="absolute inset-0 bg-white/20 rounded-full group-hover:animate-ping"></div>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Photo count badge */}
-                      <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {album.photo_count || 0}
-                      </div>
+                </div>
+
+                {/* Content */}
+                <div className="gallery-card-content">
+                  <h3 className="gallery-card-title">{album.title}</h3>
+
+                  {album.description && (
+                    <p className="gallery-card-description">{album.description}</p>
+                  )}
+
+                  {/* Metadata row */}
+                  <div className="gallery-card-meta">
+                    <div className="gallery-card-meta-item">
+                      <LeafIcon className="w-3.5 h-3.5" />
+                      {album.photo_count || 0} photos
                     </div>
 
-                    {/* Content section */}
-                    <div className="p-5">
-                      <h3 className="font-bold text-xl mb-2 text-gray-800 group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text group-hover:from-purple-600 group-hover:to-blue-600 transition-all duration-300">
-                        {album.title}
-                      </h3>
-                      
-                      {album.description && (
-                        <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">{album.description}</p>
-                      )}
-                      
-                      {/* Footer with enhanced styling */}
-                      <div className="flex justify-between items-center pt-3 border-t border-gray-100">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${albumGradient} animate-pulse`}></div>
-                          <span className="text-sm font-medium text-gray-700">
-                            {album.photo_count || 0} photos
-                          </span>
-                        </div>
-                        
-                        {album.event_date && (
-                          <span className="text-xs text-gray-500 bg-gray-50 px-3 py-1 rounded-full font-medium">
-                            {new Date(album.event_date).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    {album.event_date && (
+                      <span className="gallery-card-meta-date">
+                        {formatDate(album.event_date)}
+                      </span>
+                    )}
                   </div>
 
-                  {/* Hover glow effect */}
-                  <div className={`absolute -inset-1 bg-gradient-to-r ${albumGradient} rounded-2xl blur-lg opacity-0 group-hover:opacity-20 transition-opacity duration-300 -z-10`}></div>
-                </Link>
-              );
-            })}
+                  {/* Tagged Members Ribbon */}
+                  <TaggedMembersRibbon members={album.tagged_members} />
+                </div>
+              </Link>
+            ))}
           </div>
         )}
       </div>

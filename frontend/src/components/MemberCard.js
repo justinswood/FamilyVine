@@ -1,85 +1,102 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
+import { MapPin, BookOpen, Camera } from 'lucide-react';
 import ProfileImage from '../components/ProfileImage';
 import { calculateAge } from '../utils/dateUtils';
+import { formatFullName } from '../utils/nameUtils';
 
-const MemberCard = ({ member }) => {
-  // Safety check: if member is undefined, don't render anything
-  if (!member) {
-    return null;
-  }
+const FleurDeLis = () => (
+  <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ display: 'block' }}>
+    <path d="M12 2C12 2 9 6 9 9c0 1.5.7 2.8 1.8 3.6C9.3 13.2 8 14.8 8 16.5c0 .7.1 1.3.4 1.9L6 17c-1.5-.5-2.5-1-3-1.5.5 1 1.5 2 3 2.5l2.8 1c.5 1 1.3 1.8 2.2 2.3V22h2v-.7c.9-.5 1.7-1.3 2.2-2.3l2.8-1c1.5-.5 2.5-1.5 3-2.5-.5.5-1.5 1-3 1.5l-2.4 1.4c.3-.6.4-1.2.4-1.9 0-1.7-1.3-3.3-2.8-3.9C15.3 11.8 16 10.5 16 9c0-3-3-7-3-7h-1z" />
+  </svg>
+);
 
-  const fullName = `${member.first_name || ''} ${member.middle_name ? ' ' + member.middle_name + ' ' : ' '}${member.last_name || ''}`.trim();
+const MemberCard = ({ member, memoryCounts, kinshipTitle }) => {
+  if (!member) return null;
+
+  const fullName = formatFullName(member);
   const age = calculateAge(member.birth_date, member.death_date);
+  const isDeceased = member.is_alive === false || member.death_date !== null;
+  const memories = memoryCounts || { stories: 0, photos: 0 };
+  const totalMemories = memories.stories + memories.photos;
 
-  // Format age display based on whether member is alive or deceased
-  const formatAgeDisplay = (age, isAlive) => {
+  const formatAgeDisplay = () => {
     if (age === null) return null;
-    
-    if (isAlive !== false) {
-      return `${age} years old`;
-    } else {
-      return `Lived ${age} years`;
-    }
+    if (!isDeceased) return `${age} years old`;
+    return `Lived ${age} years`;
   };
 
-  // Check if member is deceased (handles both is_alive false and death_date)
-  const isDeceased = member.is_alive === false || member.death_date !== null;
+  const formatLifeYears = () => {
+    const birthYear = member.birth_date ? new Date(member.birth_date).getFullYear() : null;
+    const deathYear = member.death_date ? new Date(member.death_date).getFullYear() : null;
+    if (!birthYear) return null;
+    if (isDeceased && deathYear) return `${birthYear} \u2014 ${deathYear}`;
+    return `b. ${birthYear}`;
+  };
 
   return (
-    <div className="bg-white shadow rounded-xl p-4 text-center hover:shadow-lg transition-shadow">
-      <div className="relative mb-4 flex justify-center">
-        {/* Use ProfileImage component with safety checks */}
-        <ProfileImage 
-          member={member} 
-          size="medium" 
-          className="border-2 border-gray-200" 
-        />
-        
-        {/* Deceased indicator */}
-        {isDeceased && (
-          <div className="absolute -top-1 -right-1 bg-gray-100 rounded-full p-1 border-2 border-white shadow-sm">
-            <span 
-              className="text-gray-600" 
-              title="Deceased"
-              style={{ fontSize: '1.5em', lineHeight: '1' }}
-            >
-              ✝
-            </span>
+    <div className={`member-card-heirloom ${isDeceased ? 'card-deceased' : 'card-living'} group`}>
+      {/* Fleur-de-lis for deceased members */}
+      {isDeceased && (
+        <div className="fleur-indicator" title="In Memoriam">
+          <FleurDeLis />
+        </div>
+      )}
+
+      {/* Kinship tooltip on hover */}
+      {kinshipTitle && (
+        <div className="kinship-tooltip">
+          {kinshipTitle}
+        </div>
+      )}
+
+      {/* Photo with memory badge */}
+      <div className="heirloom-photo-wrap">
+        <div className="heirloom-photo-ring">
+          <ProfileImage
+            member={member}
+            size="medium"
+            className=""
+          />
+        </div>
+        {totalMemories > 0 && (
+          <div className="memory-badge" title={`${memories.stories} stories, ${memories.photos} photos`}>
+            {memories.stories > 0 && <><BookOpen style={{ width: 8, height: 8 }} /> {memories.stories}</>}
+            {memories.stories > 0 && memories.photos > 0 && <span style={{ opacity: 0.5 }}>&middot;</span>}
+            {memories.photos > 0 && <><Camera style={{ width: 8, height: 8 }} /> {memories.photos}</>}
           </div>
         )}
       </div>
-      
-      <h3 className="text-lg font-semibold text-gray-800 mb-1">{fullName || 'Unknown Name'}</h3>
-      
-      {/* Age display */}
-      {age !== null && (
-        <p className="text-gray-500 text-sm mb-2">
-          {formatAgeDisplay(age, member.is_alive)}
-        </p>
+
+      {/* Name */}
+      <h3 className="heirloom-name">{fullName || 'Unknown Name'}</h3>
+
+      {/* Kinship subtitle (always visible if available) */}
+      {kinshipTitle && (
+        <p className="heirloom-kinship">{kinshipTitle}</p>
       )}
-      
-      {/* Location with icon */}
-      <div className="text-gray-600 mb-2 flex justify-center items-center gap-1">
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-        <span>{member.location || 'Location not specified'}</span>
+
+      {/* Ledger-style dates */}
+      {formatLifeYears() && (
+        <p className="heirloom-ledger">{formatLifeYears()}</p>
+      )}
+      {formatAgeDisplay() && !formatLifeYears() && (
+        <p className="heirloom-ledger">{formatAgeDisplay()}</p>
+      )}
+
+      {/* Location */}
+      <div className="heirloom-location">
+        <MapPin style={{ width: 11, height: 11 }} />
+        <span>{member.location || 'Unknown'}</span>
       </div>
-      
-      <div className="flex justify-center space-x-3">
-        <Link 
-          to={`/members/${member.id || ''}`} 
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-        >
-          View
+
+      {/* Actions */}
+      <div className="heirloom-actions">
+        <Link to={`/members/${member.id || ''}`} className="btn-registry btn-registry-primary">
+          View Profile
         </Link>
-        <Link 
-          to={`/members/${member.id || ''}/edit`} 
-          className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
-        >
+        <Link to={`/members/${member.id || ''}/edit`} className="btn-registry btn-registry-secondary">
           Edit
         </Link>
       </div>
@@ -96,8 +113,14 @@ MemberCard.propTypes = {
     birth_date: PropTypes.string,
     death_date: PropTypes.string,
     photo_url: PropTypes.string,
-    is_alive: PropTypes.bool
-  })
+    is_alive: PropTypes.bool,
+    location: PropTypes.string
+  }),
+  memoryCounts: PropTypes.shape({
+    stories: PropTypes.number,
+    photos: PropTypes.number
+  }),
+  kinshipTitle: PropTypes.string
 };
 
 export default React.memo(MemberCard);

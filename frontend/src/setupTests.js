@@ -5,7 +5,7 @@
 import '@testing-library/jest-dom';
 
 // Mock environment variables for testing
-process.env.REACT_APP_API = process.env.REACT_APP_API || 'http://localhost:5050';
+process.env.REACT_APP_API = process.env.REACT_APP_API ?? '';
 
 // Mock IntersectionObserver (used by some components)
 global.IntersectionObserver = class IntersectionObserver {

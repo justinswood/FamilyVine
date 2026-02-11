@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, User, LogOut, ChevronDown, UserPlus, Users, Image, Book, Clock, UtensilsCrossed } from 'lucide-react';
+import { Settings as SettingsIcon, User, LogOut, ChevronDown, UserPlus, Users, Image, Book, Clock, UtensilsCrossed, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import GlobalSearch from './GlobalSearch';
+import { useTheme } from '../contexts/ThemeContext';
 
 const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { toggleTheme, isDark } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMembersMenu, setShowMembersMenu] = useState(false);
   const [showMemoriesMenu, setShowMemoriesMenu] = useState(false);
@@ -17,8 +18,6 @@ const Navigation = () => {
   const menuRef = useRef(null);
   const membersMenuRef = useRef(null);
   const memoriesMenuRef = useRef(null);
-  const membersButtonRef = useRef(null);
-  const memoriesButtonRef = useRef(null);
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -38,8 +37,9 @@ const Navigation = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Hide navigation on login and register pages
-  if (location.pathname === '/login' || location.pathname === '/register') {
+  // Hide navigation for unauthenticated users and on auth pages
+  if (!user || location.pathname === '/login' || location.pathname === '/register'
+      || location.pathname === '/forgot-password' || location.pathname === '/reset-password') {
     return null;
   }
 
@@ -48,209 +48,268 @@ const Navigation = () => {
     navigate('/login');
   };
 
-  const handleMembersClick = () => {
-    if (membersButtonRef.current) {
-      const rect = membersButtonRef.current.getBoundingClientRect();
-      setMembersButtonRect(rect);
-    }
+  const handleMembersClick = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMembersButtonRect(rect);
     setShowMembersMenu(!showMembersMenu);
   };
 
-  const handleMemoriesClick = () => {
-    if (memoriesButtonRef.current) {
-      const rect = memoriesButtonRef.current.getBoundingClientRect();
-      setMemoriesButtonRect(rect);
-    }
+  const handleMemoriesClick = (event) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMemoriesButtonRect(rect);
     setShowMemoriesMenu(!showMemoriesMenu);
   };
 
+  // Check if current path matches the link
+  const isActive = (path) => location.pathname === path;
+  const isActiveGroup = (paths) => paths.some(p => location.pathname.startsWith(p));
+
+  // Archival nav link classes – parchment pill with gold active dot
+  const getNavLinkClasses = (active) => `
+    inline-block rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-300 relative
+    ${active
+      ? "text-[#2E5A2E] dark:text-vine-400 font-semibold after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-[#D4AF37]"
+      : 'text-[#4A4A4A] dark:text-secondary-300 hover:text-[#2E5A2E] dark:hover:text-vine-400 hover:bg-[#2E5A2E]/10 dark:hover:bg-[#2E5A2E]/15'
+    }
+  `;
+
+  // Common dropdown item classes
+  const dropdownItemClasses = "flex items-center gap-2 px-3 py-2 text-xs text-vine-600 dark:text-secondary-300 hover:bg-vine-50 dark:hover:bg-vine-900/20 hover:text-vine-dark dark:hover:text-vine-400 transition-colors";
+
   return (
-    <nav className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-800 dark:to-gray-700 shadow-sm transition-colors duration-200 border-b border-gray-200 dark:border-gray-600 sticky top-0 z-50">
-      <div className="w-full px-3 py-0.5 flex items-center justify-between min-w-0">
-        {/* Left section - Logo (fixed) */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Link to="/" className="block">
-            <img
-              src="/logo.png"
-              alt="FamilyVine"
-              className="h-16 w-auto object-contain hover:opacity-90 transition-opacity duration-200"
-              style={{ maxWidth: '250px' }}
-            />
-          </Link>
-        </div>
-
-        {/* Center section - Scrollable Navigation Links */}
-        <div className="flex-1 mx-4 min-w-0">
-          <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide pb-1">
-            <Link
-              to="/tree"
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Tree
+    <nav className="bg-vine-50/90 dark:bg-secondary-800 backdrop-blur-lg sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-3 py-1.5">
+        <div className="flex items-center justify-between">
+          {/* Left section - Logo */}
+          <div className="flex items-center flex-1">
+            <Link to="/" className="block group -my-3">
+              <img
+                src="/logo.png"
+                alt="FamilyVine"
+                className="h-14 w-auto object-contain transition-transform duration-200 group-hover:scale-105"
+                style={{ maxWidth: '180px' }}
+              />
             </Link>
+          </div>
 
-            {/* Members Dropdown */}
-            <div className="flex-shrink-0">
-              <button
-                ref={membersButtonRef}
-                onClick={handleMembersClick}
-                className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex items-center gap-1"
-              >
-                Members
-                <ChevronDown className="w-3 h-3" />
-              </button>
+          {/* Center section - Dock-style Navigation */}
+          <div className="hidden md:flex items-center justify-center">
+            <div
+              className="flex items-center rounded-full p-1 backdrop-blur-sm"
+              style={{
+                backgroundColor: isDark ? '#1e293b' : '#F9F8F3',
+                border: `1px solid rgba(212, 175, 55, ${isDark ? '0.15' : '0.3'})`,
+                boxShadow: isDark
+                  ? '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(212, 175, 55, 0.1)'
+                  : '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(212, 175, 55, 0.2)',
+              }}
+            >
+              <Link to="/tree" className={getNavLinkClasses(isActive('/tree'))}>
+                Tree
+              </Link>
+
+              {/* Members Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={handleMembersClick}
+                  className={`${getNavLinkClasses(isActiveGroup(['/members', '/add']))} flex items-center gap-1`}
+                >
+                  Members
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showMembersMenu ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              {/* Memories Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={handleMemoriesClick}
+                  className={`${getNavLinkClasses(isActiveGroup(['/gallery', '/recipes', '/stories', '/timeline']))} flex items-center gap-1`}
+                >
+                  Memories
+                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${showMemoriesMenu ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              <Link to="/map" className={getNavLinkClasses(isActive('/map'))}>
+                Map
+              </Link>
+
+              <Link to="/calendar" className={getNavLinkClasses(isActive('/calendar'))}>
+                Calendar
+              </Link>
             </div>
+          </div>
 
-            {/* Memories Dropdown */}
-            <div className="flex-shrink-0">
-              <button
-                ref={memoriesButtonRef}
-                onClick={handleMemoriesClick}
-                className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex items-center gap-1"
-              >
-                Memories
-                <ChevronDown className="w-3 h-3" />
-              </button>
-            </div>
+          {/* Right section - Theme Toggle, Settings, and User Menu */}
+          <div className="flex items-center gap-1 flex-1 justify-end">
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className="p-1.5 text-[#2E5A2E] dark:text-[#D4AF37] hover:text-[#D4AF37] dark:hover:text-vine-400
+                         hover:bg-[#F9F8F3] dark:hover:bg-secondary-700 rounded-full transition-all duration-300"
+              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {isDark ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+            </button>
 
             <Link
-              to="/map"
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
+              to="/settings"
+              className="p-1.5 text-[#2E5A2E] dark:text-[#D4AF37] hover:text-[#D4AF37] dark:hover:text-vine-400
+                         hover:bg-[#F9F8F3] dark:hover:bg-secondary-700 rounded-full transition-all duration-300"
+              title="Settings"
             >
-              Map
+              <SettingsIcon className="w-4 h-4" />
             </Link>
 
-            <Link
-              to="/calendar"
-              className="px-2 py-1.5 text-sm text-gray-700 dark:text-gray-300 font-medium rounded-md transition-all duration-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 whitespace-nowrap flex-shrink-0"
-            >
-              Calendar
-            </Link>
+            {/* User Menu */}
+            {user && (
+              <div className="relative" ref={menuRef}>
+                <button
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  className="p-1.5 text-[#2E5A2E] dark:text-[#D4AF37] hover:text-[#D4AF37] dark:hover:text-vine-400
+                             hover:bg-[#F9F8F3] dark:hover:bg-secondary-700 rounded-full transition-all duration-300"
+                  title="User Menu"
+                >
+                  <User className="w-4 h-4" />
+                </button>
+
+                {/* Dropdown Menu */}
+                {showUserMenu && (
+                  <div className="absolute right-0 mt-1.5 w-48 card py-1.5 z-50 animate-scale-in">
+                    <div className="px-3 py-2 border-b border-vine-200 dark:border-secondary-700">
+                      <p className="text-xs font-semibold text-vine-dark dark:text-white font-heading">{user.username}</p>
+                      <p className="text-[0.65rem] text-vine-sage dark:text-secondary-400 mt-0.5">{user.email}</p>
+                      <span className="inline-block mt-1.5 px-1.5 py-0.5 text-[0.65rem] font-medium bg-vine-100 dark:bg-vine-900/30 text-vine-600 dark:text-vine-300 rounded-full capitalize">
+                        {user.role}
+                      </span>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-vine-600 dark:text-secondary-300 hover:bg-error-50 dark:hover:bg-error-900/20 hover:text-error-600 dark:hover:text-error-400 transition-colors"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right section - Search, Settings, and User Menu (fixed) */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <GlobalSearch />
-          <Link
-            to="/settings"
-            className="p-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400
-                       hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r
-                       dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 rounded-full transition-all duration-300
-                       hover:scale-110"
-            title="Settings"
+        {/* Mobile Navigation - Simplified row below */}
+        <div className="md:hidden mt-2">
+          <div
+            className="flex items-center justify-center rounded-full p-1 overflow-x-auto backdrop-blur-sm"
+            style={{
+              backgroundColor: isDark ? '#1e293b' : '#F9F8F3',
+              border: `1px solid rgba(212, 175, 55, ${isDark ? '0.15' : '0.3'})`,
+              boxShadow: isDark
+                ? '0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(212, 175, 55, 0.1)'
+                : '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(212, 175, 55, 0.2)',
+            }}
           >
-            <SettingsIcon className="w-5 h-5" />
-          </Link>
-
-          {/* User Menu */}
-          {user && (
-            <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center gap-2 p-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400
-                           hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 dark:hover:bg-gradient-to-r
-                           dark:hover:from-blue-900/20 dark:hover:to-purple-900/20 rounded-full transition-all duration-300
-                           hover:scale-110"
-                title="User Menu"
-              >
-                <User className="w-5 h-5" />
-              </button>
-
-              {/* Dropdown Menu */}
-              {showUserMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">{user.username}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
-                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 capitalize">{user.role}</p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Logout
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+            <Link to="/tree" className={getNavLinkClasses(isActive('/tree'))}>
+              Tree
+            </Link>
+            <button
+              onClick={handleMembersClick}
+              className={`${getNavLinkClasses(isActiveGroup(['/members', '/add']))} flex items-center gap-1`}
+            >
+              Members
+              <ChevronDown className={`w-3 h-3 ${showMembersMenu ? 'rotate-180' : ''}`} />
+            </button>
+            <button
+              onClick={handleMemoriesClick}
+              className={`${getNavLinkClasses(isActiveGroup(['/gallery', '/recipes', '/stories', '/timeline']))} flex items-center gap-1`}
+            >
+              Memories
+              <ChevronDown className={`w-3 h-3 ${showMemoriesMenu ? 'rotate-180' : ''}`} />
+            </button>
+            <Link to="/map" className={getNavLinkClasses(isActive('/map'))}>
+              Map
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Members Dropdown Menu - Fixed positioning outside scrollable container */}
+      {/* Members Dropdown Menu - Fixed positioning */}
       {showMembersMenu && membersButtonRect && createPortal(
         <div
           ref={membersMenuRef}
-          className="fixed w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2"
+          className="fixed w-44 card py-1.5 animate-scale-in"
           style={{
-            top: `${membersButtonRect.bottom + 8}px`,
-            left: `${membersButtonRect.left}px`,
+            top: `${membersButtonRect.bottom + 6}px`,
+            left: `${membersButtonRect.left + (membersButtonRect.width / 2) - 88}px`,
             zIndex: 10000
           }}
         >
           <Link
             to="/members"
             onClick={() => setShowMembersMenu(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className={dropdownItemClasses}
           >
-            <Users className="w-4 h-4" />
+            <Users className="w-3.5 h-3.5" />
             View Members
           </Link>
           <Link
             to="/add"
             onClick={() => setShowMembersMenu(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className={dropdownItemClasses}
           >
-            <UserPlus className="w-4 h-4" />
+            <UserPlus className="w-3.5 h-3.5" />
             Add Member
           </Link>
         </div>,
         document.body
       )}
 
-      {/* Memories Dropdown Menu - Fixed positioning outside scrollable container */}
+      {/* Memories Dropdown Menu - Fixed positioning */}
       {showMemoriesMenu && memoriesButtonRect && createPortal(
         <div
           ref={memoriesMenuRef}
-          className="fixed w-48 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2"
+          className="fixed w-44 card py-1.5 animate-scale-in"
           style={{
-            top: `${memoriesButtonRect.bottom + 8}px`,
-            left: `${memoriesButtonRect.left}px`,
+            top: `${memoriesButtonRect.bottom + 6}px`,
+            left: `${memoriesButtonRect.left + (memoriesButtonRect.width / 2) - 88}px`,
             zIndex: 10000
           }}
         >
           <Link
             to="/gallery"
             onClick={() => setShowMemoriesMenu(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className={dropdownItemClasses}
           >
-            <Image className="w-4 h-4" />
+            <Image className="w-3.5 h-3.5" />
             Gallery
           </Link>
           <Link
             to="/recipes"
             onClick={() => setShowMemoriesMenu(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className={dropdownItemClasses}
           >
-            <UtensilsCrossed className="w-4 h-4" />
+            <UtensilsCrossed className="w-3.5 h-3.5" />
             Recipes
           </Link>
           <Link
             to="/stories"
             onClick={() => setShowMemoriesMenu(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className={dropdownItemClasses}
           >
-            <Book className="w-4 h-4" />
+            <Book className="w-3.5 h-3.5" />
             Stories
           </Link>
           <Link
             to="/timeline"
             onClick={() => setShowMemoriesMenu(false)}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className={dropdownItemClasses}
           >
-            <Clock className="w-4 h-4" />
+            <Clock className="w-3.5 h-3.5" />
             Timeline
           </Link>
         </div>,

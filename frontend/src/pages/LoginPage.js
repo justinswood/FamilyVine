@@ -1,196 +1,248 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+
+/* Fleur-de-lis SVG for password visibility toggle */
+const FleurDeLis = ({ className = 'w-5 h-5' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C12 2 9.5 5.5 9.5 8C9.5 9.8 10.5 11 12 11.5C13.5 11 14.5 9.8 14.5 8C14.5 5.5 12 2 12 2Z" opacity="0.9"/>
+    <path d="M5 10C5 10 3 12.5 4 14.5C4.8 16 6.5 16.5 8 16C8 16 7 14.5 7.5 13C8 11.5 9.5 11 9.5 11C7.5 11 5 10 5 10Z" opacity="0.7"/>
+    <path d="M19 10C19 10 21 12.5 20 14.5C19.2 16 17.5 16.5 16 16C16 16 17 14.5 16.5 13C16 11.5 14.5 11 14.5 11C16.5 11 19 10 19 10Z" opacity="0.7"/>
+    <path d="M12 12V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+    <path d="M9 18H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+  </svg>
+);
+
+const LEGACY_QUOTES = [
+  "Family is the vine that holds us all together.",
+  "Every branch tells a story worth preserving.",
+  "In our roots, we find our strength.",
+  "The best heritage is a loving family.",
+  "We carry the stories of those who came before us.",
+  "A family tree is a garden of memories.",
+];
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const [searchParams] = useSearchParams();
+  const { login, isAuthenticated } = useAuth();
 
-  // State to store form data (empty by default)
-  const [formData, setFormData] = useState({
-    username: '',
-    password: ''
-  });
-
-  // State for loading and error messages
+  const [formData, setFormData] = useState({ username: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [shaking, setShaking] = useState(false);
 
-  // Handle input changes
+  // Check if session expired
+  const sessionExpired = searchParams.get('session') === 'expired';
+
+  // Redirect already-authenticated users to homepage
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Rotating legacy quote
+  const [quoteIndex, setQuoteIndex] = useState(() =>
+    Math.floor(Math.random() * LEGACY_QUOTES.length)
+  );
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setQuoteIndex(prev => (prev + 1) % LEGACY_QUOTES.length);
+    }, 8000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const currentQuote = useMemo(() => LEGACY_QUOTES[quoteIndex], [quoteIndex]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    // Clear error when user starts typing
+    setFormData(prev => ({ ...prev, [name]: value }));
     if (error) setError('');
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
-    // Basic validation
     if (!formData.username || !formData.password) {
       setError('Please fill in all fields');
+      setShaking(true);
+      setTimeout(() => setShaking(false), 600);
       setLoading(false);
       return;
     }
 
-    // Call the login function from AuthContext
     const result = await login(formData.username, formData.password);
 
     if (result.success) {
-      // Redirect to home page
       navigate('/');
     } else {
       setError(result.error || 'Invalid username or password');
+      setShaking(true);
+      setTimeout(() => setShaking(false), 600);
     }
 
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        
-        {/* Logo and Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4 shadow-lg">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent pb-1">
-            FamilyVine
-          </h1>
-          <p className="text-gray-600 mt-2">Welcome back to your family tree</p>
+    <div className="login-gateway">
+      {/* Brand logo */}
+      <div className="login-brand">
+        <img
+          src="/logo.png"
+          alt="FamilyVine"
+          className="login-brand-logo h-16 w-auto object-contain"
+        />
+      </div>
+
+      {/* Login form card */}
+      <div className="max-w-[400px] w-full">
+        <div className={`login-card-vellum ${shaking ? 'login-card-shake' : ''}`}>
+          <h2 style={{ fontFamily: 'var(--font-header)', color: 'var(--vine-dark)', fontSize: '1.2rem', fontWeight: 600, textAlign: 'center', marginBottom: '14px' }}>
+            Sign In
+          </h2>
+
+          <form onSubmit={handleSubmit}>
+            {/* Session expired message */}
+            {sessionExpired && !error && (
+              <div className="mb-4 p-3 rounded-lg text-center" style={{
+                background: 'rgba(212, 175, 55, 0.1)',
+                border: '1px solid rgba(212, 175, 55, 0.3)',
+                color: 'var(--vine-dark)'
+              }}>
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', margin: 0 }}>
+                  Your session has expired. Please sign in again.
+                </p>
+              </div>
+            )}
+
+            {/* Error message */}
+            {error && (
+              <div className="login-error mb-4">
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {/* Username */}
+              <div>
+                <label style={{ fontFamily: 'var(--font-header)', fontSize: '0.8rem', fontWeight: 500, color: 'var(--vine-dark)', display: 'block', marginBottom: '6px' }}>
+                  Username
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    className="login-input"
+                    placeholder="Enter username"
+                    disabled={loading}
+                    autoComplete="username"
+                  />
+                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--vine-sage)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Password */}
+              <div>
+                <label style={{ fontFamily: 'var(--font-header)', fontSize: '0.8rem', fontWeight: 500, color: 'var(--vine-dark)', display: 'block', marginBottom: '6px' }}>
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    className="login-input"
+                    style={{ paddingRight: '40px' }}
+                    placeholder="Enter password"
+                    disabled={loading}
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={`login-fleur-toggle ${showPassword ? 'active' : ''}`}
+                    disabled={loading}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    <FleurDeLis className="w-4.5 h-4.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember me & Forgot */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="login-leaf-check"
+                  />
+                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--vine-sage)', marginLeft: '8px' }}>
+                    Remember me
+                  </span>
+                </label>
+                <Link
+                  to="/forgot-password"
+                  style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', fontWeight: 500, color: 'var(--vine-green)' }}
+                  className="hover:underline"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
+
+              {/* Sign In button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="login-btn-vine"
+              >
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Signing in...
+                  </span>
+                ) : (
+                  'Sign In'
+                )}
+              </button>
+
+              {/* Register link */}
+              <div className="text-center">
+                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--vine-sage)' }}>
+                  Don't have an account?{' '}
+                  <Link to="/register" style={{ color: 'var(--vine-green)', fontWeight: 600 }} className="hover:underline">
+                    Sign up
+                  </Link>
+                </p>
+              </div>
+            </div>
+          </form>
         </div>
 
-        {/* Login Form */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Sign In</h2>
-          
-          <form onSubmit={handleSubmit}>
-          
-          {/* Error Message */}
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600 text-sm">{error}</p>
-            </div>
-          )}
-
-          <div className="space-y-6">
-            {/* Email/Username Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Username
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors hover:border-blue-300"
-                  placeholder="Enter username"
-                  disabled={loading}
-                />
-                <svg className="absolute right-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Password Field */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-12 hover:border-blue-300"
-                  placeholder="Enter password"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3.5 text-gray-400 hover:text-blue-600 transition-colors"
-                  disabled={loading}
-                >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464M9.878 9.878L8.464 11.292M14.12 14.12l1.415 1.415M14.12 14.12l1.415-1.415M14.12 14.12L12.707 12.707M9.878 9.878l-1.414-1.414" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Remember Me & Forgot Password */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="ml-2 text-sm text-gray-600">Remember me</span>
-              </label>
-              <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                Forgot Password?
-              </Link>
-            </div>
-
-            {/* Login Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Signing in...
-                </div>
-              ) : (
-                'Sign In'
-              )}
-            </button>
-
-            {/* Register Link */}
-            <div className="text-center mt-4">
-              <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
-                <Link to="/register" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Sign up
-                </Link>
-              </p>
-            </div>
-          </div>
-        </form>
+        {/* Legacy quote ticker */}
+        <div className="mt-3" key={quoteIndex}>
+          <p className="login-quote">
+            "{currentQuote}"
+          </p>
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-gray-500 text-sm">
-            © 2024 FamilyVine - Connecting Generations
+        <div className="text-center mt-3 mb-4 login-footer">
+          <p>
+            &copy; {new Date().getFullYear()} FamilyVine &mdash; Connecting Generations
           </p>
         </div>
       </div>

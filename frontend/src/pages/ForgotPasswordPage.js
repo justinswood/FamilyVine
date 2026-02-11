@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API || 'http://localhost:5050';
+const API_URL = process.env.REACT_APP_API ?? '';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -53,24 +53,24 @@ const ForgotPasswordPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
       <div className="max-w-md w-full">
 
         {/* Logo and Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-vine-500 to-vine-600 rounded-full mb-4 shadow-lg">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-vine-600 to-vine-dark bg-clip-text text-transparent">
             FamilyVine
           </h1>
-          <p className="text-gray-600 mt-2">Reset your password</p>
+          <p className="text-vine-sage mt-2">Reset your password</p>
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/50">
           {success ? (
             /* Success Message */
             <div>
@@ -80,11 +80,11 @@ const ForgotPasswordPage = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-semibold text-gray-800 mb-3">Check Your Email</h2>
-                <p className="text-gray-600 mb-4">
+                <h2 className="text-2xl font-semibold text-vine-dark mb-3">Check Your Email</h2>
+                <p className="text-vine-sage mb-4">
                   If an account exists with <strong>{email}</strong>, you will receive a password reset link shortly.
                 </p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-vine-sage">
                   The reset link will expire in 1 hour for security reasons.
                 </p>
               </div>
@@ -100,7 +100,7 @@ const ForgotPasswordPage = () => {
                   </div>
                   <Link
                     to={`/reset-password?token=${resetToken}`}
-                    className="mt-3 inline-block text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    className="mt-3 inline-block text-sm text-vine-600 hover:text-vine-dark font-medium"
                   >
                     Go to Reset Password Page
                   </Link>
@@ -110,7 +110,7 @@ const ForgotPasswordPage = () => {
               <div className="space-y-3">
                 <Link
                   to="/login"
-                  className="block w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all font-medium text-center shadow-md hover:shadow-lg"
+                  className="block w-full bg-gradient-to-r from-vine-500 to-vine-600 text-white py-3 px-4 rounded-lg hover:from-vine-600 hover:to-vine-dark focus:ring-2 focus:ring-vine-500 focus:ring-offset-2 transition-all font-medium text-center shadow-md hover:shadow-lg"
                 >
                   Back to Login
                 </Link>
@@ -120,7 +120,7 @@ const ForgotPasswordPage = () => {
                     setEmail('');
                     setResetToken('');
                   }}
-                  className="block w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-200 transition-all font-medium text-center"
+                  className="block w-full bg-vine-50 text-vine-dark py-3 px-4 rounded-lg hover:bg-vine-100 transition-all font-medium text-center"
                 >
                   Send Another Link
                 </button>
@@ -129,8 +129,8 @@ const ForgotPasswordPage = () => {
           ) : (
             /* Reset Form */
             <div>
-              <h2 className="text-2xl font-semibold text-gray-800 mb-3 text-center">Forgot Password?</h2>
-              <p className="text-gray-600 text-center mb-6 text-sm">
+              <h2 className="text-2xl font-semibold text-vine-dark mb-3 text-center">Forgot Password?</h2>
+              <p className="text-vine-sage text-center mb-6 text-sm">
                 Enter your email address and we'll send you a link to reset your password.
               </p>
 
@@ -144,7 +144,7 @@ const ForgotPasswordPage = () => {
 
                 {/* Email Field */}
                 <div className="mb-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-vine-dark mb-2">
                     Email Address
                   </label>
                   <div className="relative">
@@ -153,11 +153,11 @@ const ForgotPasswordPage = () => {
                       name="email"
                       value={email}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors hover:border-blue-300"
+                      className="w-full px-4 py-3 border border-vine-200 rounded-lg focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-colors hover:border-vine-300"
                       placeholder="Enter your email"
                       disabled={loading}
                     />
-                    <svg className="absolute right-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="absolute right-3 top-3.5 w-5 h-5 text-vine-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
@@ -167,7 +167,7 @@ const ForgotPasswordPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105"
+                  className="w-full bg-gradient-to-r from-vine-500 to-vine-600 text-white py-3 px-4 rounded-lg hover:from-vine-600 hover:to-vine-dark focus:ring-2 focus:ring-vine-500 focus:ring-offset-2 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105"
                 >
                   {loading ? (
                     <div className="flex items-center justify-center">
@@ -184,7 +184,7 @@ const ForgotPasswordPage = () => {
 
                 {/* Back to Login Link */}
                 <div className="text-center mt-6">
-                  <Link to="/login" className="text-sm text-gray-600 hover:text-blue-600 font-medium">
+                  <Link to="/login" className="text-sm text-vine-sage hover:text-vine-600 font-medium">
                     Back to Login
                   </Link>
                 </div>

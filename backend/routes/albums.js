@@ -7,6 +7,7 @@ const pool = require('../config/database');
 const { processImage } = require('../utils/imageProcessor');
 const { uploadConfigs } = require('../config/multer');
 const logger = require('../config/logger');
+const { authenticateToken } = require('../middleware/auth');
 
 // Use centralized multer config for gallery uploads
 const upload = uploadConfigs.gallery;
@@ -15,13 +16,37 @@ const upload = uploadConfigs.gallery;
 router.get('/', async (req, res) => {
   try {
     const query = `
-      SELECT a.*, 
+      SELECT a.*,
              p.file_path as cover_photo_path,
-             COUNT(photos.id) as photo_count
+             p.rotation_degrees as cover_photo_rotation,
+             COUNT(DISTINCT photos.id) as photo_count,
+             COALESCE(
+               json_agg(
+                 DISTINCT jsonb_build_object(
+                   'id', m.id,
+                   'first_name', m.first_name,
+                   'last_name', m.last_name,
+                   'photo_url', m.photo_url
+                 )
+               ) FILTER (WHERE m.id IS NOT NULL),
+               '[]'
+             ) as tagged_members,
+             COALESCE(
+               (SELECT json_agg(rp) FROM (
+                 SELECT rp.id, rp.file_path
+                 FROM photos rp
+                 WHERE rp.album_id = a.id
+                 ORDER BY rp.uploaded_at DESC
+                 LIMIT 3
+               ) rp),
+               '[]'
+             ) as recent_photos
       FROM albums a
       LEFT JOIN photos p ON a.cover_photo_id = p.id
       LEFT JOIN photos ON photos.album_id = a.id
-      GROUP BY a.id, p.file_path
+      LEFT JOIN photo_tags pt ON photos.id = pt.photo_id
+      LEFT JOIN members m ON pt.member_id = m.id
+      GROUP BY a.id, p.file_path, p.rotation_degrees
       ORDER BY a.created_at DESC
     `;
     const result = await pool.query(query);
@@ -226,7 +251,7 @@ router.get('/:albumId/photos/:photoId', async (req, res) => {
       SELECT p.*, 
              array_agg(json_build_object(
                'member_id', pt.member_id,
-               'member_name', m.first_name || ' ' || m.last_name,
+               'member_name', m.first_name || ' ' || m.last_name || COALESCE(' ' || NULLIF(m.suffix, ''), ''),
                'x', pt.x_coordinate,
                'y', pt.y_coordinate,
                'width', pt.width,
@@ -296,57 +321,67 @@ router.put('/:id/cover/:photoId', async (req, res) => {
 });
 
 // Add tag to photo
-router.post('/:albumId/photos/:photoId/tags', async (req, res) => {
+router.post('/:albumId/photos/:photoId/tags', authenticateToken, async (req, res) => {
   try {
     const { photoId } = req.params;
-    const { 
-      member_id, 
-      x_coordinate = null, 
+    const {
+      member_id,
+      x_coordinate = null,
       y_coordinate = null,
       width = null,
       height = null,
       confidence = null,
-      is_verified = true 
+      is_verified = true
     } = req.body;
-    
+
     if (!member_id) {
       return res.status(400).json({ error: 'Member ID is required' });
     }
-    
+
+    // Get tagged_by from authenticated user
+    const tagged_by = req.user?.id || null;
+
     // Check if this member is already tagged in this photo
     const existingTag = await pool.query(
       'SELECT id FROM photo_tags WHERE photo_id = $1 AND member_id = $2',
       [photoId, member_id]
     );
-    
+
     if (existingTag.rows.length > 0) {
       return res.status(400).json({ error: 'Member is already tagged in this photo' });
     }
-    
+
     const query = `
       INSERT INTO photo_tags (
-        photo_id, member_id, x_coordinate, y_coordinate, 
-        width, height, confidence, is_verified
+        photo_id, member_id, x_coordinate, y_coordinate,
+        width, height, confidence, is_verified, tagged_by
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `;
-    
+
     const values = [
       photoId, member_id, x_coordinate, y_coordinate,
-      width, height, confidence, is_verified
+      width, height, confidence, is_verified, tagged_by
     ];
-    
+
     const result = await pool.query(query, values);
-    
+
     // Get member details for response
-    const memberQuery = `SELECT first_name, last_name FROM members WHERE id = $1`;
+    const memberQuery = `SELECT first_name, last_name, suffix FROM members WHERE id = $1`;
     const memberResult = await pool.query(memberQuery, [member_id]);
     const member = memberResult.rows[0];
-    
+
+    logger.info('Photo tag created', {
+      tagId: result.rows[0].id,
+      photoId,
+      memberId: member_id,
+      taggedBy: tagged_by
+    });
+
     res.status(201).json({
       ...result.rows[0],
-      member_name: `${member.first_name} ${member.last_name}`,
+      member_name: `${member.first_name} ${member.last_name}${member.suffix ? ' ' + member.suffix : ''}`,
       x_coordinate: result.rows[0].x_coordinate ? parseFloat(result.rows[0].x_coordinate) : null,
       y_coordinate: result.rows[0].y_coordinate ? parseFloat(result.rows[0].y_coordinate) : null,
       width: result.rows[0].width ? parseFloat(result.rows[0].width) : null,
@@ -369,6 +404,7 @@ router.get('/:albumId/photos/:photoId/tags', async (req, res) => {
         pt.*,
         m.first_name,
         m.last_name,
+        m.suffix,
         m.photo_url
       FROM photo_tags pt
       JOIN members m ON pt.member_id = m.id
@@ -382,7 +418,7 @@ router.get('/:albumId/photos/:photoId/tags', async (req, res) => {
     const tags = result.rows.map(tag => ({
       id: tag.id,
       member_id: tag.member_id,
-      member_name: `${tag.first_name} ${tag.last_name}`,
+      member_name: `${tag.first_name} ${tag.last_name}${tag.suffix ? ' ' + tag.suffix : ''}`,
       x_coordinate: tag.x_coordinate ? parseFloat(tag.x_coordinate) : null,
       y_coordinate: tag.y_coordinate ? parseFloat(tag.y_coordinate) : null,
       width: tag.width ? parseFloat(tag.width) : null,
@@ -464,13 +500,13 @@ router.put('/:albumId/photos/:photoId/tags/:tagId', async (req, res) => {
     
     // Get updated tag with member info
     const updatedTag = result.rows[0];
-    const memberQuery = `SELECT first_name, last_name FROM members WHERE id = $1`;
+    const memberQuery = `SELECT first_name, last_name, suffix FROM members WHERE id = $1`;
     const memberResult = await pool.query(memberQuery, [updatedTag.member_id]);
     const member = memberResult.rows[0];
-    
+
     res.json({
       ...updatedTag,
-      member_name: `${member.first_name} ${member.last_name}`,
+      member_name: `${member.first_name} ${member.last_name}${member.suffix ? ' ' + member.suffix : ''}`,
       x_coordinate: updatedTag.x_coordinate ? parseFloat(updatedTag.x_coordinate) : null,
       y_coordinate: updatedTag.y_coordinate ? parseFloat(updatedTag.y_coordinate) : null,
       width: updatedTag.width ? parseFloat(updatedTag.width) : null,
@@ -523,16 +559,149 @@ router.get('/tagged/:memberId', async (req, res) => {
   }
 });
 
-// PUT /:albumId/photos/:photoId/rotate - Rotate a photo 90° clockwise
-router.put('/:albumId/photos/:photoId/rotate', async (req, res) => {
+// PUT /:albumId/photos/:photoId/rotate - Rotate a photo (destructive by default for reliable display)
+router.put('/:albumId/photos/:photoId/rotate', authenticateToken, async (req, res) => {
   const { albumId, photoId } = req.params;
-  const { degrees = 90 } = req.body; // Default to 90° clockwise
+  const { degrees = 90, destructive = true } = req.body;
 
   try {
     // Validate degrees (only allow 90, 180, 270, -90)
     const validDegrees = [90, 180, 270, -90];
     if (!validDegrees.includes(degrees)) {
       return res.status(400).json({ error: 'Invalid rotation degrees' });
+    }
+
+    // Get photo details from database
+    const photoQuery = await pool.query(
+      'SELECT * FROM photos WHERE id = $1 AND album_id = $2',
+      [photoId, albumId]
+    );
+
+    if (photoQuery.rows.length === 0) {
+      return res.status(404).json({ error: 'Photo not found' });
+    }
+
+    const photo = photoQuery.rows[0];
+
+    // NON-DESTRUCTIVE MODE (default): Store rotation as metadata
+    if (!destructive) {
+      // Normalize degrees to 0-359 range
+      const normalizedDegrees = degrees < 0 ? 360 + degrees : degrees;
+      const newRotation = (photo.rotation_degrees + normalizedDegrees) % 360;
+
+      // Determine if we need to swap width/height (90° or 270° rotation from current state)
+      const effectiveRotation = (normalizedDegrees % 180) !== 0;
+      const newWidth = effectiveRotation ? photo.height : photo.width;
+      const newHeight = effectiveRotation ? photo.width : photo.height;
+
+      // Update rotation metadata in database
+      const result = await pool.query(
+        `UPDATE photos
+         SET rotation_degrees = $1,
+             width = $2,
+             height = $3,
+             edited_at = NOW()
+         WHERE id = $4
+         RETURNING *`,
+        [newRotation, newWidth, newHeight, photoId]
+      );
+
+      logger.info('Photo rotated non-destructively', {
+        photoId,
+        albumId,
+        degrees: normalizedDegrees,
+        newRotation,
+        dimensions: { width: newWidth, height: newHeight }
+      });
+
+      return res.json({
+        message: 'Photo rotated successfully (non-destructive)',
+        photo: result.rows[0]
+      });
+    }
+
+    // DESTRUCTIVE MODE: Physically rotate the file (backward compatibility)
+    const filePath = path.join(__dirname, '..', photo.file_path);
+
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Photo file not found on disk' });
+    }
+
+    // Backup original file path if not already backed up
+    if (!photo.original_file_path) {
+      await pool.query(
+        'UPDATE photos SET original_file_path = $1 WHERE id = $2',
+        [photo.file_path, photoId]
+      );
+    }
+
+    // Rotate image using Sharp
+    const buffer = await sharp(filePath)
+      .rotate(degrees)
+      .toBuffer();
+
+    // Write rotated image back to same path
+    await sharp(buffer).toFile(filePath);
+
+    // Get new metadata (width/height may have swapped for 90/270 rotations)
+    const metadata = await sharp(filePath).metadata();
+
+    // Update photo dimensions, reset rotation, and edit tracking in database
+    await pool.query(
+      `UPDATE photos
+       SET width = $1, height = $2, file_size = $3,
+           rotation_degrees = 0,
+           is_edited = true, edited_at = NOW()
+       WHERE id = $4`,
+      [metadata.width, metadata.height, metadata.size, photoId]
+    );
+
+    logger.info('Photo rotated destructively', {
+      photoId,
+      albumId,
+      degrees,
+      newDimensions: { width: metadata.width, height: metadata.height }
+    });
+
+    res.json({
+      message: 'Photo rotated successfully (destructive)',
+      photo: { id: photoId, width: metadata.width, height: metadata.height }
+    });
+
+  } catch (error) {
+    logger.error('Error rotating photo:', error);
+    res.status(500).json({ error: 'Failed to rotate photo' });
+  }
+});
+
+// POST /:albumId/photos/:photoId/crop - Crop a photo (destructive operation)
+router.post('/:albumId/photos/:photoId/crop', authenticateToken, async (req, res) => {
+  const { albumId, photoId } = req.params;
+  const { crop, quality = 0.85 } = req.body;
+
+  try {
+    // Validate crop coordinates (percentages: 0-100)
+    if (!crop || typeof crop !== 'object') {
+      return res.status(400).json({ error: 'Crop coordinates are required' });
+    }
+
+    const { x, y, width, height } = crop;
+    if (x == null || y == null || width == null || height == null) {
+      return res.status(400).json({ error: 'Crop must include x, y, width, and height' });
+    }
+
+    if (width <= 0 || height <= 0 || width > 100 || height > 100) {
+      return res.status(400).json({ error: 'Invalid crop dimensions' });
+    }
+
+    if (x < 0 || y < 0 || x + width > 100 || y + height > 100) {
+      return res.status(400).json({ error: 'Crop coordinates out of bounds' });
+    }
+
+    // Validate quality parameter
+    if (quality < 0.1 || quality > 1.0) {
+      return res.status(400).json({ error: 'Quality must be between 0.1 and 1.0' });
     }
 
     // Get photo details from database
@@ -553,31 +722,114 @@ router.put('/:albumId/photos/:photoId/rotate', async (req, res) => {
       return res.status(404).json({ error: 'Photo file not found on disk' });
     }
 
-    // Rotate image using Sharp
-    const buffer = await sharp(filePath)
-      .rotate(degrees) // Rotate by specified degrees
-      .toBuffer();
+    // Backup original file path if not already backed up
+    if (!photo.original_file_path) {
+      await pool.query(
+        'UPDATE photos SET original_file_path = $1 WHERE id = $2',
+        [photo.file_path, photoId]
+      );
+      logger.info('Backed up original file path before crop', { photoId, originalPath: photo.file_path });
+    }
 
-    // Write rotated image back to same path
-    await sharp(buffer).toFile(filePath);
-
-    // Get new metadata (width/height may have swapped for 90/270 rotations)
+    // Get current image metadata
     const metadata = await sharp(filePath).metadata();
 
-    // Update photo dimensions in database
-    await pool.query(
-      'UPDATE photos SET width = $1, height = $2, file_size = $3 WHERE id = $4',
-      [metadata.width, metadata.height, metadata.size, photoId]
+    // Convert percentage coordinates to pixels
+    const cropPixels = {
+      left: Math.round((x / 100) * metadata.width),
+      top: Math.round((y / 100) * metadata.height),
+      width: Math.round((width / 100) * metadata.width),
+      height: Math.round((height / 100) * metadata.height)
+    };
+
+    // Validate pixel dimensions
+    if (cropPixels.width < 10 || cropPixels.height < 10) {
+      return res.status(400).json({ error: 'Cropped area is too small (minimum 10x10 pixels)' });
+    }
+
+    // Generate cropped file path
+    const ext = path.extname(filePath);
+    const baseName = path.basename(filePath, ext);
+    const dirName = path.dirname(filePath);
+    const croppedPath = path.join(dirName, `${baseName}_cropped_${Date.now()}${ext}`);
+
+    // Perform the crop operation
+    await sharp(filePath)
+      .extract(cropPixels)
+      .jpeg({ quality: Math.round(quality * 100) })
+      .toFile(croppedPath);
+
+    // Get metadata of cropped image
+    const croppedMetadata = await sharp(croppedPath).metadata();
+
+    // Delete old file (since we're replacing it)
+    if (photo.file_path !== photo.original_file_path) {
+      try {
+        fs.unlinkSync(filePath);
+        logger.info('Deleted previous edited file', { path: filePath });
+      } catch (err) {
+        logger.warn('Could not delete previous file', { path: filePath, error: err.message });
+      }
+    }
+
+    // Convert file path to relative path for database
+    const relativePath = croppedPath.replace(path.join(__dirname, '..'), '').replace(/^\//, '');
+
+    // Update photo record with new file path and dimensions
+    const updateResult = await pool.query(
+      `UPDATE photos
+       SET file_path = $1,
+           width = $2,
+           height = $3,
+           file_size = $4,
+           is_edited = true,
+           edited_at = NOW()
+       WHERE id = $5
+       RETURNING *`,
+      [relativePath, croppedMetadata.width, croppedMetadata.height, croppedMetadata.size, photoId]
     );
 
+    // Update tag coordinates proportionally
+    // Tags are stored as percentages, so we need to adjust them based on the crop area
+    const tagUpdateResult = await pool.query(
+      `UPDATE photo_tags
+       SET x_coordinate = ((x_coordinate - $1) * 100.0 / $2),
+           y_coordinate = ((y_coordinate - $3) * 100.0 / $4),
+           width = (width * 100.0 / $2),
+           height = (height * 100.0 / $4)
+       WHERE photo_id = $5
+       RETURNING *`,
+      [x, width, y, height, photoId]
+    );
+
+    // Remove tags that are now outside the cropped area
+    await pool.query(
+      `DELETE FROM photo_tags
+       WHERE photo_id = $1
+       AND (x_coordinate < 0 OR y_coordinate < 0 OR x_coordinate > 100 OR y_coordinate > 100)`,
+      [photoId]
+    );
+
+    logger.info('Photo cropped successfully', {
+      photoId,
+      albumId,
+      cropArea: crop,
+      originalDimensions: { width: metadata.width, height: metadata.height },
+      newDimensions: { width: croppedMetadata.width, height: croppedMetadata.height },
+      tagsUpdated: tagUpdateResult.rowCount,
+      newFilePath: relativePath
+    });
+
     res.json({
-      message: 'Photo rotated successfully',
-      photo: { id: photoId, width: metadata.width, height: metadata.height }
+      success: true,
+      message: 'Photo cropped successfully',
+      photo: updateResult.rows[0],
+      tagsUpdated: tagUpdateResult.rowCount
     });
 
   } catch (error) {
-    logger.error('Error rotating photo:', error);
-    res.status(500).json({ error: 'Failed to rotate photo' });
+    logger.error('Error cropping photo:', error);
+    res.status(500).json({ error: 'Failed to crop photo' });
   }
 });
 

@@ -98,37 +98,35 @@ const IngredientsEditor = ({ value, onChange }) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2.5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 style={{ fontFamily: "var(--font-header, 'Playfair Display', serif)", fontSize: '0.77rem', fontWeight: 700, color: 'var(--vine-dark, #2D4F1E)' }}>
             Ingredients
           </h3>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p style={{ fontSize: '0.49rem', color: 'var(--vine-sage, #86A789)', fontFamily: 'var(--font-body)' }}>
             List all ingredients with quantities
           </p>
         </div>
         <button
           onClick={handleAddIngredient}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500
-                     hover:from-orange-600 hover:to-red-600 text-white rounded-lg
-                     transition-all duration-200 shadow-sm hover:shadow-md"
+          className="recipe-btn-sage"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3 h-3" />
           Add Ingredient
         </button>
       </div>
 
       {/* Ingredients List */}
       {ingredients.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 dark:bg-gray-800/50 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700">
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
+        <div className="text-center py-8 rounded-md border-2 border-dashed" style={{ backgroundColor: 'var(--alabaster-parchment, #F5F0E6)', borderColor: 'rgba(212, 175, 55, 0.25)' }}>
+          <p style={{ color: 'var(--vine-sage)', fontSize: '0.6rem', marginBottom: '8px' }}>
             No ingredients yet
           </p>
           <button
             onClick={handleAddIngredient}
-            className="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium"
+            style={{ color: 'var(--vine-dark)', fontWeight: 600, fontSize: '0.6rem' }}
           >
             Add your first ingredient
           </button>
@@ -143,7 +141,7 @@ const IngredientsEditor = ({ value, onChange }) => {
             items={ingredients.map(i => i.id)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-2">
+            <div className="space-y-1">
               {ingredients.map((ingredient, index) => (
                 <IngredientCard
                   key={ingredient.id}
@@ -160,7 +158,7 @@ const IngredientsEditor = ({ value, onChange }) => {
 
       {/* Helper Text */}
       {ingredients.length > 0 && (
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+        <p style={{ fontSize: '0.52rem', color: 'var(--vine-sage)', marginTop: '6px' }}>
           {ingredients.length} {ingredients.length === 1 ? 'ingredient' : 'ingredients'}
         </p>
       )}

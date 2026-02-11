@@ -18,8 +18,11 @@ const isValidEmail = (email) => {
 };
 
 const isValidPhone = (phone) => {
-  const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
-  return !phone || phoneRegex.test(phone);
+  // Allow digits, spaces, dashes, parentheses, plus sign, and periods
+  // Require at least 7 digits after removing formatting
+  if (!phone) return true;
+  const digitsOnly = phone.replace(/[\s\-().+]/g, '');
+  return /^[0-9]{7,15}$/.test(digitsOnly);
 };
 
 const isValidDate = (date) => {

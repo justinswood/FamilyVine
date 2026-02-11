@@ -308,28 +308,28 @@ const ExportFamilyData = ({ members, relationships }) => {
     <div className="p-6">
       {/* Export Type Selection */}
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Choose Export Type</h2>
+        <h2 className="text-lg font-heading font-semibold mb-4 text-vine-dark dark:text-gray-200">Choose Export Type</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {exportOptions.map(option => (
             <div
               key={option.id}
               className={`border rounded-lg p-4 cursor-pointer transition-all ${
                 exportType === option.id
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-400'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
+                  ? 'border-vine-500 bg-vine-50 dark:bg-vine-900/30 dark:border-vine-400'
+                  : 'border-vine-200 dark:border-gray-700 hover:border-vine-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800'
               }`}
               onClick={() => setExportType(option.id)}
             >
               <div className="flex items-start space-x-3">
                 <div className="text-2xl">{option.icon}</div>
                 <div>
-                  <h3 className="font-semibold text-gray-800 dark:text-gray-200">{option.name}</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{option.description}</p>
+                  <h3 className="font-semibold text-vine-dark dark:text-gray-200">{option.name}</h3>
+                  <p className="text-sm text-vine-sage dark:text-gray-400 mt-1">{option.description}</p>
                   <div className="flex space-x-2 mt-2">
                     {option.formats.map(format => (
                       <span
                         key={format}
-                        className="inline-block bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs px-2 py-1 rounded"
+                        className="inline-block bg-vine-100 dark:bg-gray-700 text-vine-dark dark:text-gray-300 text-xs px-2 py-1 rounded"
                       >
                         {format.toUpperCase()}
                       </span>
@@ -345,18 +345,18 @@ const ExportFamilyData = ({ members, relationships }) => {
       {/* Export Options */}
       {exportType && (
         <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Export Options</h2>
+          <h2 className="text-lg font-heading font-semibold mb-4 text-vine-dark dark:text-gray-200">Export Options</h2>
 
           {/* Format Selection */}
           {exportType !== 'gedcom' && (
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
                 Export Format
               </label>
               <select
                 value={exportFormat}
                 onChange={(e) => setExportFormat(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                className="w-full border border-vine-200 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 {exportOptions.find(opt => opt.id === exportType)?.formats.map(format => (
                   <option key={format} value={format}>
@@ -376,7 +376,7 @@ const ExportFamilyData = ({ members, relationships }) => {
                 onChange={(e) => setIncludePhotos(e.target.checked)}
                 className="mr-2"
               />
-              <span className="text-sm text-gray-700 dark:text-gray-300">Include photos (where supported)</span>
+              <span className="text-sm text-vine-dark dark:text-gray-300">Include photos (where supported)</span>
             </label>
             <label className="flex items-center cursor-pointer">
               <input
@@ -385,7 +385,7 @@ const ExportFamilyData = ({ members, relationships }) => {
                 onChange={(e) => setIncludePrivateInfo(e.target.checked)}
                 className="mr-2"
               />
-              <span className="text-sm text-gray-700 dark:text-gray-300">Include private information (email, phone)</span>
+              <span className="text-sm text-vine-dark dark:text-gray-300">Include private information (email, phone)</span>
             </label>
           </div>
         </div>
@@ -395,32 +395,32 @@ const ExportFamilyData = ({ members, relationships }) => {
       {exportType && exportType !== 'relationships' && exportType !== 'gedcom' && (
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Select Members</h2>
+            <h2 className="text-lg font-heading font-semibold text-vine-dark dark:text-gray-200">Select Members</h2>
             <div className="space-x-2">
               <button
                 onClick={selectAllMembers}
-                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm"
+                className="text-vine-600 dark:text-vine-400 hover:text-vine-dark dark:hover:text-vine-300 text-sm"
               >
                 Select All
               </button>
               <button
                 onClick={clearSelection}
-                className="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 text-sm"
+                className="text-vine-sage dark:text-gray-400 hover:text-vine-dark dark:hover:text-gray-300 text-sm"
               >
                 Clear All
               </button>
             </div>
           </div>
 
-          <div className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+          <div className="text-sm text-vine-sage dark:text-gray-400 mb-3">
             {selectedMembers.length === 0 ? 'All members will be exported' : `${selectedMembers.length} members selected`}
           </div>
 
-          <div className="max-h-64 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+          <div className="max-h-64 overflow-y-auto border border-vine-200 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
             {members.map(member => (
               <label
                 key={member.id}
-                className="flex items-center p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                className="flex items-center p-3 hover:bg-vine-50 dark:hover:bg-gray-700 cursor-pointer border-b border-vine-100 dark:border-gray-700 last:border-b-0"
               >
                 <input
                   type="checkbox"
@@ -429,7 +429,7 @@ const ExportFamilyData = ({ members, relationships }) => {
                   className="mr-3"
                 />
                 <div className="flex-1">
-                  <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                  <span className="text-sm font-medium text-vine-dark dark:text-gray-200">
                     {member.first_name} {member.last_name}
                   </span>
                   {member.location && (
@@ -447,25 +447,25 @@ const ExportFamilyData = ({ members, relationships }) => {
       {/* Export Summary */}
       {exportType && (
         <div className="mb-6">
-          <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Export Summary</h2>
+          <h2 className="text-lg font-heading font-semibold mb-4 text-vine-dark dark:text-gray-200">Export Summary</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-            <div className="bg-blue-50 dark:bg-blue-900/30 rounded p-4 border border-blue-100 dark:border-blue-800">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            <div className="bg-vine-50 dark:bg-vine-900/30 rounded p-4 border border-vine-100 dark:border-vine-800">
+              <div className="text-2xl font-bold text-vine-600 dark:text-vine-400">
                 {selectedMembers.length || members.length}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Members to Export</div>
+              <div className="text-sm text-vine-sage dark:text-gray-400">Members to Export</div>
             </div>
             <div className="bg-green-50 dark:bg-green-900/30 rounded p-4 border border-green-100 dark:border-green-800">
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {exportType === 'relationships' ? relationships.length : '—'}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Relationships</div>
+              <div className="text-sm text-vine-sage dark:text-gray-400">Relationships</div>
             </div>
-            <div className="bg-purple-50 dark:bg-purple-900/30 rounded p-4 border border-purple-100 dark:border-purple-800">
-              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+            <div className="bg-vine-50 dark:bg-vine-900/30 rounded p-4 border border-vine-100 dark:border-vine-800">
+              <div className="text-2xl font-bold text-vine-600 dark:text-vine-400">
                 {exportFormat.toUpperCase()}
               </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Export Format</div>
+              <div className="text-sm text-vine-sage dark:text-gray-400">Export Format</div>
             </div>
           </div>
         </div>
@@ -478,8 +478,8 @@ const ExportFamilyData = ({ members, relationships }) => {
           disabled={!exportType || loading}
           className={`inline-flex items-center px-6 py-3 rounded-lg text-white font-medium transition-colors ${
             !exportType || loading
-              ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600'
+              ? 'bg-vine-sage dark:bg-gray-600 cursor-not-allowed'
+              : 'bg-vine-600 hover:bg-vine-dark dark:bg-vine-500 dark:hover:bg-vine-600'
           }`}
         >
           <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

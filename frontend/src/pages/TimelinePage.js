@@ -3,85 +3,72 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import ProfileImage from '../components/ProfileImage';
 
-// Inject timeline-specific CSS to override any conflicts
-const timelineStyles = `
-  .timeline-page * {
-    writing-mode: horizontal-tb !important;
-    text-orientation: mixed !important;
-    transform: none !important;
-    max-width: none !important;
-  }
-  
-  .timeline-page .timeline-event-card {
-    display: block !important;
-    width: auto !important;
-    max-width: none !important;
-  }
-  
-  .timeline-page .timeline-event-header {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    white-space: normal !important;
-  }
-  
-  .timeline-page .timeline-event-description {
-    display: block !important;
-    white-space: normal !important;
-    word-wrap: break-word !important;
-  }
-  
-  .timeline-page .timeline-profile-container {
-    display: inline-block !important;
-    flex-shrink: 0 !important;
-    width: auto !important;
-    height: auto !important;
-  }
-  
-  .timeline-page .timeline-year-badge {
-    display: inline-block !important;
-    white-space: nowrap !important;
-  }
-  
-  .timeline-page .timeline-location {
-    display: block !important;
-    white-space: normal !important;
-  }
-  
-  /* Mobile-specific timeline fixes */
-  @media (max-width: 768px) {
-    .timeline-mobile-card {
-      width: 85% !important;
-      margin-left: 4rem !important;
-      margin-right: auto !important;
-    }
-    
-    .timeline-mobile-line {
-      left: 2rem !important;
-    }
-    
-    .timeline-mobile-dot {
-      left: 2rem !important;
-    }
-    
-    .timeline-mobile-decade {
-      justify-content: flex-start !important;
-      padding-left: 4rem !important;
-    }
-  }
-`;
+// Decade descriptions — poetic one-liners
+const decadeDescriptions = {
+  1900: "A new century dawned, humming with engines, lightbulbs, and quiet wonder.",
+  1910: "Storm clouds gathered, and the world learned how fragile peace could be.",
+  1920: "Jazz spilled into the streets as hearts lifted and nights sparkled.",
+  1930: "Hope learned to whisper, carried in shared meals and steady hands.",
+  1940: "Fire and courage reshaped the world, followed by the slow work of healing.",
+  1950: "Warm kitchens glowed with promise, televisions flickered, and dreams felt reachable.",
+  1960: "Voices rose, colors bloomed, and humanity touched the moon.",
+  1970: "The world exhaled, searching inward for meaning and peace.",
+  1980: "Neon dreams pulsed with confidence, ambition, and electric joy.",
+  1990: "Wires connected distant souls as optimism rode the digital breeze.",
+  2000: "Time sped up, screens lit faces, and possibility felt endless.",
+  2010: "Stories overlapped, voices multiplied, and the world spoke at once.",
+  2020: "Through loss and learning, resilience took root and hope quietly endured through 2025"
+};
 
-// Inject the styles
-if (typeof document !== 'undefined') {
-  const existingStyle = document.getElementById('timeline-override-styles');
-  if (existingStyle) {
-    existingStyle.remove();
+// Leaf icon SVGs for vine nodes
+const LeafIcon = ({ className = '' }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M13.5 2.5C13.5 2.5 11 3.5 9 5.5C7 7.5 6.5 10 6.5 10C6.5 10 6 7.5 4 5.5C2 3.5 2.5 2.5 2.5 2.5C2.5 2.5 1 6 3 9C4.5 11.2 6.5 12 8 13.5C9.5 12 11.5 11.2 13 9C15 6 13.5 2.5 13.5 2.5Z" />
+  </svg>
+);
+
+/**
+ * Decade Almanac Summary — Gilded Vellum card anchoring each decade
+ */
+const DecadeAlmanac = ({ decade, events }) => {
+  const births = events.filter(e => e.type === 'birth' && !e.isWorldEvent).length;
+  const marriages = events.filter(e => e.type === 'marriage' && !e.isWorldEvent).length;
+  const passings = events.filter(e => e.type === 'death' && !e.isWorldEvent).length;
+  const worldCount = events.filter(e => e.isWorldEvent).length;
+  const description = decadeDescriptions[decade] || '';
+
+  return (
+    <div className="decade-almanac">
+      <h2 className="decade-almanac-title">The {decade}s</h2>
+      <div className="gilded-divider"></div>
+      {description && (
+        <p className="decade-almanac-description">{description}</p>
+      )}
+      <div className="decade-almanac-stats">
+        {births > 0 && <span><strong>{births}</strong> {births === 1 ? 'birth' : 'births'}</span>}
+        {marriages > 0 && <span><strong>{marriages}</strong> {marriages === 1 ? 'union' : 'unions'}</span>}
+        {passings > 0 && <span><strong>{passings}</strong> {passings === 1 ? 'passing' : 'passings'}</span>}
+        {worldCount > 0 && <span><strong>{worldCount}</strong> world {worldCount === 1 ? 'event' : 'events'}</span>}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Generates a "generational echo" — a contextual link between family and world events.
+ */
+function getGenerationalEcho(event, allEvents) {
+  if (event.isWorldEvent) return null;
+
+  // Find a world event in the same year
+  const worldEvent = allEvents.find(
+    e => e.isWorldEvent && e.year === event.year
+  );
+  if (worldEvent) {
+    return `In the same year: ${worldEvent.description}`;
   }
-  
-  const style = document.createElement('style');
-  style.id = 'timeline-override-styles';
-  style.textContent = timelineStyles;
-  document.head.appendChild(style);
+
+  return null;
 }
 
 const TimelinePage = () => {
@@ -89,40 +76,51 @@ const TimelinePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [showWorldEvents, setShowWorldEvents] = useState(true);
 
   useEffect(() => {
     fetchTimelineData();
   }, []);
 
-  const filteredEvents = filter === 'all'
-    ? events
-    : events.filter(event => event.type === filter);
+  const filteredEvents = events.filter(event => {
+    if (!showWorldEvents && event.isWorldEvent) return false;
+    if (filter === 'all') return true;
+    if (filter === 'world') return event.isWorldEvent;
+    return event.type === filter && !event.isWorldEvent;
+  });
 
   const groupedByDecade = filteredEvents.reduce((groups, event) => {
     const decade = Math.floor(event.year / 10) * 10;
-    if (!groups[decade]) {
-      groups[decade] = [];
-    }
+    if (!groups[decade]) groups[decade] = [];
     groups[decade].push(event);
     return groups;
   }, {});
 
-  const decades = Object.keys(groupedByDecade)
-    .map(Number)
-    .sort((a, b) => a - b);
+  const decades = Object.keys(groupedByDecade).map(Number).sort((a, b) => a - b);
+
+  // Also group ALL events by decade (unfiltered) for decade stats
+  const allByDecade = events.reduce((groups, event) => {
+    const decade = Math.floor(event.year / 10) * 10;
+    if (!groups[decade]) groups[decade] = [];
+    groups[decade].push(event);
+    return groups;
+  }, {});
 
   const fetchTimelineData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${process.env.REACT_APP_API}/api/members`);
-      const members = response.data;
+      const [membersResponse, worldEventsResponse] = await Promise.all([
+        axios.get(`${process.env.REACT_APP_API}/api/members`),
+        axios.get(`${process.env.REACT_APP_API}/api/world-events`)
+      ]);
 
+      const members = membersResponse.data;
+      const worldEvents = worldEventsResponse.data;
       const timelineEvents = [];
 
       members.forEach(member => {
         const fullName = `${member.first_name} ${member.last_name}`;
 
-        // Birth events
         if (member.birth_date) {
           timelineEvents.push({
             type: 'birth',
@@ -136,7 +134,6 @@ const TimelinePage = () => {
           });
         }
 
-        // Death events
         if (member.death_date) {
           timelineEvents.push({
             type: 'death',
@@ -150,37 +147,44 @@ const TimelinePage = () => {
           });
         }
 
-        // NEW: Marriage events (avoid duplicates by only creating for the person with lower ID)
         if (member.is_married && member.marriage_date && member.spouse_id) {
-          // Find the spouse's information
           const spouse = members.find(m => m.id === member.spouse_id);
-          
-          // Only create the marriage event if this member has a lower ID than their spouse
-          // This prevents duplicate marriage events for the same couple
           if (!spouse || member.id < spouse.id) {
             const spouseName = spouse ? `${spouse.first_name} ${spouse.last_name}` : 'Unknown spouse';
-
             timelineEvents.push({
               type: 'marriage',
               date: new Date(member.marriage_date),
               year: new Date(member.marriage_date).getFullYear(),
               description: `${fullName} married ${spouseName}`,
-              location: 'Unknown location', // We could add a marriage_place field later
+              location: 'Unknown location',
               memberId: member.id,
               memberName: fullName,
               member: member,
-              spouse: spouse, // Store spouse info for display
+              spouse: spouse,
               spouseName: spouseName
             });
           }
         }
       });
 
-      // Sort all events by date
+      worldEvents.forEach(worldEvent => {
+        const eventDate = new Date(worldEvent.event_date);
+        timelineEvents.push({
+          type: 'world',
+          date: eventDate,
+          year: eventDate.getFullYear(),
+          description: worldEvent.title,
+          location: worldEvent.description || '',
+          category: worldEvent.category,
+          icon: worldEvent.icon,
+          isWorldEvent: true
+        });
+      });
+
       timelineEvents.sort((a, b) => a.date - b.date);
       setEvents(timelineEvents);
-    } catch (error) {
-      console.error('Error fetching timeline data:', error);
+    } catch (err) {
+      console.error('Error fetching timeline data:', err);
       setError('Failed to load timeline data');
     } finally {
       setLoading(false);
@@ -189,31 +193,16 @@ const TimelinePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-        {/* Animated background pattern */}
-        <div className="absolute inset-0 opacity-3">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="timeline-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M30,10 L30,50 M10,30 L50,30" stroke="currentColor" strokeWidth="1" className="text-blue-200" />
-                <circle cx="30" cy="30" r="3" fill="currentColor" className="text-purple-200" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#timeline-pattern)" />
-          </svg>
-        </div>
-
-        {/* Floating decorative elements */}
+      <div className="min-h-screen relative overflow-hidden bg-transparent">
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br from-pink-200/30 to-purple-200/30 rounded-full blur-xl"></div>
-          <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-bl from-blue-200/30 to-cyan-200/30 rounded-full blur-xl"></div>
+          <div className="absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br from-vine-200/10 to-vine-300/10 rounded-full blur-xl"></div>
+          <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-bl from-amber-100/10 to-vine-100/10 rounded-full blur-xl"></div>
         </div>
-
         <div className="relative z-10 flex justify-center items-center h-64">
           <div className="text-center bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mx-auto mb-4"></div>
-            <div className="text-xl bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent font-semibold">
-              Loading timeline...
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-vine-500 border-t-transparent mx-auto mb-4"></div>
+            <div className="text-xl bg-gradient-to-r from-vine-600 to-vine-dark bg-clip-text text-transparent font-semibold font-heading">
+              Loading Chronicle...
             </div>
           </div>
         </div>
@@ -223,18 +212,7 @@ const TimelinePage = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-        <div className="absolute inset-0 opacity-3">
-          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="error-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M30,10 L30,50 M10,30 L50,30" stroke="currentColor" strokeWidth="1" className="text-red-200" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#error-pattern)" />
-          </svg>
-        </div>
-
+      <div className="min-h-screen relative overflow-hidden bg-transparent">
         <div className="relative z-10 text-center text-red-600 mt-8">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl max-w-md mx-auto">
             <div className="text-red-500 mb-4">
@@ -242,10 +220,10 @@ const TimelinePage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h2 className="text-xl font-bold mb-2 bg-gradient-to-r from-red-700 to-pink-700 bg-clip-text text-transparent">
-              Error Loading Timeline
+            <h2 className="text-xl font-bold mb-2 text-red-700 font-heading">
+              Error Loading Chronicle
             </h2>
-            <p className="text-gray-600">{error}</p>
+            <p className="text-vine-sage">{error}</p>
           </div>
         </div>
       </div>
@@ -253,123 +231,55 @@ const TimelinePage = () => {
   }
 
   return (
-    <div className="timeline-page min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      {/* Animated background pattern */}
-      <div className="absolute inset-0 opacity-3">
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="family-timeline-pattern" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
-              {/* Timeline branches */}
-              <path d="M30,10 L30,50 M10,30 L50,30 M20,20 L40,40 M40,20 L20,40"
-                stroke="currentColor" strokeWidth="1" className="text-blue-200" />
-              {/* Timeline dots */}
-              <circle cx="15" cy="15" r="2" fill="currentColor" className="text-green-200" />
-              <circle cx="45" cy="45" r="2" fill="currentColor" className="text-purple-200" />
-              {/* Small calendar icons */}
-              <rect x="40" y="12" width="8" height="6" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-blue-200" />
-              <line x1="42" y1="10" x2="42" y2="14" stroke="currentColor" strokeWidth="0.5" className="text-blue-200" />
-              <line x1="46" y1="10" x2="46" y2="14" stroke="currentColor" strokeWidth="0.5" className="text-blue-200" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#family-timeline-pattern)" />
-        </svg>
-      </div>
-
-      {/* Floating decorative elements */}
+    <div className="min-h-screen relative overflow-hidden bg-transparent">
+      {/* Subtle decorative blurs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br from-pink-200/30 to-purple-200/30 rounded-full blur-xl"></div>
-        <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-bl from-blue-200/30 to-cyan-200/30 rounded-full blur-xl"></div>
-        <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 w-80 h-40 bg-gradient-to-t from-purple-200/30 to-pink-200/30 rounded-full blur-xl"></div>
+        <div className="absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br from-purple-200/10 to-vine-200/10 rounded-full blur-xl"></div>
+        <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-bl from-amber-100/10 to-vine-100/10 rounded-full blur-xl"></div>
+        <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 w-80 h-40 bg-gradient-to-t from-vine-200/10 to-transparent rounded-full blur-xl"></div>
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 w-full px-4 py-8">
-        {/* UPDATED: Enhanced header with timeline icon and text effects */}
-        <div className="text-center mb-6">
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-xl max-w-xl mx-auto relative overflow-hidden">
-            {/* Background text effect */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-              <span className="text-6xl font-black text-gray-400 transform rotate-12">TIMELINE</span>
-            </div>
+      <div className="relative z-10 w-full px-4 py-6">
 
-            <div className="relative z-10 flex items-center justify-center mb-2">
-              {/* Custom timeline icon */}
-              <div className="mr-3">
-                <svg width="32" height="32" viewBox="0 0 32 32" className="text-purple-600">
-                  <defs>
-                    <linearGradient id="timelineGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#8b5cf6" />
-                      <stop offset="50%" stopColor="#3b82f6" />
-                      <stop offset="100%" stopColor="#06b6d4" />
-                    </linearGradient>
-                  </defs>
-                  {/* Timeline line */}
-                  <line x1="16" y1="4" x2="16" y2="28" stroke="url(#timelineGradient)" strokeWidth="3" strokeLinecap="round" />
-                  {/* Timeline dots */}
-                  <circle cx="16" cy="8" r="3" fill="url(#timelineGradient)" />
-                  <circle cx="16" cy="16" r="4" fill="url(#timelineGradient)" />
-                  <circle cx="16" cy="24" r="3" fill="url(#timelineGradient)" />
-                  {/* Side branches */}
-                  <line x1="8" y1="8" x2="13" y2="8" stroke="url(#timelineGradient)" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="19" y1="16" x2="24" y2="16" stroke="url(#timelineGradient)" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="8" y1="24" x2="13" y2="24" stroke="url(#timelineGradient)" strokeWidth="2" strokeLinecap="round" />
-                </svg>
+        {/* Chronicle Header — Gilded Vellum */}
+        <div className="max-w-xl mx-auto mb-5">
+          <div className="chronicle-header">
+            <h1 className="chronicle-header-title">Family Chronicle</h1>
+
+            <p className="mt-0.5 tracking-widest uppercase" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)', fontSize: '0.6rem' }}>
+              A living record of generations
+            </p>
+
+            {/* Filter pills */}
+            <div className="mt-3 flex flex-col items-center gap-2">
+              <div className="chronicle-filters">
+                {[
+                  { key: 'all', label: 'All Events' },
+                  { key: 'birth', label: 'Births' },
+                  { key: 'marriage', label: 'Marriages' },
+                  { key: 'death', label: 'Passings' },
+                  { key: 'world', label: 'World Events' },
+                ].map(f => (
+                  <button
+                    key={f.key}
+                    onClick={() => setFilter(f.key)}
+                    className={`chronicle-filter-btn ${
+                      filter === f.key
+                        ? f.key === 'world' ? 'active-world' : 'active'
+                        : ''
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
               </div>
 
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-700 via-blue-700 to-cyan-700 bg-clip-text text-transparent drop-shadow-sm"
-                style={{
-                  textShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                  WebkitTextStroke: '0.5px rgba(147, 51, 234, 0.1)'
-                }}>
-                Family Timeline
-              </h1>
-            </div>
-
-            <p className="text-gray-600 text-base font-medium relative z-10">
-              Journey through your family's most important moments
-            </p>
-          </div>
-        </div>
-
-        {/* UPDATED: Smaller filter buttons with marriage option */}
-        <div className="flex justify-center items-center gap-3 mb-6">
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-1 border border-white/50 shadow-xl">
-            <div className="inline-flex rounded-lg shadow-sm">
               <button
-                onClick={() => setFilter('all')}
-                className={`px-4 py-2 text-xs font-medium rounded-l-lg transition-all ${filter === 'all'
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105'
-                  : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50'
-                  } border border-white/50`}
+                onClick={() => setShowWorldEvents(!showWorldEvents)}
+                className={`chronicle-toggle ${showWorldEvents ? 'active' : ''}`}
               >
-                🌟 All Events
-              </button>
-              <button
-                onClick={() => setFilter('birth')}
-                className={`px-4 py-2 text-xs font-medium transition-all ${filter === 'birth'
-                  ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg transform scale-105'
-                  : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50'
-                  } border-t border-b border-white/50`}
-              >
-                🎂 Births
-              </button>
-              <button
-                onClick={() => setFilter('marriage')}
-                className={`px-4 py-2 text-xs font-medium transition-all ${filter === 'marriage'
-                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg transform scale-105'
-                  : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50'
-                  } border-t border-b border-white/50`}
-              >
-                💍 Marriages
-              </button>
-              <button
-                onClick={() => setFilter('death')}
-                className={`px-4 py-2 text-xs font-medium rounded-r-lg transition-all ${filter === 'death'
-                  ? 'bg-gradient-to-r from-gray-500 to-slate-500 text-white shadow-lg transform scale-105'
-                  : 'bg-white/60 text-gray-700 hover:bg-gradient-to-r hover:from-gray-50 hover:to-slate-50'
-                  } border border-white/50`}
-              >
-                🕊️ Deaths
+                {showWorldEvents ? 'Hide World Events' : 'Show World Events'}
               </button>
             </div>
           </div>
@@ -379,128 +289,184 @@ const TimelinePage = () => {
         {filteredEvents.length === 0 ? (
           <div className="text-center mt-8">
             <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-white/50 shadow-xl max-w-md mx-auto">
-              <div className="text-gray-400 mb-4">
+              <div className="text-vine-sage mb-4">
                 <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold mb-2 bg-gradient-to-r from-gray-700 to-slate-700 bg-clip-text text-transparent">
+              <h3 className="text-xl font-semibold mb-2 text-vine-dark font-heading">
                 No events to display
               </h3>
-              <p className="text-gray-600 mb-4">Try adding birth dates and marriage information to family members.</p>
+              <p className="text-vine-sage mb-4">Try adding birth dates and marriage information to family members.</p>
               <Link
                 to="/members"
-                className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-full hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all shadow-lg font-medium"
+                className="chronicle-profile-link"
               >
                 View Members
               </Link>
             </div>
           </div>
         ) : (
-          <div className="relative max-w-4xl mx-auto">
-            {/* Central timeline line - responsive */}
-            <div className="absolute left-1/2 md:left-1/2 left-8 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-200 via-purple-200 to-pink-200 transform md:transform md:-translate-x-1/2 timeline-mobile-line"></div>
+          <div className="chronicle-container">
+            {/* The Central Vine */}
+            <div className="chronicle-vine"></div>
 
-            {/* Timeline content */}
-            <div className="space-y-16">
-              {decades.map(decade => (
-                <div key={decade} className="relative">
-                  {/* Decade marker */}
-                  <div className="flex justify-center md:justify-center justify-start pl-16 mb-8 timeline-mobile-decade">
-                    <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-3 rounded-full shadow-xl border-4 border-white text-lg font-bold z-10 relative">
-                      {decade}s
-                    </div>
-                  </div>
+            {decades.map((decade, decadeIndex) => {
+              const eventsBeforeThisDecade = decades
+                .slice(0, decadeIndex)
+                .reduce((sum, d) => sum + groupedByDecade[d].length, 0);
+
+              return (
+                <div key={decade} className="relative mb-12">
+                  {/* Decade Almanac Summary */}
+                  <DecadeAlmanac
+                    decade={decade}
+                    events={allByDecade[decade] || []}
+                  />
 
                   {/* Events in this decade */}
-                  <div className="space-y-8">
-                    {groupedByDecade[decade].map((event, index) => (
-                      <div key={index} className="relative flex items-center">
-                        {/* UPDATED: Timeline dot with different colors for different event types - responsive */}
-                        <div className={`absolute left-1/2 md:left-1/2 left-8 transform md:transform md:-translate-x-1/2 w-4 h-4 rounded-full border-4 border-white shadow-lg z-10 timeline-mobile-dot ${event.type === 'birth' ? 'bg-green-500' :
-                          event.type === 'marriage' ? 'bg-pink-500' :
-                            'bg-gray-500'
-                          }`}></div>
+                  <div className="space-y-10">
+                    {groupedByDecade[decade].map((event, localIndex) => {
+                      const globalIndex = eventsBeforeThisDecade + localIndex;
+                      const isLeft = globalIndex % 2 === 0;
+                      const side = isLeft ? 'left' : 'right';
+                      const cardType = event.isWorldEvent ? 'world' : 'family';
+                      const leafType = event.isWorldEvent ? 'world' : event.type;
 
-                        {/* Event card - responsive layout */}
-                        <div className={`w-full md:w-5/12 ml-16 md:ml-0 ${index % 2 === 0 ? 'md:mr-auto md:pr-8' : 'md:ml-auto md:pl-8'} timeline-mobile-card`}>
-                          <div className="timeline-event-card bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-xl border border-white/50 hover:shadow-2xl transition-all hover:scale-105" style={{display: 'block', width: 'auto', maxWidth: 'none'}}>
-                            <div className="timeline-event-header flex items-center mb-4" style={{display: 'flex', flexDirection: 'row', alignItems: 'center', whiteSpace: 'normal', writingMode: 'horizontal-tb'}}>
-                              <div className="timeline-profile-container mr-4" style={{display: 'inline-block', flexShrink: 0, width: 'auto', height: 'auto'}}>
-                                <div className="relative">
-                                  <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-400 via-purple-400 to-blue-400 rounded-full opacity-75 blur-sm"></div>
-                                  <div className="relative bg-white rounded-full p-1">
-                                    <ProfileImage
-                                      member={event.member}
-                                      size="small"
-                                      className="border-2 border-gray-200"
-                                    />
-                                  </div>
+                      // Generational echo
+                      const echo = getGenerationalEcho(event, events);
+
+                      // Age calculation for personal events
+                      let ageLabel = null;
+                      if (!event.isWorldEvent) {
+                        if (event.type === 'birth') {
+                          ageLabel = 'Born';
+                        } else if (event.member?.birth_date) {
+                          const birthYear = new Date(event.member.birth_date).getFullYear();
+                          const age = event.year - birthYear;
+                          if (age >= 0) ageLabel = `Age ${age}`;
+                        }
+                      }
+
+                      return (
+                        <div key={localIndex} className={`chronicle-item ${side}`}>
+                          {/* Leaf node on the vine */}
+                          <div className={`chronicle-leaf ${leafType}`}>
+                            <LeafIcon className="w-3.5 h-3.5 text-white" />
+                          </div>
+
+                          {/* Event card */}
+                          <div className={`chronicle-card ${cardType}`}>
+                            {/* Top row: profile/icon + year + badge + age */}
+                            <div className="flex items-center gap-3 mb-3">
+                              {!event.isWorldEvent ? (
+                                <div className="flex-shrink-0">
+                                  <ProfileImage
+                                    member={event.member}
+                                    size="w-10 h-10"
+                                    className="rounded-full border-2 border-white shadow-sm"
+                                  />
+                                </div>
+                              ) : event.icon ? (
+                                <span className="text-2xl flex-shrink-0">{event.icon}</span>
+                              ) : null}
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-2 flex-wrap">
+                                  <span className="chronicle-year">{event.year}</span>
+                                  <span className={`chronicle-badge ${event.isWorldEvent ? 'world-badge' : event.type}`}>
+                                    {event.isWorldEvent
+                                      ? event.category?.charAt(0).toUpperCase() + event.category?.slice(1)
+                                      : event.type === 'birth' ? 'Birth'
+                                      : event.type === 'marriage' ? 'Marriage'
+                                      : 'Passing'}
+                                  </span>
                                 </div>
                               </div>
-                              <div style={{display: 'block', whiteSpace: 'normal'}}>
-                                <span className="timeline-year-badge text-xl font-bold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent" style={{display: 'inline-block', whiteSpace: 'nowrap', writingMode: 'horizontal-tb'}}>
-                                  {event.year}
+
+                              {ageLabel && (
+                                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${
+                                  event.type === 'birth' ? 'text-emerald-700 bg-emerald-50' :
+                                  event.type === 'marriage' ? 'text-pink-700 bg-pink-50' :
+                                  'text-vine-600 bg-vine-50'
+                                }`}>
+                                  {ageLabel}
                                 </span>
-                                {/* UPDATED: Event type badge with different colors */}
-                                <div className={`text-sm px-4 py-2 rounded-full inline-block ml-3 font-medium shadow-lg ${event.type === 'birth'
-                                  ? 'bg-gradient-to-r from-green-400 to-emerald-400 text-white'
-                                  : event.type === 'marriage'
-                                    ? 'bg-gradient-to-r from-pink-400 to-rose-400 text-white'
-                                    : 'bg-gradient-to-r from-gray-400 to-slate-400 text-white'
-                                  }`} style={{display: 'inline-block', whiteSpace: 'nowrap'}}>
-                                  {event.type === 'birth' ? '🎂 Birth' :
-                                    event.type === 'marriage' ? '💍 Marriage' :
-                                      '🕊️ Passing'}
-                                </div>
-                              </div>
+                              )}
                             </div>
-                            <h3 className="timeline-event-description font-bold text-xl mb-3 bg-gradient-to-r from-gray-800 to-slate-700 bg-clip-text text-transparent" style={{display: 'block', whiteSpace: 'normal', wordWrap: 'break-word', writingMode: 'horizontal-tb'}}>
+
+                            {/* Description */}
+                            <h3 className="font-bold text-sm mb-1.5 text-vine-dark dark:text-white leading-snug">
                               {event.description}
                             </h3>
 
-                            {/* UPDATED: Special handling for marriage events to show both spouses */}
-                            {event.type === 'marriage' && event.spouse && (
-                              <div className="bg-gradient-to-r from-pink-50 to-rose-50 rounded-lg p-3 mb-4 border border-pink-100">
-                                <div className="flex items-center space-x-3">
-                                  {event.spouse.photo_url && (
-                                    <ProfileImage
-                                      member={event.spouse}
-                                      size="w-8 h-8"
-                                      className="border border-pink-200"
-                                    />
-                                  )}
-                                  <div>
-                                    <p className="text-sm font-medium text-gray-700">
-                                      Spouse: <Link
-                                        to={`/members/${event.spouse.id}`}
-                                        className="text-pink-600 hover:text-pink-800 hover:underline font-semibold"
-                                      >
-                                        {event.spouseName}
-                                      </Link>
-                                    </p>
-                                  </div>
-                                </div>
+                            {/* Marriage spouse info */}
+                            {!event.isWorldEvent && event.type === 'marriage' && event.spouse && (
+                              <div className="flex items-center gap-1.5 mb-2.5 p-1.5 rounded-lg bg-pink-50/60 dark:bg-pink-900/10 border border-pink-100 dark:border-pink-900/20">
+                                {event.spouse.photo_url && (
+                                  <ProfileImage
+                                    member={event.spouse}
+                                    size="w-7 h-7"
+                                    className="rounded-full border border-pink-200"
+                                  />
+                                )}
+                                <span className="text-xs text-vine-dark dark:text-gray-300">
+                                  Spouse:{' '}
+                                  <Link
+                                    to={`/members/${event.spouse.id}`}
+                                    className="font-semibold text-pink-600 dark:text-pink-400 hover:underline"
+                                  >
+                                    {event.spouseName}
+                                  </Link>
+                                </span>
                               </div>
                             )}
 
-                            <div className="timeline-location bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 mb-4 border border-blue-100" style={{display: 'block', whiteSpace: 'normal', writingMode: 'horizontal-tb'}}>
-                              <p className="text-base text-gray-700 font-medium" style={{display: 'block', whiteSpace: 'normal', writingMode: 'horizontal-tb'}}>📍 {event.location}</p>
-                            </div>
-                            <Link
-                              to={`/members/${event.memberId}`}
-                              className="inline-block bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-2 rounded-full hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all shadow-lg font-medium"
-                            >
-                              👤 View Profile
-                            </Link>
+                            {/* Location */}
+                            {event.location && event.location !== 'Unknown location' && (
+                              <div className="chronicle-location mb-2.5">
+                                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                <span className="truncate">{event.location}</span>
+                              </div>
+                            )}
+
+                            {/* World event description (stored in location field) */}
+                            {event.isWorldEvent && event.location && (
+                              <p className="text-xs text-vine-sage dark:text-gray-400 mb-2.5 leading-relaxed">
+                                {event.location}
+                              </p>
+                            )}
+
+                            {/* Generational echo */}
+                            {echo && (
+                              <p className="chronicle-echo">{echo}</p>
+                            )}
+
+                            {/* View Profile link — family events only */}
+                            {!event.isWorldEvent && (
+                              <div className="mt-2.5">
+                                <Link
+                                  to={`/members/${event.memberId}`}
+                                  className="chronicle-profile-link"
+                                >
+                                  View Profile
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                  </svg>
+                                </Link>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
       </div>

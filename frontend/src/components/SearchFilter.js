@@ -97,7 +97,7 @@ const SearchFilter = ({ members, onFilteredMembers, onSearchTerm }) => {
       <div className="flex flex-col sm:flex-row gap-4 items-center">
         {/* Search Input */}
         <div className="relative flex-1 min-w-0">
-          <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 text-vine-sage w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -105,12 +105,12 @@ const SearchFilter = ({ members, onFilteredMembers, onSearchTerm }) => {
             placeholder="Search by name, location, occupation..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full pl-10 pr-4 py-2 border border-vine-200 rounded-lg focus:ring-2 focus:ring-vine-500 focus:border-transparent"
           />
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-vine-sage hover:text-vine-dark"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -122,14 +122,14 @@ const SearchFilter = ({ members, onFilteredMembers, onSearchTerm }) => {
         {/* Filter Toggle */}
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 relative"
+          className="flex items-center gap-2 px-4 py-2 border border-vine-200 rounded-lg hover:bg-vine-50 relative"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z" />
           </svg>
           <span>Filters</span>
           {activeFilterCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            <span className="absolute -top-2 -right-2 bg-vine-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               {activeFilterCount}
             </span>
           )}
@@ -139,7 +139,7 @@ const SearchFilter = ({ members, onFilteredMembers, onSearchTerm }) => {
         {(searchTerm || activeFilterCount > 0) && (
           <button
             onClick={clearFilters}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 text-sm"
+            className="px-4 py-2 text-vine-sage hover:text-vine-dark text-sm"
           >
             Clear All
           </button>
@@ -148,16 +148,16 @@ const SearchFilter = ({ members, onFilteredMembers, onSearchTerm }) => {
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+        <div className="mt-4 pt-4 border-t border-vine-200">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-vine-dark mb-1">
                 Gender
               </label>
               <select
                 value={filters.gender}
                 onChange={(e) => handleFilterChange('gender', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="w-full border border-vine-200 rounded-lg px-3 py-2 text-sm"
               >
                 <option value="">All</option>
                 <option value="Male">Male</option>
@@ -166,13 +166,13 @@ const SearchFilter = ({ members, onFilteredMembers, onSearchTerm }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-vine-dark mb-1">
                 Status
               </label>
               <select
                 value={filters.isAlive}
                 onChange={(e) => handleFilterChange('isAlive', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="w-full border border-vine-200 rounded-lg px-3 py-2 text-sm"
               >
                 <option value="">All</option>
                 <option value="true">Living</option>
@@ -181,13 +181,13 @@ const SearchFilter = ({ members, onFilteredMembers, onSearchTerm }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-vine-dark mb-1">
                 Location
               </label>
               <select
                 value={filters.hasLocation}
                 onChange={(e) => handleFilterChange('hasLocation', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="w-full border border-vine-200 rounded-lg px-3 py-2 text-sm"
               >
                 <option value="">All</option>
                 <option value="true">Has Location</option>
@@ -196,13 +196,13 @@ const SearchFilter = ({ members, onFilteredMembers, onSearchTerm }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-vine-dark mb-1">
                 Photo
               </label>
               <select
                 value={filters.hasPhoto}
                 onChange={(e) => handleFilterChange('hasPhoto', e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                className="w-full border border-vine-200 rounded-lg px-3 py-2 text-sm"
               >
                 <option value="">All</option>
                 <option value="true">Has Photo</option>
@@ -214,7 +214,7 @@ const SearchFilter = ({ members, onFilteredMembers, onSearchTerm }) => {
       )}
 
       {/* Results Summary */}
-      <div className="mt-4 text-sm text-gray-600">
+      <div className="mt-4 text-sm text-vine-sage">
         <span>Showing {members.length} family members</span>
         {searchTerm && (
           <span className="ml-2">for "{searchTerm}"</span>

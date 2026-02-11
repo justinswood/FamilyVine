@@ -129,8 +129,8 @@ const FamilyStatistics = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
-        <TrendingUp className="w-6 h-6 text-blue-600" />
+      <h2 className="text-2xl font-heading font-bold text-gray-900 dark:text-gray-100 mb-6 flex items-center gap-2">
+        <TrendingUp className="w-6 h-6 text-vine-600" />
         Family Statistics
       </h2>
 
@@ -141,9 +141,9 @@ const FamilyStatistics = () => {
           title="Total Members"
           value={stats.totalMembers}
           subtitle={`${stats.livingMembers} living`}
-          color="blue"
+          color="vine"
         />
-        
+
         <StatCard
           icon={Calendar}
           title="Generations"
@@ -151,7 +151,7 @@ const FamilyStatistics = () => {
           subtitle="Estimated count"
           color="green"
         />
-        
+
         <StatCard
           icon={Heart}
           title="Marriages"
@@ -159,13 +159,13 @@ const FamilyStatistics = () => {
           subtitle="Recorded unions"
           color="red"
         />
-        
+
         <StatCard
           icon={TrendingUp}
           title="Recent Additions"
           value={stats.recentAdditions}
           subtitle="Last 30 days"
-          color="purple"
+          color="vine"
         />
       </div>
 
@@ -185,22 +185,22 @@ const FamilyStatistics = () => {
             </div>
           </div>
           
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 
-                          rounded-lg p-3 text-center border border-blue-200 dark:border-blue-700/50">
-            <div className="text-xl font-bold text-blue-700 dark:text-blue-300">
+          <div className="bg-gradient-to-r from-vine-50 to-vine-100 dark:from-vine-900/20 dark:to-vine-800/20
+                          rounded-lg p-3 text-center border border-vine-200 dark:border-vine-700/50">
+            <div className="text-xl font-bold text-vine-dark dark:text-vine-300">
               {stats.ageGroups.adults}
             </div>
-            <div className="text-sm text-blue-600 dark:text-blue-400">
+            <div className="text-sm text-vine-600 dark:text-vine-400">
               Adults (18-64)
             </div>
           </div>
-          
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 
-                          rounded-lg p-3 text-center border border-purple-200 dark:border-purple-700/50">
-            <div className="text-xl font-bold text-purple-700 dark:text-purple-300">
+
+          <div className="bg-gradient-to-r from-vine-50 to-vine-100 dark:from-vine-900/20 dark:to-vine-800/20
+                          rounded-lg p-3 text-center border border-vine-200 dark:border-vine-700/50">
+            <div className="text-xl font-bold text-vine-dark dark:text-vine-300">
               {stats.ageGroups.seniors}
             </div>
-            <div className="text-sm text-purple-600 dark:text-purple-400">
+            <div className="text-sm text-vine-600 dark:text-vine-400">
               Seniors (65+)
             </div>
           </div>
@@ -224,7 +224,7 @@ const FamilyStatistics = () => {
                     {loc.location}
                   </span>
                 </div>
-                <span className="bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 
+                <span className="bg-vine-100 dark:bg-vine-900/50 text-vine-dark dark:text-vine-200
                                  px-2 py-1 rounded-full text-sm font-semibold">
                   {loc.count} {loc.count === 1 ? 'member' : 'members'}
                 </span>

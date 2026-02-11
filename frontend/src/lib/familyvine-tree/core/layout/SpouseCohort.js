@@ -3,6 +3,8 @@
  * Walker's algorithm works on cohorts (spouse pairs) rather than individual nodes
  */
 
+import { LayoutConfig } from './LayoutConfig.js';
+
 /**
  * SpouseCohort class - represents a married couple as a single layout unit
  */
@@ -88,8 +90,8 @@ export class SpouseCohort {
    * Calculate the combined width of the cohort
    */
   calculateWidth() {
-    const SPOUSE_GAP = 30;
-    const NODE_WIDTH = 200;
+    const SPOUSE_GAP = LayoutConfig.SPOUSE_GAP;
+    const NODE_WIDTH = LayoutConfig.NODE_WIDTH;
 
     if (this.partners.length === 2) {
       // Two partners: width includes both nodes and gap
@@ -283,8 +285,8 @@ export const buildCohorts = (treeModel) => {
  * @param {TreeModel} treeModel - Tree model to update
  */
 export const expandCohorts = (cohorts, treeModel) => {
-  const SPOUSE_GAP = 30;
-  const NODE_WIDTH = 200;
+  const SPOUSE_GAP = LayoutConfig.SPOUSE_GAP;
+  const NODE_WIDTH = LayoutConfig.NODE_WIDTH;
 
   console.log('📐 Expanding cohorts to individual positions');
 

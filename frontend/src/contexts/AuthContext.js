@@ -3,23 +3,33 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const AuthContext = createContext(null);
 
 // API URL from environment variable
-const API_URL = process.env.REACT_APP_API || 'http://localhost:5050';
+const API_URL = process.env.REACT_APP_API ?? '';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const verifyingRef = React.useRef(false); // Prevent multiple simultaneous verifications
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
     const storedToken = localStorage.getItem('familyVine_token');
     const storedUser = localStorage.getItem('familyVine_user');
+    const lastVerified = localStorage.getItem('familyVine_lastVerified');
 
     if (storedToken && storedUser) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
-      // Verify token is still valid
-      verifyToken(storedToken);
+
+      // Only verify if not verified in the last 5 minutes
+      const now = Date.now();
+      const fiveMinutes = 5 * 60 * 1000;
+
+      if (!lastVerified || (now - parseInt(lastVerified)) > fiveMinutes) {
+        verifyToken(storedToken);
+      } else {
+        setLoading(false);
+      }
     } else {
       setLoading(false);
     }
@@ -27,6 +37,14 @@ export const AuthProvider = ({ children }) => {
 
   // Verify token with backend
   const verifyToken = async (tokenToVerify) => {
+    // Prevent multiple simultaneous verifications
+    if (verifyingRef.current) {
+      setLoading(false);
+      return;
+    }
+
+    verifyingRef.current = true;
+
     try {
       const response = await fetch(`${API_URL}/api/auth/me`, {
         headers: {
@@ -38,15 +56,21 @@ export const AuthProvider = ({ children }) => {
         const data = await response.json();
         setUser(data.user);
         setToken(tokenToVerify);
+        // Store verification timestamp
+        localStorage.setItem('familyVine_lastVerified', Date.now().toString());
       } else {
         // Token invalid, clear auth state
         logout();
       }
     } catch (error) {
       console.error('Token verification failed:', error);
-      logout();
+      // Don't logout on network errors, only on actual auth failures
+      if (error.message !== 'Failed to fetch') {
+        logout();
+      }
     } finally {
       setLoading(false);
+      verifyingRef.current = false;
     }
   };
 
@@ -77,6 +101,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('familyVine_token', data.token);
         localStorage.setItem('familyVine_user', JSON.stringify(data.user));
         localStorage.setItem('familyVine_loggedIn', 'true'); // For backwards compatibility
+        localStorage.setItem('familyVine_lastVerified', Date.now().toString());
 
         setToken(data.token);
         setUser(data.user);
@@ -119,6 +144,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('familyVine_token', data.token);
         localStorage.setItem('familyVine_user', JSON.stringify(data.user));
         localStorage.setItem('familyVine_loggedIn', 'true');
+        localStorage.setItem('familyVine_lastVerified', Date.now().toString());
 
         setToken(data.token);
         setUser(data.user);
@@ -138,6 +164,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('familyVine_token');
     localStorage.removeItem('familyVine_user');
     localStorage.removeItem('familyVine_loggedIn');
+    localStorage.removeItem('familyVine_lastVerified');
     setToken(null);
     setUser(null);
   };

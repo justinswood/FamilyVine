@@ -100,9 +100,9 @@ const SiteMetrics = () => {
       title: 'Total Members',
       value: metrics.loading ? '...' : metrics.totalMembers.toLocaleString(),
       icon: Users,
-      color: 'from-blue-500 to-blue-600',
-      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-      borderColor: 'border-blue-200 dark:border-blue-700'
+      color: 'from-vine-500 to-vine-600',
+      bgColor: 'bg-vine-50 dark:bg-vine-900/20',
+      borderColor: 'border-vine-200 dark:border-vine-700'
     },
     {
       title: 'Average Age',
@@ -128,15 +128,15 @@ const SiteMetrics = () => {
           : 'No data'
       ),
       icon: TrendingUp,
-      color: 'from-purple-500 to-purple-600',
-      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-      borderColor: 'border-purple-200 dark:border-purple-700'
+      color: 'from-vine-500 to-vine-600',
+      bgColor: 'bg-vine-50 dark:bg-vine-900/20',
+      borderColor: 'border-vine-200 dark:border-vine-700'
     }
   ];
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
+      <h3 className="text-lg font-heading font-semibold text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
         <TrendingUp className="w-5 h-5 text-green-600" />
         <DecryptedText 
           text="Family Metrics"

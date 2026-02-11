@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config/api';
 
 const GenerationManager = () => {
   const [members, setMembers] = useState([]);
@@ -12,11 +13,7 @@ const GenerationManager = () => {
 
   const fetchMembers = async () => {
     try {
-      const API_BASE = window.location.hostname === 'family.techwoods.cc' 
-        ? 'https://family.techwoods.cc'
-        : 'http://192.168.1.120:5000';
-      
-      const response = await fetch(`${API_BASE}/api/members`);
+      const response = await fetch(`${API_URL}/api/members`);
       if (response.ok) {
         const data = await response.json();
         setMembers(data.sort((a, b) => (a.generation || 0) - (b.generation || 0)));
@@ -31,11 +28,7 @@ const GenerationManager = () => {
   const updateGeneration = async (memberId, newGeneration) => {
     try {
       setSaving(true);
-      const API_BASE = window.location.hostname === 'family.techwoods.cc' 
-        ? 'https://family.techwoods.cc'
-        : 'http://192.168.1.120:5000';
-      
-      const response = await fetch(`${API_BASE}/api/members/${memberId}`, {
+      const response = await fetch(`${API_URL}/api/members/${memberId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ generation: newGeneration })

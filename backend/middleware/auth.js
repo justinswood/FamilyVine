@@ -54,17 +54,54 @@ const optionalAuth = (req, res, next) => {
 };
 
 /**
- * Role-based authorization middleware
- * Checks if user has required role after authentication
- * Usage: router.delete('/api/members/:id', authenticateToken, requireRole('admin'), async (req, res) => { ... })
+ * Role hierarchy: viewer < editor < admin
+ * Higher roles inherit permissions of lower roles
  */
-const requireRole = (role) => {
+const ROLE_HIERARCHY = {
+  viewer: 1,
+  editor: 2,
+  admin: 3
+};
+
+/**
+ * Role-based authorization middleware with hierarchy support
+ * Checks if user has required role or higher after authentication
+ * Usage: router.delete('/api/members/:id', authenticateToken, requireRole('admin'), async (req, res) => { ... })
+ *
+ * @param {string} minRole - Minimum role required ('viewer', 'editor', or 'admin')
+ */
+const requireRole = (minRole) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ error: 'Authentication required' });
     }
 
-    if (req.user.role !== role && !req.user.roles?.includes(role)) {
+    const userRoleLevel = ROLE_HIERARCHY[req.user.role] || 0;
+    const requiredLevel = ROLE_HIERARCHY[minRole] || 0;
+
+    if (userRoleLevel < requiredLevel) {
+      return res.status(403).json({
+        error: 'Insufficient permissions',
+        required: minRole,
+        current: req.user.role
+      });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Require exact role (no hierarchy)
+ * Use when you need specifically that role, not higher
+ */
+const requireExactRole = (role) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    if (req.user.role !== role) {
       return res.status(403).json({ error: `${role} role required` });
     }
 
@@ -75,5 +112,7 @@ const requireRole = (role) => {
 module.exports = {
   authenticateToken,
   optionalAuth,
-  requireRole
+  requireRole,
+  requireExactRole,
+  ROLE_HIERARCHY
 };

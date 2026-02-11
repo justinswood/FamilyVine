@@ -1,20 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Clock, ChefHat, Users, Heart, Edit, Trash2, ArrowLeft, Camera } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Clock, ChefHat, Users, Heart, Edit, Trash2, ArrowLeft, Camera, Eye, EyeOff } from 'lucide-react';
 import IngredientsEditor from '../components/IngredientsEditor';
 import InstructionStepsEditor from '../components/InstructionStepsEditor';
 import ProfileImage from '../components/ProfileImage';
 
+/* ── Leaf SVG Icon ── */
+const LeafIcon = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 19 2c1 2 2 4.5 2 8 0 5.5-3.5 10-10 10Z" />
+    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+  </svg>
+);
+
+/* ── Scale ingredient quantities ── */
+const scaleIngredientLine = (line, multiplier) => {
+  if (multiplier === 1) return line;
+  // Match fractions like 1/2, mixed numbers like 1 1/2, and decimals like 2.5
+  return line.replace(/(\d+\s+\d+\/\d+|\d+\/\d+|\d+\.?\d*)/g, (match) => {
+    let value;
+    if (match.includes(' ') && match.includes('/')) {
+      // Mixed number: "1 1/2"
+      const parts = match.split(' ');
+      const whole = parseFloat(parts[0]);
+      const [num, den] = parts[1].split('/').map(Number);
+      value = whole + num / den;
+    } else if (match.includes('/')) {
+      // Fraction: "1/2"
+      const [num, den] = match.split('/').map(Number);
+      value = num / den;
+    } else {
+      value = parseFloat(match);
+    }
+    const scaled = value * multiplier;
+    // Format nicely
+    if (Number.isInteger(scaled)) return String(scaled);
+    if (scaled % 1 === 0.5) return `${Math.floor(scaled)} 1/2`;
+    if (scaled % 1 === 0.25) return `${Math.floor(scaled)} 1/4`;
+    if (scaled % 1 === 0.75) return `${Math.floor(scaled)} 3/4`;
+    if (scaled % 1 === 0.333) return `${Math.floor(scaled)} 1/3`;
+    if (scaled % 1 === 0.667) return `${Math.floor(scaled)} 2/3`;
+    return scaled.toFixed(1).replace(/\.0$/, '');
+  });
+};
+
 const RecipeView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  // Check if we should start in edit mode (e.g., after creating a new recipe)
+  const [isEditing, setIsEditing] = useState(location.state?.editMode || false);
   const [checkedIngredients, setCheckedIngredients] = useState({});
+
+  // Serving multiplier
+  const [servingMultiplier, setServingMultiplier] = useState(1);
 
   // Form state for editing
   const [formData, setFormData] = useState({});
@@ -32,10 +77,25 @@ const RecipeView = () => {
   const [members, setMembers] = useState([]);
   const [memberSearch, setMemberSearch] = useState('');
 
+  // Save animation
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Secret ingredients reveal
+  const [secretsRevealed, setSecretsRevealed] = useState(false);
+
   useEffect(() => {
     fetchRecipe();
     fetchMembers();
   }, [id]);
+
+  // Enter edit mode if navigated from recipe creation
+  useEffect(() => {
+    if (location.state?.editMode) {
+      setIsEditing(true);
+      // Clear the state so refreshing doesn't keep triggering edit mode
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const fetchMembers = async () => {
     try {
@@ -75,13 +135,37 @@ const RecipeView = () => {
 
   const handleUpdate = async () => {
     try {
+      setIsSaving(true);
+
+      // Upload photo first if one is selected
+      if (selectedPhoto) {
+        const photoFormData = new FormData();
+        photoFormData.append('photo', selectedPhoto);
+        await axios.post(
+          `${process.env.REACT_APP_API}/api/recipes/${id}/photo`,
+          photoFormData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+      }
+
+      // Save recipe data
       await axios.put(`${process.env.REACT_APP_API}/api/recipes/${id}`, formData);
+
+      // Brief pause for animation
+      await new Promise(resolve => setTimeout(resolve, 800));
       await fetchRecipe();
+
+      // Clear photo states
+      setSelectedPhoto(null);
+      setPhotoPreview(null);
+
       setIsEditing(false);
-      alert('Recipe updated successfully!');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       console.error('Error updating recipe:', err);
       alert('Failed to update recipe');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -114,7 +198,7 @@ const RecipeView = () => {
       await fetchRecipe();
       setSelectedPhoto(null);
       setPhotoPreview(null);
-      alert('Photo uploaded successfully!');
+      // UI updates automatically via fetchRecipe
     } catch (err) {
       console.error('Error uploading photo:', err);
       alert('Failed to upload photo');
@@ -184,12 +268,22 @@ const RecipeView = () => {
     }));
   };
 
+  // Scaled ingredients
+  const scaledIngredients = useMemo(() => {
+    if (!recipe?.ingredients) return [];
+    return recipe.ingredients
+      .split('\n')
+      .filter(line => line.trim())
+      .map(line => scaleIngredientLine(line, servingMultiplier));
+  }, [recipe?.ingredients, servingMultiplier]);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading recipe...</p>
+      <div className="min-h-screen bg-transparent">
+        <div className="max-w-7xl mx-auto p-4">
+          <div className="flex justify-center items-center h-64">
+            <div className="w-10 h-10 border-3 border-vine-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
         </div>
       </div>
     );
@@ -200,8 +294,13 @@ const RecipeView = () => {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <p className="text-red-600 dark:text-red-400 text-xl mb-4">{error || 'Recipe not found'}</p>
-          <Link to="/recipes" className="text-orange-500 hover:text-orange-600 underline">
-            Back to Recipes
+          <Link
+            to="/recipes"
+            className="inline-flex items-center gap-2 text-sm"
+            style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)' }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Heirloom Kitchen
           </Link>
         </div>
       </div>
@@ -217,129 +316,159 @@ const RecipeView = () => {
 
   const displayPhotoUrl = photoPreview || photoUrl;
 
+  // Find contributor member object
+  const contributorMember = recipe.contributed_by
+    ? members.find(m => m.id === recipe.contributed_by)
+    : null;
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Back Button - Fixed at top */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-16 z-40">
-        <div className="container mx-auto px-4 py-3 flex items-center justify-between max-w-6xl">
+    <div className="min-h-screen bg-transparent">
+      {/* Toolbar — Archival */}
+      <div className="recipe-toolbar sticky top-16 z-40">
+        <div className="container mx-auto px-4 py-1.5 flex items-center justify-between max-w-6xl">
           <Link
             to="/recipes"
-            className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
+            className="inline-flex items-center gap-1.5 transition-colors"
+            style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)' }}
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back to Recipes</span>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            <span className="text-xs font-medium">Heirloom Kitchen</span>
           </Link>
 
           {/* Quick Actions */}
           <div className="flex items-center gap-2">
             <button
               onClick={toggleFavorite}
-              className={`p-2 rounded-lg transition-colors ${
-                recipe.is_family_favorite
-                  ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+              className={`recipe-toolbar-btn ${recipe.is_family_favorite ? 'recipe-toolbar-btn-active' : ''}`}
               title={recipe.is_family_favorite ? 'Remove from favorites' : 'Add to favorites'}
             >
-              <Heart className="w-5 h-5" fill={recipe.is_family_favorite ? "currentColor" : "none"} />
+              <Heart className="w-4 h-4" fill={recipe.is_family_favorite ? "#dc2626" : "none"} stroke={recipe.is_family_favorite ? "#dc2626" : "currentColor"} />
             </button>
 
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className={`p-2 rounded-lg transition-colors ${
-                isEditing
-                  ? 'bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
+              className={`recipe-toolbar-btn ${isEditing ? 'recipe-toolbar-btn-active' : ''}`}
               title="Edit recipe"
             >
-              <Edit className="w-5 h-5" />
+              <Edit className="w-4 h-4" />
             </button>
 
             <button
               onClick={handleDelete}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              className="recipe-toolbar-btn recipe-toolbar-btn-danger"
               title="Delete recipe"
             >
-              <Trash2 className="w-5 h-5" />
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Hero Section - Split Layout */}
+      {/* Hero Section — Gilded Vellum */}
       {!isEditing && (
-        <div className="w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div className="recipe-hero w-full">
           <div className="container mx-auto max-w-6xl">
-            <div className="grid md:grid-cols-2 gap-0">
-              {/* Left Side - Title, Description, Total Cook Time */}
-              <div className="relative flex flex-col justify-center p-3 md:p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-800 dark:to-gray-900">
-                {/* Contributor Profile Picture - Upper Right Corner */}
-                {recipe.contributed_by && (() => {
-                  const contributor = members.find(m => m.id === recipe.contributed_by);
-                  if (contributor) {
-                    return (
-                      <div className="absolute top-3 right-3 flex flex-col items-center">
-                        <Link to={`/members/${contributor.id}`}>
-                          <ProfileImage member={contributor} size="small" className="w-16 h-16" />
-                        </Link>
-                        <span className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-center">
-                          {contributor.first_name}
-                        </span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
-                <h1 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white mb-2 pr-20">
+            <div className="grid md:grid-cols-[65%_35%] gap-0">
+              {/* Left Side - Title & Description */}
+              <div className="relative flex flex-col justify-center p-3 md:p-5">
+                <h1 className="recipe-hero-title mb-1">
                   {recipe.title}
                 </h1>
 
                 {recipe.description && (
-                  <p className="text-sm text-gray-700 dark:text-gray-300 mb-3 leading-relaxed pr-20">
+                  <p className="recipe-hero-description mb-2">
                     {recipe.description}
                   </p>
                 )}
 
-                {/* Total Cook Time & Tags */}
-                <div className="space-y-2">
-                  {recipe.total_time && (
-                    <div className="inline-flex items-center gap-2 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 w-fit">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-purple-600">
-                        <Clock className="w-4 h-4 text-white" />
+                {/* Quick Info */}
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap gap-1.5">
+                    {recipe.prep_time && (
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md recipe-meta-badge w-fit">
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full" style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))' }}>
+                          <Clock className="w-2.5 h-2.5 text-white" />
+                        </div>
+                        <div>
+                          <div className="recipe-meta-badge-label" style={{ justifyContent: 'flex-start', marginBottom: 0, fontSize: '0.55rem' }}>Prep</div>
+                          <div className="recipe-meta-badge-value" style={{ fontSize: '0.7rem' }}>{recipe.prep_time} min</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-xs font-medium text-gray-600 dark:text-gray-400">Total Time</div>
-                        <div className="text-lg font-bold text-gray-900 dark:text-white">{recipe.total_time} min</div>
+                    )}
+                    {recipe.cook_time && (
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md recipe-meta-badge w-fit">
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full" style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))' }}>
+                          <ChefHat className="w-2.5 h-2.5 text-white" />
+                        </div>
+                        <div>
+                          <div className="recipe-meta-badge-label" style={{ justifyContent: 'flex-start', marginBottom: 0, fontSize: '0.55rem' }}>Cook</div>
+                          <div className="recipe-meta-badge-value" style={{ fontSize: '0.7rem' }}>{recipe.cook_time} min</div>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                    {recipe.total_time && (
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md recipe-meta-badge w-fit">
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full" style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))' }}>
+                          <Clock className="w-2.5 h-2.5 text-white" />
+                        </div>
+                        <div>
+                          <div className="recipe-meta-badge-label" style={{ justifyContent: 'flex-start', marginBottom: 0, fontSize: '0.55rem' }}>Total</div>
+                          <div className="recipe-meta-badge-value" style={{ fontSize: '0.7rem' }}>{recipe.total_time} min</div>
+                        </div>
+                      </div>
+                    )}
+                    {recipe.servings && (
+                      <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md recipe-meta-badge w-fit">
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full" style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))' }}>
+                          <Users className="w-2.5 h-2.5 text-white" />
+                        </div>
+                        <div>
+                          <div className="recipe-meta-badge-label" style={{ justifyContent: 'flex-start', marginBottom: 0, fontSize: '0.55rem' }}>Servings</div>
+                          <div className="recipe-meta-badge-value" style={{ fontSize: '0.7rem' }}>{recipe.servings}</div>
+                        </div>
+                      </div>
+                    )}
+                    {/* From the Kitchen of — inline badge */}
+                    {recipe.contributor_name && (
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md recipe-meta-badge" style={{ minWidth: '10rem' }}>
+                        {contributorMember && (
+                          <Link to={`/members/${contributorMember.id}`}>
+                            <ProfileImage member={contributorMember} size="small" className="w-9 h-9" style={{ border: '2px solid rgba(212,175,55,0.5)', borderRadius: '50%' }} />
+                          </Link>
+                        )}
+                        <div>
+                          <div className="recipe-meta-badge-label" style={{ justifyContent: 'flex-start', marginBottom: 0, fontSize: '0.55rem' }}>From the Kitchen of</div>
+                          <Link
+                            to={`/members/${recipe.contributor_id || recipe.contributed_by}`}
+                            style={{ fontSize: '0.7rem', fontFamily: 'var(--font-body)', color: 'var(--vine-dark)', fontWeight: 600 }}
+                          >
+                            {recipe.contributor_name}
+                          </Link>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
-                  {/* Tags */}
-                  {recipe.tags && recipe.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {recipe.tags.map(tag => (
-                        <span
-                          key={tag}
-                          className="px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full"
-                        >
+                  {/* Category + Tags */}
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {recipe.category && (
+                      <span className="recipe-card-category">{recipe.category}</span>
+                    )}
+                    {recipe.tags && recipe.tags.length > 0 && (
+                      recipe.tags.map(tag => (
+                        <span key={tag} className="recipe-card-tag">
                           #{tag}
                         </span>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Right Side - Image */}
-              <div className="relative h-32 md:h-48 bg-gradient-to-br from-orange-500 to-red-500">
+              <div className="relative overflow-hidden min-h-[200px]" style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))' }}>
                 {displayPhotoUrl ? (
-                  <img
-                    src={displayPhotoUrl}
-                    alt={recipe.title}
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={displayPhotoUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <Camera className="w-8 h-8 text-white/30" />
@@ -352,37 +481,37 @@ const RecipeView = () => {
       )}
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-4 max-w-6xl">
         {/* Edit Mode Header */}
         {isEditing && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-sm font-semibold text-orange-600 dark:text-orange-400 mb-4">EDIT MODE</h2>
+          <div className="recipe-panel mb-6">
+            <h2 className="recipe-edit-label" style={{ fontSize: '0.52rem', marginBottom: '11px' }}>Edit Mode</h2>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
+                <label className="recipe-edit-label">Title</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="recipe-edit-input"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+                <label className="recipe-edit-label">Description</label>
                 <textarea
                   value={formData.description || ''}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="A brief description of the recipe..."
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="recipe-edit-textarea"
                   rows="3"
                 />
               </div>
 
               {/* Member Contributor Dropdown */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="recipe-edit-label">
                   Recipe Contributed By
                 </label>
                 <div className="relative">
@@ -391,12 +520,11 @@ const RecipeView = () => {
                     value={memberSearch}
                     onChange={(e) => setMemberSearch(e.target.value)}
                     placeholder="Search for a family member..."
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="recipe-edit-input"
                   />
 
-                  {/* Dropdown with filtered members */}
                   {memberSearch && (
-                    <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <div className="absolute z-10 w-full mt-1 rounded-md shadow-lg max-h-48 overflow-y-auto" style={{ backgroundColor: 'var(--alabaster-parchment)', border: '1px solid rgba(212,175,55,0.25)' }}>
                       {members
                         .filter(m => {
                           const searchLower = memberSearch.toLowerCase();
@@ -409,12 +537,12 @@ const RecipeView = () => {
                             type="button"
                             onClick={() => {
                               setFormData({ ...formData, contributed_by: member.id });
-                              setMemberSearch(''); // Clear search to hide dropdown
+                              setMemberSearch('');
                             }}
-                            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors"
+                            className="w-full px-3 py-1.5 text-left hover:bg-vine-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
                           >
-                            <ProfileImage member={member} size="small" className="w-8 h-8" />
-                            <span className="text-gray-900 dark:text-white">
+                            <ProfileImage member={member} size="small" className="w-6 h-6" />
+                            <span className="text-gray-900 dark:text-white" style={{ fontFamily: 'var(--font-body)', fontSize: '0.6rem' }}>
                               {member.first_name} {member.last_name}
                             </span>
                           </button>
@@ -424,7 +552,7 @@ const RecipeView = () => {
                         const fullName = `${m.first_name} ${m.last_name}`.toLowerCase();
                         return fullName.includes(searchLower);
                       }).length === 0 && (
-                        <div className="px-4 py-2 text-gray-500 dark:text-gray-400">
+                        <div className="px-4 py-2" style={{ color: 'var(--vine-sage)' }}>
                           No members found
                         </div>
                       )}
@@ -432,25 +560,34 @@ const RecipeView = () => {
                   )}
                 </div>
 
-                {/* Show selected contributor */}
                 {formData.contributed_by && !memberSearch && (
-                  <div className="mt-2">
+                  <div className="mt-3">
                     {(() => {
                       const contributor = members.find(m => m.id === formData.contributed_by);
                       if (contributor) {
                         return (
-                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                            <ProfileImage member={contributor} size="small" className="w-8 h-8" />
-                            <span>Selected: {contributor.first_name} {contributor.last_name}</span>
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-md" style={{ background: 'var(--alabaster-parchment)', border: '1px solid rgba(212,175,55,0.2)' }}>
+                            <div style={{ border: '2px solid rgba(212,175,55,0.5)', borderRadius: '50%' }}>
+                              <ProfileImage member={contributor} size="small" className="w-8 h-8" />
+                            </div>
+                            <div className="flex-1">
+                              <div style={{ fontFamily: 'var(--font-body)', fontSize: '0.42rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(163,130,40,0.8)', fontWeight: 600 }}>
+                                FROM THE KITCHEN OF
+                              </div>
+                              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '0.7rem', fontWeight: 700, color: 'var(--vine-dark)' }}>
+                                {contributor.first_name} {contributor.last_name}
+                              </div>
+                            </div>
                             <button
                               type="button"
                               onClick={() => {
                                 setFormData({ ...formData, contributed_by: null });
                                 setMemberSearch('');
                               }}
-                              className="ml-2 text-red-600 dark:text-red-400 hover:underline"
+                              className="p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              style={{ color: 'var(--vine-sage)' }}
                             >
-                              Remove
+                              <Trash2 className="w-3 h-3" />
                             </button>
                           </div>
                         );
@@ -461,15 +598,15 @@ const RecipeView = () => {
                 )}
               </div>
 
-              {/* Photo Upload in Edit Mode */}
+              {/* Photo Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Recipe Photo</label>
+                <label className="recipe-edit-label">Recipe Photo</label>
                 {(photoPreview || photoUrl) && (
                   <div className="relative mb-4">
                     <img
                       src={photoPreview || photoUrl}
                       alt="Preview"
-                      className="w-full max-h-64 object-cover rounded-lg"
+                      className="w-full max-h-44 object-cover rounded-md"
                     />
                   </div>
                 )}
@@ -477,181 +614,124 @@ const RecipeView = () => {
                   type="file"
                   accept="image/*"
                   onChange={handlePhotoSelect}
-                  className="block w-full text-sm text-gray-500 dark:text-gray-400
-                    file:mr-4 file:py-2 file:px-4
-                    file:rounded-lg file:border-0
-                    file:text-sm file:font-semibold
-                    file:bg-orange-50 dark:file:bg-orange-900/20 file:text-orange-700 dark:file:text-orange-400
-                    hover:file:bg-orange-100 dark:hover:file:bg-orange-900/30 file:cursor-pointer"
+                  className="block w-full text-xs text-gray-500 dark:text-gray-400
+                    file:mr-3 file:py-1.5 file:px-3
+                    file:rounded-md file:border-0
+                    file:text-xs file:font-semibold
+                    file:bg-vine-50 dark:file:bg-vine-900/20 file:text-vine-700 dark:file:text-vine-400
+                    hover:file:bg-vine-100 dark:hover:file:bg-vine-900/30 file:cursor-pointer"
                 />
                 {photoPreview && (
-                  <button
-                    onClick={handlePhotoUpload}
-                    disabled={uploadingPhoto}
-                    className="mt-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50"
-                  >
-                    {uploadingPhoto ? 'Uploading...' : 'Save Photo'}
-                  </button>
+                  <p className="mt-2 text-xs" style={{ color: 'var(--vine-sage)', fontFamily: 'var(--font-body)' }}>
+                    Photo will be saved when you click "Save Changes"
+                  </p>
                 )}
               </div>
 
-              {/* Time and Servings Fields */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prep Time (min)</label>
+              {/* Time and Servings Badges */}
+              <div className="flex flex-wrap justify-center gap-4 py-1.5">
+                <div className="recipe-time-badge-wrapper">
                   <input
                     type="number"
                     value={formData.prep_time || ''}
                     onChange={(e) => setFormData({ ...formData, prep_time: e.target.value })}
                     placeholder="15"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="recipe-time-badge-input"
                   />
+                  <span className="recipe-time-badge-label">Prep</span>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cook Time (min)</label>
+                <div className="recipe-time-badge-wrapper">
                   <input
                     type="number"
                     value={formData.cook_time || ''}
                     onChange={(e) => setFormData({ ...formData, cook_time: e.target.value })}
                     placeholder="45"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="recipe-time-badge-input"
                   />
+                  <span className="recipe-time-badge-label">Cook</span>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Total Time (min)</label>
+                <div className="recipe-time-badge-wrapper">
                   <input
                     type="number"
                     value={formData.total_time || ''}
                     onChange={(e) => setFormData({ ...formData, total_time: e.target.value })}
                     placeholder="60"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="recipe-time-badge-input"
                   />
+                  <span className="recipe-time-badge-label">Total</span>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Servings</label>
+                <div className="recipe-time-badge-wrapper">
                   <input
                     type="text"
                     value={formData.servings || ''}
                     onChange={(e) => setFormData({ ...formData, servings: e.target.value })}
-                    placeholder="6-8 slices"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="6-8"
+                    className="recipe-time-badge-input"
+                    style={{ width: '50px', height: '50px' }}
                   />
+                  <span className="recipe-time-badge-label">Servings</span>
                 </div>
               </div>
 
               {/* Category and Tags */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</label>
+                  <label className="recipe-edit-label">Category</label>
                   <input
                     type="text"
                     value={formData.category || ''}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    placeholder="e.g., Dessert, Main Course, Appetizer"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="e.g., Dessert, Main Course"
+                    className="recipe-edit-input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Tags (comma-separated)</label>
+                  <label className="recipe-edit-label">Tags (comma-separated)</label>
                   <input
                     type="text"
                     value={formData.tags || ''}
                     onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                     placeholder="e.g., holiday, family-favorite, quick"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    className="recipe-edit-input"
                   />
                 </div>
+              </div>
+
+              {/* Chef's Tips */}
+              <div>
+                <label className="recipe-edit-label">Chef's Tips</label>
+                <textarea
+                  value={formData.chef_notes || ''}
+                  onChange={(e) => setFormData({ ...formData, chef_notes: e.target.value })}
+                  placeholder="Any personal tips, secret techniques, or family wisdom for this recipe..."
+                  rows="3"
+                  style={{
+                    width: '100%',
+                    padding: '11px',
+                    fontFamily: 'var(--font-handwritten)',
+                    fontSize: '0.74rem',
+                    lineHeight: '1.8',
+                    color: 'var(--vine-dark)',
+                    background: `var(--alabaster-parchment) repeating-linear-gradient(transparent, transparent 19px, rgba(212,175,55,0.12) 19px, rgba(212,175,55,0.12) 20px)`,
+                    border: '1px solid rgba(212,175,55,0.2)',
+                    borderRadius: '6px',
+                    resize: 'vertical',
+                    outline: 'none',
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = 'rgba(212,175,55,0.5)'; e.target.style.boxShadow = '0 0 0 3px rgba(212,175,55,0.1)'; }}
+                  onBlur={(e) => { e.target.style.borderColor = 'rgba(212,175,55,0.2)'; e.target.style.boxShadow = 'none'; }}
+                />
               </div>
             </div>
           </div>
         )}
 
-        {/* Metadata Badges - Compact */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-3 mb-6 border border-gray-200 dark:border-gray-700">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {/* Prep Time */}
-            {recipe.prep_time && (
-              <div className="text-center p-2 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg">
-                <div className="flex items-center justify-center gap-1 text-blue-600 dark:text-blue-400 mb-0.5">
-                  <Clock className="w-3 h-3" />
-                  <span className="text-xs font-medium">Prep Time</span>
-                </div>
-                <div className="text-lg font-bold text-gray-900 dark:text-white">{recipe.prep_time}</div>
-                <div className="text-[10px] text-gray-600 dark:text-gray-400">minutes</div>
-              </div>
-            )}
-
-            {/* Cook Time */}
-            {recipe.cook_time && (
-              <div className="text-center p-2 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg">
-                <div className="flex items-center justify-center gap-1 text-orange-600 dark:text-orange-400 mb-0.5">
-                  <ChefHat className="w-3 h-3" />
-                  <span className="text-xs font-medium">Cook Time</span>
-                </div>
-                <div className="text-lg font-bold text-gray-900 dark:text-white">{recipe.cook_time}</div>
-                <div className="text-[10px] text-gray-600 dark:text-gray-400">minutes</div>
-              </div>
-            )}
-
-            {/* Total Time */}
-            {recipe.total_time && (
-              <div className="text-center p-2 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg">
-                <div className="flex items-center justify-center gap-1 text-purple-600 dark:text-purple-400 mb-0.5">
-                  <Clock className="w-3 h-3" />
-                  <span className="text-xs font-medium">Total Time</span>
-                </div>
-                <div className="text-lg font-bold text-gray-900 dark:text-white">{recipe.total_time}</div>
-                <div className="text-[10px] text-gray-600 dark:text-gray-400">minutes</div>
-              </div>
-            )}
-
-            {/* Servings */}
-            {recipe.servings && (
-              <div className="text-center p-2 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg">
-                <div className="flex items-center justify-center gap-1 text-green-600 dark:text-green-400 mb-0.5">
-                  <Users className="w-3 h-3" />
-                  <span className="text-xs font-medium">Servings</span>
-                </div>
-                <div className="text-lg font-bold text-gray-900 dark:text-white">{recipe.servings}</div>
-                <div className="text-[10px] text-gray-600 dark:text-gray-400">people</div>
-              </div>
-            )}
-          </div>
-
-          {/* Category Only */}
-          {recipe.category && (
-            <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <span className="px-2 py-0.5 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-xs font-medium">
-                {recipe.category}
-              </span>
-            </div>
-          )}
-
-          {/* Contributor */}
-          {recipe.contributor_name && (
-            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                Recipe contributed by{' '}
-                <Link
-                  to={`/members/${recipe.contributor_id}`}
-                  className="text-orange-600 dark:text-orange-400 hover:underline font-medium"
-                >
-                  {recipe.contributor_name}
-                </Link>
-              </p>
-            </div>
-          )}
-        </div>
-
         {/* Two Column Layout - Ingredients & Instructions */}
         <div className="grid md:grid-cols-5 gap-6 mb-6">
           {/* Ingredients - Left Column (2/5) */}
           <div className="md:col-span-2">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700 sticky top-32">
+            <div className="recipe-panel sticky top-32">
               {isEditing ? (
                 <IngredientsEditor
                   value={formData.ingredients || ''}
@@ -659,23 +739,70 @@ const RecipeView = () => {
                 />
               ) : (
                 <>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Ingredients</h2>
+                  <h2 className="recipe-panel-title">Ingredients</h2>
+
+                  {/* Serving Multiplier Slider */}
+                  <div className="serving-slider-container mb-5">
+                    <span className="serving-slider-label">Scale:</span>
+                    <input
+                      type="range"
+                      min="0.5"
+                      max="4"
+                      step="0.5"
+                      value={servingMultiplier}
+                      onChange={(e) => setServingMultiplier(parseFloat(e.target.value))}
+                      className="serving-slider"
+                    />
+                    <span className="serving-multiplier-display">{servingMultiplier}x</span>
+                  </div>
+
+                  {/* Secret Ingredients Reveal Button */}
+                  {scaledIngredients.some(line => line.startsWith('[SECRET]')) && (
+                    <button
+                      onClick={() => setSecretsRevealed(!secretsRevealed)}
+                      className="mb-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-medium transition-all"
+                      style={{
+                        fontFamily: 'var(--font-body)',
+                        background: secretsRevealed ? 'rgba(212,175,55,0.15)' : 'linear-gradient(135deg, rgba(212,175,55,0.2), rgba(212,175,55,0.08))',
+                        color: 'rgba(163, 130, 40, 0.9)',
+                        border: '1px solid rgba(212,175,55,0.3)',
+                      }}
+                    >
+                      {secretsRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      {secretsRevealed ? 'Hide Secret Ingredients' : 'Reveal Secret Ingredients'}
+                    </button>
+                  )}
+
                   <div className="space-y-3">
-                    {recipe.ingredients.split('\n').filter(line => line.trim()).map((line, idx) => (
-                      <label key={idx} className="flex items-start gap-3 cursor-pointer group">
-                        <input
-                          type="checkbox"
-                          checked={checkedIngredients[idx] || false}
-                          onChange={() => toggleIngredient(idx)}
-                          className="mt-1 w-5 h-5 text-orange-500 border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-orange-500 cursor-pointer"
-                        />
-                        <span className={`flex-1 text-gray-700 dark:text-gray-300 leading-relaxed transition-all ${
-                          checkedIngredients[idx] ? 'line-through text-gray-400 dark:text-gray-500' : ''
-                        }`}>
-                          {line}
-                        </span>
-                      </label>
-                    ))}
+                    {scaledIngredients.map((line, idx) => {
+                      const isSecret = line.startsWith('[SECRET]');
+                      const displayLine = isSecret ? line.replace('[SECRET]', '').trim() : line;
+                      const showAsHidden = isSecret && !secretsRevealed;
+
+                      return (
+                        <label key={idx} className={`flex items-start gap-3 cursor-pointer group ${isSecret && secretsRevealed ? 'recipe-secret-glow' : ''}`} style={isSecret && secretsRevealed ? { paddingLeft: '8px', marginLeft: '-8px' } : {}}>
+                          <input
+                            type="checkbox"
+                            checked={checkedIngredients[idx] || false}
+                            onChange={() => toggleIngredient(idx)}
+                            className="mt-1 w-4 h-4 text-vine-600 border-vine-200 rounded focus:ring-2 focus:ring-vine-500 cursor-pointer"
+                          />
+                          <span
+                            className={`flex-1 leading-relaxed transition-all ${
+                              checkedIngredients[idx] ? 'line-through opacity-40' : ''
+                            }`}
+                            style={{
+                              fontFamily: showAsHidden ? 'var(--font-handwritten)' : 'var(--font-body)',
+                              fontSize: '0.72rem',
+                              color: showAsHidden ? 'rgba(212,175,55,0.7)' : (checkedIngredients[idx] ? 'var(--vine-sage)' : 'var(--vine-dark)'),
+                              fontStyle: showAsHidden ? 'italic' : 'normal',
+                            }}
+                          >
+                            {showAsHidden ? 'Secret ingredient...' : displayLine}
+                          </span>
+                        </label>
+                      );
+                    })}
                   </div>
                 </>
               )}
@@ -684,7 +811,7 @@ const RecipeView = () => {
 
           {/* Instructions - Right Column (3/5) */}
           <div className="md:col-span-3">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+            <div className="recipe-panel">
               {isEditing ? (
                 <InstructionStepsEditor
                   value={formData.instructions || ''}
@@ -692,15 +819,17 @@ const RecipeView = () => {
                 />
               ) : (
                 <>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Instructions</h2>
-                  <div className="space-y-6">
+                  <h2 className="recipe-panel-title">Instructions</h2>
+                  <div className="space-y-5">
                     {recipe.instructions.split('\n').filter(line => line.trim()).map((line, idx) => (
                       <div key={idx} className="flex gap-4">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+                        <div className="recipe-step-number">
                           {idx + 1}
                         </div>
                         <div className="flex-1 pt-0.5">
-                          <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{line}</p>
+                          <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', color: 'var(--vine-dark)', lineHeight: '1.6' }}>
+                            {line}
+                          </p>
                         </div>
                       </div>
                     ))}
@@ -711,10 +840,31 @@ const RecipeView = () => {
           </div>
         </div>
 
+        {/* Chef's Tips (View Mode) */}
+        {!isEditing && recipe.chef_notes && (
+          <div className="recipe-panel mb-6">
+            <h2 className="recipe-panel-title">Chef's Tips</h2>
+            <div
+              style={{
+                fontFamily: 'var(--font-handwritten)',
+                fontSize: '0.74rem',
+                lineHeight: '1.8',
+                color: 'var(--vine-dark)',
+                padding: '11px',
+                background: `var(--alabaster-parchment) repeating-linear-gradient(transparent, transparent 19px, rgba(212,175,55,0.12) 19px, rgba(212,175,55,0.12) 20px)`,
+                borderRadius: '6px',
+                whiteSpace: 'pre-wrap',
+              }}
+            >
+              {recipe.chef_notes}
+            </div>
+          </div>
+        )}
+
         {/* Save/Cancel Buttons (Edit Mode) */}
         {isEditing && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700 mb-6">
-            <div className="flex gap-3">
+          <div className="recipe-panel mb-6">
+            <div className="flex gap-2">
               <button
                 onClick={() => {
                   setIsEditing(false);
@@ -722,23 +872,55 @@ const RecipeView = () => {
                   setPhotoPreview(null);
                   setSelectedPhoto(null);
                 }}
-                className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 font-medium transition-colors"
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 rounded-md text-xs font-medium border transition-all disabled:opacity-50"
+                style={{ fontFamily: 'var(--font-body)', borderColor: 'rgba(0,0,0,0.08)', color: 'var(--vine-dark)' }}
               >
                 Cancel
               </button>
-              <button
+              <motion.button
                 onClick={handleUpdate}
-                className="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 font-medium shadow-sm transition-all"
+                disabled={isSaving}
+                className="flex-1 px-4 py-2 rounded-md text-white text-xs font-medium transition-all disabled:opacity-80 overflow-hidden"
+                style={{
+                  background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))',
+                  boxShadow: '0 2px 8px rgba(45, 79, 30, 0.25)',
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                Save Changes
-              </button>
+                <AnimatePresence mode="wait">
+                  {isSaving ? (
+                    <motion.span
+                      key="saving"
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      exit={{ scale: 0, rotate: 180 }}
+                      transition={{ duration: 0.4, ease: 'easeOut' }}
+                      className="inline-block text-base"
+                    >
+                      &#x269C;
+                    </motion.span>
+                  ) : (
+                    <motion.span
+                      key="text"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      Save Changes
+                    </motion.span>
+                  )}
+                </AnimatePresence>
+              </motion.button>
             </div>
           </div>
         )}
 
         {/* Family Notes Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Family Notes</h2>
+        <div className="recipe-notes-panel">
+          <h2 className="recipe-panel-title">Family Notes</h2>
 
           {/* Add comment */}
           <div className="mb-6">
@@ -746,29 +928,37 @@ const RecipeView = () => {
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Add a family note or tip about this recipe..."
-              className="w-full p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+              className="w-full p-4 border rounded-lg bg-white/90 dark:bg-gray-900 focus:ring-2 focus:ring-vine-500 focus:border-transparent resize-none"
               rows="3"
+              style={{ fontFamily: 'var(--font-body)', borderColor: 'rgba(0,0,0,0.08)', color: 'var(--vine-dark)' }}
             />
             <button
               onClick={handleAddComment}
               disabled={addingComment || !newComment.trim()}
-              className="mt-3 px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 font-medium transition-colors"
+              className="mt-3 px-5 py-2 text-white rounded-lg disabled:opacity-50 text-sm font-medium transition-all"
+              style={{
+                fontFamily: 'var(--font-body)',
+                background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))',
+                boxShadow: '0 2px 8px rgba(45, 79, 30, 0.25)',
+              }}
             >
               {addingComment ? 'Adding...' : 'Add Note'}
             </button>
           </div>
 
           {/* Comments list */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {recipe.comments && recipe.comments.length > 0 ? (
               recipe.comments
                 .filter(comment => !comment.is_deleted)
                 .map((comment) => (
-                  <div key={comment.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                  <div key={comment.id} className="recipe-note-item">
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">{comment.comment_text}</p>
-                        <div className="flex items-center gap-3 mt-2 text-sm text-gray-500 dark:text-gray-400">
+                        <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.9rem', color: 'var(--vine-dark)', lineHeight: '1.5' }}>
+                          {comment.comment_text}
+                        </p>
+                        <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: 'var(--vine-sage)' }}>
                           {comment.member_name && (
                             <span className="font-medium">{comment.member_name}</span>
                           )}
@@ -779,7 +969,7 @@ const RecipeView = () => {
                       </div>
                       <button
                         onClick={() => handleDeleteComment(comment.id)}
-                        className="ml-4 p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                        className="ml-4 p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                         title="Delete comment"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -788,7 +978,7 @@ const RecipeView = () => {
                   </div>
                 ))
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+              <p className="text-center py-8" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)' }}>
                 No family notes yet. Be the first to add one!
               </p>
             )}

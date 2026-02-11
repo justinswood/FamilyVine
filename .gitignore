@@ -50,3 +50,12 @@ docs/
 APPLICATION_SUMMARY.md
 CLAUDE.md
 KNOWLEDGE_BASE.md
+
+# Additional backup patterns
+backup_*.sql
+
+# Third-party UI kits
+saasable-ui/
+
+# Internal bookkeeping
+claudemd_bookkeep.md

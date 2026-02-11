@@ -9,7 +9,7 @@ const GlobalSearch = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
-  
+
   const navigate = useNavigate();
   const searchRef = useRef(null);
   const inputRef = useRef(null);
@@ -17,20 +17,20 @@ const GlobalSearch = () => {
   // Helper function to format birth date without timezone
   const formatBirthDate = (dateString) => {
     if (!dateString) return '';
-    
+
     try {
       // Parse date string as local date to avoid timezone shifts
       const dateOnly = dateString.split('T')[0]; // Remove time part if present
       const [year, month, day] = dateOnly.split('-');
-      
+
       // Create date object with local timezone (no timezone conversion)
       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-      
+
       // Return in a clean format like "August 29, 1987"
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric' 
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
       });
     } catch (error) {
       // If date parsing fails, try to extract just the year
@@ -40,20 +40,20 @@ const GlobalSearch = () => {
   };
 
   // Helper function to render user avatar
-  const renderUserAvatar = (member, gradientColors = "from-blue-500 to-purple-500") => {
+  const renderUserAvatar = (member, gradientColors = "from-vine-500 to-vine-600") => {
     const hasPhoto = member.photo_url && member.photo_url.trim() !== '';
-    
+
     if (hasPhoto) {
       // Construct the full photo URL
-      const photoUrl = member.photo_url.startsWith('http') 
-        ? member.photo_url 
+      const photoUrl = member.photo_url.startsWith('http')
+        ? member.photo_url
         : `${process.env.REACT_APP_API}/${member.photo_url}`;
-        
+
       return (
         <img
           src={photoUrl}
           alt={`${member.first_name} ${member.last_name}`}
-          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+          className="w-10 h-10 rounded-full object-cover border-2 border-white dark:border-secondary-700 shadow-sm"
           onError={(e) => {
             // If image fails to load, show initials instead
             e.target.style.display = 'none';
@@ -62,10 +62,10 @@ const GlobalSearch = () => {
         />
       );
     }
-    
+
     // Fallback to initials
     return (
-      <div className={`w-10 h-10 bg-gradient-to-br ${gradientColors} 
+      <div className={`w-10 h-10 bg-gradient-to-br ${gradientColors}
                       rounded-full flex items-center justify-center text-white font-semibold shadow-sm`}>
         {member.first_name?.[0]}{member.last_name?.[0]}
       </div>
@@ -104,7 +104,7 @@ const GlobalSearch = () => {
         setIsOpen(true);
         setTimeout(() => inputRef.current?.focus(), 100);
       }
-      
+
       if (event.key === 'Escape') {
         setIsOpen(false);
       }
@@ -145,10 +145,10 @@ const GlobalSearch = () => {
     const newRecent = [member, ...recentSearches.filter(r => r.id !== member.id)].slice(0, 5);
     setRecentSearches(newRecent);
     localStorage.setItem('familyVine_recentSearches', JSON.stringify(newRecent));
-    
+
     // Navigate to member page
     navigate(`/members/${member.id}`);
-    
+
     // Close search
     setIsOpen(false);
     setSearchTerm('');
@@ -168,36 +168,36 @@ const GlobalSearch = () => {
           setIsOpen(true);
           setTimeout(() => inputRef.current?.focus(), 100);
         }}
-        className="flex items-center gap-1 px-2 py-1 text-xs text-gray-600 dark:text-gray-300 
-                   bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 
-                   transition-colors border border-gray-200 dark:border-gray-600"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-vine-600 dark:text-secondary-400
+                   bg-vine-100 dark:bg-secondary-800 rounded-lg hover:bg-vine-200 dark:hover:bg-secondary-700
+                   transition-colors border border-vine-200 dark:border-secondary-700"
       >
-        <Search className="w-3 h-3" />
+        <Search className="w-3.5 h-3.5" />
         <span className="hidden lg:inline">Search</span>
-        <span className="text-xs text-gray-400 dark:text-gray-500 hidden xl:inline">Ctrl+K</span>
+        <span className="text-xs text-vine-sage dark:text-secondary-500 hidden xl:inline ml-1">Ctrl+K</span>
       </button>
 
       {/* Search Modal */}
       {isOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center pt-20 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-2xl mx-4 max-h-96 overflow-hidden">
+        <div className="fixed inset-0 bg-vine-dark/40 dark:bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 z-50">
+          <div className="card w-full max-w-2xl mx-4 max-h-96 overflow-hidden">
             {/* Search Input */}
-            <div className="flex items-center gap-3 p-4 border-b border-gray-200 dark:border-gray-600">
-              <Search className="w-5 h-5 text-gray-400" />
+            <div className="flex items-center gap-3 p-4 border-b border-vine-200 dark:border-secondary-700">
+              <Search className="w-5 h-5 text-vine-sage" />
               <input
                 ref={inputRef}
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search for family members..."
-                className="flex-1 text-lg bg-transparent border-none outline-none 
-                           text-gray-900 dark:text-gray-100 placeholder-gray-400"
+                className="flex-1 text-lg bg-transparent border-none outline-none
+                           text-vine-dark dark:text-white placeholder-secondary-400"
               />
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                className="p-1.5 hover:bg-vine-100 dark:hover:bg-secondary-700 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-400" />
+                <X className="w-5 h-5 text-vine-sage" />
               </button>
             </div>
 
@@ -205,13 +205,13 @@ const GlobalSearch = () => {
             <div className="max-h-80 overflow-y-auto">
               {loading && (
                 <div className="flex items-center justify-center py-8">
-                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  <span className="ml-2 text-gray-600 dark:text-gray-400">Searching...</span>
+                  <div className="w-6 h-6 border-2 border-vine-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="ml-2 text-vine-600 dark:text-secondary-400">Searching...</span>
                 </div>
               )}
 
               {!loading && searchTerm && results.length === 0 && (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <div className="text-center py-8 text-vine-sage dark:text-secondary-400">
                   <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p>No family members found for "{searchTerm}"</p>
                 </div>
@@ -219,30 +219,30 @@ const GlobalSearch = () => {
 
               {!loading && results.length > 0 && (
                 <div className="p-2">
-                  <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 px-2 py-1 mb-1">
+                  <h3 className="text-sm font-semibold text-vine-sage dark:text-secondary-400 px-2 py-1 mb-1">
                     Search Results
                   </h3>
                   {results.map((member) => (
                     <button
                       key={member.id}
                       onClick={() => handleSelectResult(member)}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 dark:hover:bg-gray-700 
+                      className="w-full flex items-center gap-3 p-3 hover:bg-vine-50 dark:hover:bg-vine-900/20
                                  rounded-lg transition-colors text-left"
                     >
                       <div className="relative">
                         {renderUserAvatar(member)}
                         {/* Fallback initials (hidden by default, shown if image fails) */}
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 
+                        <div className="w-10 h-10 bg-gradient-to-br from-vine-500 to-vine-600
                                         rounded-full flex items-center justify-center text-white font-semibold shadow-sm"
                              style={{ display: 'none' }}>
                           {member.first_name?.[0]}{member.last_name?.[0]}
                         </div>
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                        <div className="font-medium text-vine-dark dark:text-white">
                           {member.first_name} {member.last_name}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-sm text-vine-sage dark:text-secondary-400">
                           {member.birth_date && `Born ${formatBirthDate(member.birth_date)}`}
                           {member.birth_place && ` in ${member.birth_place}`}
                         </div>
@@ -255,12 +255,12 @@ const GlobalSearch = () => {
               {!loading && !searchTerm && recentSearches.length > 0 && (
                 <div className="p-2">
                   <div className="flex items-center justify-between px-2 py-1 mb-1">
-                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                    <h3 className="text-sm font-semibold text-vine-sage dark:text-secondary-400">
                       Recent Searches
                     </h3>
                     <button
                       onClick={clearRecentSearches}
-                      className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="text-xs text-vine-sage hover:text-vine-600 dark:hover:text-vine-400"
                     >
                       Clear
                     </button>
@@ -269,23 +269,23 @@ const GlobalSearch = () => {
                     <button
                       key={member.id}
                       onClick={() => handleSelectResult(member)}
-                      className="w-full flex items-center gap-3 p-3 hover:bg-gray-100 dark:hover:bg-gray-700 
+                      className="w-full flex items-center gap-3 p-3 hover:bg-vine-50 dark:hover:bg-vine-900/20
                                  rounded-lg transition-colors text-left"
                     >
                       <div className="relative">
-                        {renderUserAvatar(member, "from-green-500 to-teal-500")}
+                        {renderUserAvatar(member, "from-success-500 to-success-600")}
                         {/* Fallback initials for recent searches */}
-                        <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 
+                        <div className="w-10 h-10 bg-gradient-to-br from-success-500 to-success-600
                                         rounded-full flex items-center justify-center text-white font-semibold shadow-sm"
                              style={{ display: 'none' }}>
                           {member.first_name?.[0]}{member.last_name?.[0]}
                         </div>
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium text-gray-900 dark:text-gray-100">
+                        <div className="font-medium text-vine-dark dark:text-white">
                           {member.first_name} {member.last_name}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-sm text-vine-sage dark:text-secondary-400">
                           Recent search
                         </div>
                       </div>
@@ -295,7 +295,7 @@ const GlobalSearch = () => {
               )}
 
               {!loading && !searchTerm && recentSearches.length === 0 && (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <div className="text-center py-8 text-vine-sage dark:text-secondary-400">
                   <Search className="w-8 h-8 mx-auto mb-2 opacity-50" />
                   <p>Start typing to search your family tree</p>
                   <p className="text-xs mt-1">Use Ctrl+K to quickly open search</p>

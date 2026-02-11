@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS members (
     middle_name VARCHAR(255),
     nickname VARCHAR(100),
     last_name VARCHAR(255) NOT NULL,
+    suffix VARCHAR(20),
     relationship VARCHAR(255),
     gender VARCHAR(50),
     is_alive BOOLEAN NOT NULL DEFAULT true,

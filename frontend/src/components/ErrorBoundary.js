@@ -72,18 +72,18 @@ class ErrorBoundary extends React.Component {
             </div>
 
             {/* Error Message */}
-            <h1 className="text-3xl font-bold text-center text-slate-800 mb-3">
+            <h1 className="text-3xl font-heading font-bold text-center text-vine-dark mb-3">
               Oops! Something went wrong
             </h1>
 
-            <p className="text-center text-slate-600 mb-6">
+            <p className="text-center text-vine-sage mb-6">
               We're sorry, but something unexpected happened. The error has been logged and we'll look into it.
             </p>
 
             {/* Error Details (Development Only) */}
             {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="mb-6 bg-slate-50 rounded-lg p-4 border border-slate-200">
-                <summary className="cursor-pointer font-semibold text-slate-700 mb-2">
+              <details className="mb-6 bg-vine-50 rounded-lg p-4 border border-vine-200">
+                <summary className="cursor-pointer font-semibold text-vine-dark mb-2">
                   Error Details (Development Mode)
                 </summary>
                 <div className="mt-3">
@@ -91,7 +91,7 @@ class ErrorBoundary extends React.Component {
                     {this.state.error.toString()}
                   </p>
                   {this.state.errorInfo && (
-                    <pre className="text-xs text-slate-600 overflow-auto max-h-64 bg-white p-3 rounded border border-slate-200">
+                    <pre className="text-xs text-vine-sage overflow-auto max-h-64 bg-white p-3 rounded border border-vine-200">
                       {this.state.errorInfo.componentStack}
                     </pre>
                   )}
@@ -103,20 +103,20 @@ class ErrorBoundary extends React.Component {
             <div className="flex gap-3 justify-center">
               <button
                 onClick={this.handleReset}
-                className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors shadow-sm"
+                className="px-6 py-3 bg-vine-600 text-white rounded-lg font-medium hover:bg-vine-dark transition-colors shadow-sm"
               >
                 Try Again
               </button>
               <button
                 onClick={() => window.location.href = '/'}
-                className="px-6 py-3 bg-slate-100 text-slate-700 rounded-lg font-medium hover:bg-slate-200 transition-colors"
+                className="px-6 py-3 bg-vine-100 text-vine-dark rounded-lg font-medium hover:bg-vine-200 transition-colors"
               >
                 Go Home
               </button>
             </div>
 
             {/* Support Info */}
-            <p className="text-center text-sm text-slate-500 mt-6">
+            <p className="text-center text-sm text-vine-sage mt-6">
               If this problem persists, please contact support.
             </p>
           </div>

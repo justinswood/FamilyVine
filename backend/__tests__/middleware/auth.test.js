@@ -93,8 +93,10 @@ describe('auth middleware', () => {
     });
   });
 
-  describe('requireRole', () => {
-    it('should allow access when user has required role', () => {
+  describe('requireRole (with hierarchy)', () => {
+    // Role hierarchy: viewer (1) < editor (2) < admin (3)
+
+    it('should allow admin access to admin routes', () => {
       req.user = { id: 1, role: 'admin' };
       const middleware = requireRole('admin');
 
@@ -104,7 +106,25 @@ describe('auth middleware', () => {
       expect(res.status).not.toHaveBeenCalled();
     });
 
-    it('should allow access when user has editor role for editor requirement', () => {
+    it('should allow admin access to editor routes (hierarchy)', () => {
+      req.user = { id: 1, role: 'admin' };
+      const middleware = requireRole('editor');
+
+      middleware(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    it('should allow admin access to viewer routes (hierarchy)', () => {
+      req.user = { id: 1, role: 'admin' };
+      const middleware = requireRole('viewer');
+
+      middleware(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
+    });
+
+    it('should allow editor access to editor routes', () => {
       req.user = { id: 1, role: 'editor' };
       const middleware = requireRole('editor');
 
@@ -113,16 +133,31 @@ describe('auth middleware', () => {
       expect(next).toHaveBeenCalledWith();
     });
 
-    it('should allow access when user has role in roles array', () => {
-      req.user = { id: 1, role: 'viewer', roles: ['editor', 'viewer'] };
-      const middleware = requireRole('editor');
+    it('should allow editor access to viewer routes (hierarchy)', () => {
+      req.user = { id: 1, role: 'editor' };
+      const middleware = requireRole('viewer');
 
       middleware(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
     });
 
-    it('should deny access when user lacks required role', () => {
+    it('should deny editor access to admin routes', () => {
+      req.user = { id: 1, role: 'editor' };
+      const middleware = requireRole('admin');
+
+      middleware(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({
+        error: 'Insufficient permissions',
+        required: 'admin',
+        current: 'editor'
+      });
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should deny viewer access to editor routes', () => {
       req.user = { id: 1, role: 'viewer' };
       const middleware = requireRole('editor');
 
@@ -130,21 +165,26 @@ describe('auth middleware', () => {
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'editor role required'
+        error: 'Insufficient permissions',
+        required: 'editor',
+        current: 'viewer'
       });
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('should deny access when user has no role', () => {
-      req.user = { id: 1 }; // No role property
-      const middleware = requireRole('editor');
+    it('should deny viewer access to admin routes', () => {
+      req.user = { id: 1, role: 'viewer' };
+      const middleware = requireRole('admin');
 
       middleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'editor role required'
+        error: 'Insufficient permissions',
+        required: 'admin',
+        current: 'viewer'
       });
+      expect(next).not.toHaveBeenCalled();
     });
 
     it('should deny access when no user in request', () => {
@@ -159,18 +199,27 @@ describe('auth middleware', () => {
       });
     });
 
-    it('should handle multiple roles correctly', () => {
-      // Viewer should not access admin routes
-      req.user = { id: 1, role: 'viewer' };
-      const adminMiddleware = requireRole('admin');
+    it('should deny access when user has unknown role', () => {
+      req.user = { id: 1, role: 'unknown' };
+      const middleware = requireRole('viewer');
 
-      adminMiddleware(req, res, next);
+      middleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.json).toHaveBeenCalledWith({
-        error: 'admin role required'
+        error: 'Insufficient permissions',
+        required: 'viewer',
+        current: 'unknown'
       });
-      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should allow viewer access to viewer routes', () => {
+      req.user = { id: 1, role: 'viewer' };
+      const middleware = requireRole('viewer');
+
+      middleware(req, res, next);
+
+      expect(next).toHaveBeenCalledWith();
     });
   });
 });

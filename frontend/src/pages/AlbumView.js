@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { RotateCw } from 'lucide-react';
+import { RotateCw, Trash2 } from 'lucide-react';
 import PhotoTagging from '../components/PhotoTagging';
-import PhotoCropper from '../components/PhotoCropper'; // Add this import
+import PhotoCropper from '../components/PhotoCropper';
+import PhotoEditorModal from '../components/PhotoEditor/PhotoEditorModal';
 
 // Add this new component for member selection
 // Replace your MemberSelectionModal component with this simplified version
@@ -113,11 +114,11 @@ const MemberSelectionModal = ({ isOpen, onClose, onSelectMember, croppedFile }) 
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-md w-full m-4 max-h-[80vh] overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">Select Family Member</h2>
-        <p className="text-gray-600 mb-4">Choose which family member to set this cropped photo as their profile picture:</p>
+        <p className="text-vine-sage mb-4">Choose which family member to set this cropped photo as their profile picture:</p>
         
         {loading ? (
           <div className="text-center py-4">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-vine-500 mx-auto mb-2"></div>
             Loading members...
           </div>
         ) : (
@@ -127,17 +128,17 @@ const MemberSelectionModal = ({ isOpen, onClose, onSelectMember, croppedFile }) 
                 key={member.id}
                 onClick={() => handleSelectMember(member.id)}
                 disabled={saving}
-                className={`w-full text-left p-3 rounded-lg border transition-colors ${
-                  saving 
-                    ? 'bg-gray-100 cursor-not-allowed' 
-                    : 'hover:bg-gray-100'
+                className={`w-full text-left p-3 rounded-lg border border-vine-200 transition-colors ${
+                  saving
+                    ? 'bg-vine-50 cursor-not-allowed'
+                    : 'hover:bg-vine-50'
                 }`}
               >
                 <div className="font-medium">
                   {member.first_name} {member.last_name}
                 </div>
                 {member.location && (
-                  <div className="text-sm text-gray-500">{member.location}</div>
+                  <div className="text-sm text-vine-sage">{member.location}</div>
                 )}
               </button>
             ))}
@@ -145,10 +146,10 @@ const MemberSelectionModal = ({ isOpen, onClose, onSelectMember, croppedFile }) 
         )}
         
         {saving && (
-          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
+          <div className="mt-4 p-3 bg-vine-50 border border-vine-200 rounded">
             <div className="flex items-center">
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2"></div>
-              <span className="text-blue-700">Saving cropped photo...</span>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-vine-500 mr-2"></div>
+              <span className="text-vine-600">Saving cropped photo...</span>
             </div>
           </div>
         )}
@@ -158,9 +159,9 @@ const MemberSelectionModal = ({ isOpen, onClose, onSelectMember, croppedFile }) 
             onClick={onClose}
             disabled={saving}
             className={`flex-1 px-4 py-2 rounded transition-colors ${
-              saving 
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                : 'bg-gray-500 text-white hover:bg-gray-600'
+              saving
+                ? 'bg-vine-200 text-vine-sage cursor-not-allowed'
+                : 'bg-vine-500 text-white hover:bg-vine-600'
             }`}
           >
             Cancel
@@ -186,6 +187,11 @@ const AlbumView = () => {
   const [selectedPhoto, setSelectedPhoto] = useState(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [enlargedPhoto, setEnlargedPhoto] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const modalOverlayRef = useRef(null);
   
   // NEW: Add these state variables for cropping functionality
   const [showCropper, setShowCropper] = useState(false);
@@ -193,6 +199,17 @@ const AlbumView = () => {
   const [cropImageFile, setCropImageFile] = useState(null);
   const [showMemberSelection, setShowMemberSelection] = useState(false);
   const [pendingCroppedFile, setPendingCroppedFile] = useState(null);
+
+  // NEW: PhotoEditor state
+  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
+  const [selectedPhotoForEdit, setSelectedPhotoForEdit] = useState(null);
+
+  // Rename album state
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editEventDate, setEditEventDate] = useState('');
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchAlbum();
@@ -206,6 +223,49 @@ const AlbumView = () => {
       console.error('Error fetching album:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Open rename modal with current values
+  const openRenameModal = () => {
+    setEditTitle(album.title || '');
+    setEditDescription(album.description || '');
+    // Format date for input (YYYY-MM-DD)
+    setEditEventDate(album.event_date ? album.event_date.split('T')[0] : '');
+    setShowRenameModal(true);
+  };
+
+  // Save album changes
+  const handleSaveAlbum = async (e) => {
+    e.preventDefault();
+    if (!editTitle.trim()) {
+      alert('Album title is required');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await axios.put(`${process.env.REACT_APP_API}/api/albums/${id}`, {
+        title: editTitle.trim(),
+        description: editDescription.trim() || null,
+        event_date: editEventDate || null,
+        is_public: album.is_public
+      });
+
+      // Update local state
+      setAlbum(prev => ({
+        ...prev,
+        title: editTitle.trim(),
+        description: editDescription.trim() || null,
+        event_date: editEventDate || null
+      }));
+
+      setShowRenameModal(false);
+    } catch (error) {
+      console.error('Error updating album:', error);
+      alert('Failed to update album. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -267,12 +327,12 @@ const AlbumView = () => {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_API || 'http://localhost:5050'}/api/albums/${id}/photos/${photo.id}/rotate`,
+        `${process.env.REACT_APP_API ?? ''}/api/albums/${id}/photos/${photo.id}/rotate`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
+            'Authorization': `Bearer ${localStorage.getItem('familyVine_token')}`
           },
           body: JSON.stringify({ degrees: 90 })
         }
@@ -283,7 +343,7 @@ const AlbumView = () => {
       }
 
       // Refresh photos to show rotated image
-      await fetchPhotos();
+      await fetchAlbum();
 
     } catch (error) {
       console.error('Error rotating photo:', error);
@@ -291,6 +351,17 @@ const AlbumView = () => {
     } finally {
       setUploading(false);
     }
+  };
+
+  // NEW: PhotoEditor handlers
+  const handleEditPhoto = (photo) => {
+    setSelectedPhotoForEdit(photo);
+    setShowPhotoEditor(true);
+  };
+
+  const handlePhotoSaved = (updatedPhoto) => {
+    // Refresh album to show updated photo
+    fetchAlbum();
   };
 
   // NEW: Handler for when member is selected
@@ -416,12 +487,62 @@ const AlbumView = () => {
     console.log('enlargePhoto called with:', photo);
     setEnlargedPhoto(photo);
     setShowPhotoModal(true);
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
   };
 
   // Close photo modal
   const closePhotoModal = () => {
     setShowPhotoModal(false);
     setEnlargedPhoto(null);
+    setZoomLevel(1);
+    setPanOffset({ x: 0, y: 0 });
+  };
+
+  // Handle scroll wheel zoom in lightbox (native event for passive: false)
+  const handleLightboxWheel = useCallback((e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const delta = e.deltaY > 0 ? -0.15 : 0.15;
+    setZoomLevel(prev => {
+      const newZoom = Math.min(Math.max(prev + delta, 0.5), 5);
+      // Reset pan when zooming back to 1x
+      if (newZoom <= 1) {
+        setPanOffset({ x: 0, y: 0 });
+      }
+      return newZoom;
+    });
+  }, []);
+
+  // Handle mouse down for panning when zoomed
+  const handlePanStart = (e) => {
+    if (zoomLevel <= 1) return;
+    e.preventDefault();
+    setIsPanning(true);
+    setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
+  };
+
+  // Handle mouse move for panning
+  const handlePanMove = (e) => {
+    if (!isPanning) return;
+    setPanOffset({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+  };
+
+  // Handle mouse up to stop panning
+  const handlePanEnd = () => {
+    setIsPanning(false);
+  };
+
+  // Reset zoom when navigating photos
+  const navigatePhoto = (direction) => {
+    if (!album || !album.photos) return;
+    const currentIndex = album.photos.findIndex(p => p.id === enlargedPhoto.id);
+    const newIndex = currentIndex + direction;
+    if (newIndex >= 0 && newIndex < album.photos.length) {
+      setEnlargedPhoto(album.photos[newIndex]);
+      setZoomLevel(1);
+      setPanOffset({ x: 0, y: 0 });
+    }
   };
 
   // Handle body overflow when modal is open (prevent background scrolling)
@@ -443,6 +564,17 @@ const AlbumView = () => {
     };
   }, [showPhotoModal]);
 
+  // Attach native wheel event listener with { passive: false } to prevent background scrolling
+  useEffect(() => {
+    const overlay = modalOverlayRef.current;
+    if (showPhotoModal && overlay) {
+      overlay.addEventListener('wheel', handleLightboxWheel, { passive: false });
+      return () => {
+        overlay.removeEventListener('wheel', handleLightboxWheel);
+      };
+    }
+  }, [showPhotoModal, handleLightboxWheel]);
+
   // Handle keyboard navigation in modal
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -451,21 +583,27 @@ const AlbumView = () => {
       if (e.key === 'Escape') {
         closePhotoModal();
       } else if (e.key === 'ArrowLeft') {
-        const currentIndex = album.photos.findIndex(p => p.id === enlargedPhoto.id);
-        if (currentIndex > 0) {
-          setEnlargedPhoto(album.photos[currentIndex - 1]);
-        }
+        navigatePhoto(-1);
       } else if (e.key === 'ArrowRight') {
-        const currentIndex = album.photos.findIndex(p => p.id === enlargedPhoto.id);
-        if (currentIndex < album.photos.length - 1) {
-          setEnlargedPhoto(album.photos[currentIndex + 1]);
-        }
+        navigatePhoto(1);
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [showPhotoModal, enlargedPhoto, album]);
+
+  // Stop panning on mouse up anywhere
+  useEffect(() => {
+    if (isPanning) {
+      window.addEventListener('mousemove', handlePanMove);
+      window.addEventListener('mouseup', handlePanEnd);
+      return () => {
+        window.removeEventListener('mousemove', handlePanMove);
+        window.removeEventListener('mouseup', handlePanEnd);
+      };
+    }
+  }, [isPanning, panStart]);
 
   if (loading) {
     return (
@@ -479,7 +617,7 @@ const AlbumView = () => {
     return (
       <div className="text-center text-red-500 mt-8">
         <p>Album not found</p>
-        <Link to="/gallery" className="text-blue-600 hover:underline">
+        <Link to="/gallery" className="text-vine-600 hover:text-vine-dark hover:underline">
           Back to Gallery
         </Link>
       </div>
@@ -487,14 +625,14 @@ const AlbumView = () => {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+    <div className="min-h-screen relative overflow-hidden bg-transparent">
       {/* Background pattern */}
       <div className="absolute inset-0 opacity-30">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <pattern id="gallery-pattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
               <path d="M8,8 L32,8 L32,32 L8,32 Z M12,12 L28,12 L28,28 L12,28 Z M16,16 L24,16 L24,24 L16,24 Z"
-                stroke="currentColor" strokeWidth="0.5" className="text-blue-200" fill="none" />
+                stroke="currentColor" strokeWidth="0.5" className="text-vine-200" fill="none" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#gallery-pattern)" />
@@ -503,50 +641,75 @@ const AlbumView = () => {
 
       {/* Floating decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-5 -left-5 w-20 h-20 bg-gradient-to-br from-pink-200/20 to-purple-200/20 rounded-full blur-lg"></div>
-        <div className="absolute -top-10 -right-10 w-30 h-30 bg-gradient-to-bl from-blue-200/20 to-cyan-200/20 rounded-full blur-lg"></div>
-        <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 w-40 h-20 bg-gradient-to-t from-purple-200/20 to-pink-200/20 rounded-full blur-lg"></div>
+        <div className="absolute -top-5 -left-5 w-20 h-20 bg-gradient-to-br from-vine-200/20 to-vine-300/20 rounded-full blur-lg"></div>
+        <div className="absolute -top-10 -right-10 w-30 h-30 bg-gradient-to-bl from-vine-100/20 to-vine-200/20 rounded-full blur-lg"></div>
+        <div className="absolute -bottom-5 left-1/2 transform -translate-x-1/2 w-40 h-20 bg-gradient-to-t from-vine-200/20 to-vine-300/20 rounded-full blur-lg"></div>
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 max-w-6xl mx-auto p-4">
-        {/* Header */}
-        <div className="bg-white/80 backdrop-blur-sm shadow-lg rounded-xl p-4 mb-6 border border-white/50">
-          <Link to="/gallery" className="text-blue-600 hover:text-purple-600 mb-2 inline-block text-sm transition-colors">
+      <div className="relative z-10 max-w-6xl mx-auto p-3">
+        {/* Album Header — Gilded Vellum Ribbon */}
+        <div className="gallery-header mb-3">
+          <Link
+            to="/gallery"
+            className="inline-flex items-center gap-1 text-[0.65rem] font-medium transition-colors hover:opacity-80 mb-1"
+            style={{ color: 'var(--vine-green, #2E5A2E)' }}
+          >
             ← Back to Gallery
           </Link>
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{album.title}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="gallery-header-title">{album.title}</h1>
+                <button
+                  onClick={openRenameModal}
+                  className="p-1 rounded hover:bg-black/5 transition-colors"
+                  title="Edit album"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--vine-sage)' }}>
+                    <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                    <path d="m15 5 4 4" />
+                  </svg>
+                </button>
+              </div>
               {album.description && (
-                <p className="text-gray-600 mt-1 text-sm">{album.description}</p>
+                <p className="text-[0.65rem]" style={{ color: 'var(--vine-sage)', fontFamily: 'var(--font-body)', marginTop: '1px' }}>{album.description}</p>
               )}
               {album.event_date && (
-                <p className="text-gray-500 text-xs mt-1">
-                  Event Date: {new Date(album.event_date).toLocaleDateString()}
+                <p className="text-[0.65rem]" style={{ color: 'var(--vine-sage)', fontFamily: 'var(--font-body)', marginTop: '1px' }}>
+                  {new Date(album.event_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               )}
             </div>
-            <button
-              onClick={deleteAlbum}
-              disabled={deleting}
-              className={`px-3 py-1.5 rounded-full text-white text-sm ${
-                deleting 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 transform hover:scale-105 transition-all shadow-md'
-              }`}
-              title="Delete album"
-            >
-              {deleting ? 'Deleting...' : 'Delete Album'}
-            </button>
-          </div>
-          <div className="mt-4">
-            <button
-              onClick={() => setShowUploadForm(true)}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-2 rounded-full hover:from-blue-600 hover:to-purple-600 transform hover:scale-105 transition-all shadow-md text-sm font-medium"
-            >
-              Upload Photos
-            </button>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                onClick={() => setShowUploadForm(true)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[0.6rem] font-medium transition-all"
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  color: '#fffdf9',
+                  background: 'linear-gradient(135deg, var(--vine-green, #2E5A2E), var(--vine-dark, #2D4F1E))',
+                  boxShadow: '0 1px 4px rgba(45, 79, 30, 0.25)',
+                }}
+              >
+                Upload Photos
+              </button>
+              <button
+                onClick={deleteAlbum}
+                disabled={deleting}
+                className="px-2 py-1 rounded-full text-[0.6rem] font-medium transition-all"
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  color: '#fffdf9',
+                  background: deleting ? '#d1d5db' : 'linear-gradient(135deg, #dc2626, #db2777)',
+                  boxShadow: deleting ? 'none' : '0 1px 4px rgba(220, 38, 38, 0.25)',
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                }}
+                title="Delete album"
+              >
+                {deleting ? 'Deleting...' : 'Delete Album'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -576,7 +739,7 @@ const AlbumView = () => {
               {uploading && (
                 <div className="w-full bg-gray-200 rounded-full h-2.5">
                   <div 
-                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    className="bg-vine-600 h-2.5 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
                 </div>
@@ -617,68 +780,38 @@ const AlbumView = () => {
                 src={`${process.env.REACT_APP_API}/${photo.file_path}`}
                 alt={photo.caption || 'Photo'}
                 className="w-full h-64 object-cover hover:opacity-90 cursor-pointer transition-all duration-200 hover:scale-105"
+                style={{
+                  transform: `rotate(${photo.rotation_degrees || 0}deg)`,
+                  transition: 'transform 0.3s ease'
+                }}
                 onClick={() => enlargePhoto(photo)}
               />
               
-              {/* Photo overlay with actions - UPDATED */}
+              {/* Photo overlay with Edit and Delete buttons */}
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity rounded-lg pointer-events-none">
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
-                  <div className="flex flex-col space-y-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setCoverPhoto(photo.id);
-                      }}
-                      className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-2 py-1 rounded-full text-xs hover:from-blue-600 hover:to-purple-600 transition-all shadow-sm"
-                      title="Set as cover photo"
-                    >
-                      Cover
-                    </button>
-                    {/* NEW: Crop Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCropGalleryImage(photo);
-                      }}
-                      className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs hover:from-purple-600 hover:to-pink-600 transition-all shadow-sm"
-                      title="Crop image"
-                    >
-                      Crop
-                    </button>
-                    {/* NEW: Rotate Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRotatePhoto(photo);
-                      }}
-                      disabled={uploading || deleting}
-                      className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white px-2 py-1 rounded-full text-xs hover:from-teal-600 hover:to-cyan-600 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-                      title="Rotate photo 90° clockwise"
-                    >
-                      <RotateCw className="w-3 h-3" />
-                      Rotate
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openPhotoTagger(photo);
-                      }}
-                      className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full text-xs hover:from-green-600 hover:to-emerald-600 transition-all shadow-sm"
-                      title="Tag people in photo"
-                    >
-                      Tag
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deletePhoto(photo.id);
-                      }}
-                      className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-2 py-1 rounded-full text-xs hover:from-red-600 hover:to-pink-600 transition-all shadow-sm"
-                      title="Delete photo"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto flex gap-1.5">
+                  {/* Edit Photo Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditPhoto(photo);
+                    }}
+                    className="bg-gradient-to-r from-vine-500 to-vine-600 text-white w-6 h-6 rounded-full hover:from-vine-600 hover:to-vine-dark transition-all shadow-md flex items-center justify-center opacity-50 hover:opacity-90"
+                    title="Edit photo (crop, rotate, tag)"
+                  >
+                    <span className="text-[10px]">✏️</span>
+                  </button>
+                  {/* Delete Photo Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deletePhoto(photo.id);
+                    }}
+                    className="bg-gradient-to-r from-red-500 to-red-600 text-white w-6 h-6 rounded-full hover:from-red-600 hover:to-red-700 transition-all shadow-md flex items-center justify-center opacity-50 hover:opacity-90"
+                    title="Delete photo"
+                  >
+                    <Trash2 size={12} />
+                  </button>
                 </div>
               </div>
               
@@ -709,29 +842,30 @@ const AlbumView = () => {
 
         {/* Photo Modal */}
         {showPhotoModal && enlargedPhoto && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50" 
+        <div
+          ref={modalOverlayRef}
+          className="fixed inset-0 bg-black bg-opacity-95 flex items-center justify-center z-[60]"
           onClick={closePhotoModal}
           style={{
             touchAction: 'none',
             overflow: 'hidden'
           }}
           onTouchStart={(e) => {
-            // Prevent background scrolling
             document.body.style.overflow = 'hidden';
           }}
           onTouchEnd={() => {
-            // Re-enable background scrolling when modal closes
             document.body.style.overflow = 'auto';
           }}
         >
-          <div 
-            className="relative max-w-full max-h-full overflow-hidden group" 
+          <div
+            className="relative max-w-full max-h-full overflow-hidden group"
             onClick={(e) => e.stopPropagation()}
             style={{
               touchAction: 'pan-x pan-y pinch-zoom',
-              maxWidth: '100vw',
-              maxHeight: '100vh'
+              maxWidth: 'calc(100vw - 64px)',
+              maxHeight: 'calc(100vh - 64px)',
+              padding: '32px',
+              cursor: zoomLevel > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default'
             }}
           >
             <button
@@ -744,21 +878,33 @@ const AlbumView = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            
+
             <img
               src={`${process.env.REACT_APP_API}/${enlargedPhoto.file_path}`}
               alt={enlargedPhoto.caption || 'Photo'}
-              className="max-w-screen-lg max-h-screen object-contain"
+              className="object-cover rounded-lg"
               style={{
+                transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel}) rotate(${enlargedPhoto.rotation_degrees || 0}deg)`,
+                transition: isPanning ? 'none' : 'transform 0.2s ease',
                 touchAction: 'pan-x pan-y pinch-zoom',
                 userSelect: 'none',
                 WebkitUserSelect: 'none',
                 MozUserSelect: 'none',
                 msUserSelect: 'none',
-                maxWidth: '100vw',
-                maxHeight: '100vh',
-                width: 'auto',
-                height: 'auto'
+                width: 'calc(100vw - 120px)',
+                height: 'calc(100vh - 120px)',
+                maxWidth: '100%',
+                maxHeight: '100%',
+                transformOrigin: 'center center'
+              }}
+              onMouseDown={handlePanStart}
+              onDoubleClick={() => {
+                if (zoomLevel > 1) {
+                  setZoomLevel(1);
+                  setPanOffset({ x: 0, y: 0 });
+                } else {
+                  setZoomLevel(2.5);
+                }
               }}
               onTouchStart={(e) => {
                 e.stopPropagation();
@@ -771,18 +917,19 @@ const AlbumView = () => {
               }}
               draggable={false}
             />
-            
+
+            {/* Zoom indicator */}
+            {zoomLevel !== 1 && (
+              <div className="absolute top-4 left-4 bg-black bg-opacity-75 text-white px-3 py-1.5 rounded text-sm z-10">
+                {Math.round(zoomLevel * 100)}%
+              </div>
+            )}
+
             {/* Navigation arrows */}
             {album && album.photos && album.photos.length > 1 && (
               <>
                 <button
-                  onClick={() => {
-                    if (!album || !album.photos) return;
-                    const currentIndex = album.photos.findIndex(p => p.id === enlargedPhoto.id);
-                    if (currentIndex > 0) {
-                      setEnlargedPhoto(album.photos[currentIndex - 1]);
-                    }
-                  }}
+                  onClick={() => navigatePhoto(-1)}
                   className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-12 h-12 flex items-center justify-center hover:bg-white/20 hover:border-white/30 hover:scale-105 opacity-0 group-hover:opacity-100 transition-all duration-300 group/prev"
                   title="Previous photo (←)"
                   style={{ touchAction: 'manipulation' }}
@@ -793,13 +940,7 @@ const AlbumView = () => {
                   </svg>
                 </button>
                 <button
-                  onClick={() => {
-                    if (!album || !album.photos) return;
-                    const currentIndex = album.photos.findIndex(p => p.id === enlargedPhoto.id);
-                    if (currentIndex < album.photos.length - 1) {
-                      setEnlargedPhoto(album.photos[currentIndex + 1]);
-                    }
-                  }}
+                  onClick={() => navigatePhoto(1)}
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-12 h-12 flex items-center justify-center hover:bg-white/20 hover:border-white/30 hover:scale-105 opacity-0 group-hover:opacity-100 transition-all duration-300 group/next"
                   title="Next photo (→)"
                   style={{ touchAction: 'manipulation' }}
@@ -811,23 +952,144 @@ const AlbumView = () => {
                 </button>
               </>
             )}
-            
+
             {/* Photo info */}
             {enlargedPhoto.caption && (
               <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 text-white px-4 py-2 rounded text-sm max-w-lg">
                 {enlargedPhoto.caption}
               </div>
             )}
-            
+
             {/* Photo counter */}
             {album && album.photos && album.photos.length > 1 && (
               <div className="absolute bottom-4 right-4 bg-black bg-opacity-75 text-white px-4 py-2 rounded text-sm">
                 {album.photos.findIndex(p => p.id === enlargedPhoto.id) + 1} / {album.photos.length}
               </div>
             )}
+
+            {/* Bottom toolbar - Rotate & Set as Cover */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRotatePhoto(enlargedPhoto);
+                }}
+                className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-3 py-1.5 rounded-full text-xs hover:bg-white/20 hover:border-white/30 transition-all"
+                title="Rotate 90° clockwise"
+              >
+                <RotateCw size={14} />
+                Rotate
+              </button>
+              {album.cover_photo_id !== enlargedPhoto.id && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCoverPhoto(enlargedPhoto.id);
+                  }}
+                  className="flex items-center gap-1.5 bg-white/10 backdrop-blur-sm border border-white/20 text-white px-3 py-1.5 rounded-full text-xs hover:bg-white/20 hover:border-white/30 transition-all"
+                  title="Set as album cover"
+                >
+                  <span>⭐</span>
+                  Set as Cover
+                </button>
+              )}
+              {album.cover_photo_id === enlargedPhoto.id && (
+                <div className="flex items-center gap-1.5 bg-green-500/80 backdrop-blur-sm border border-green-400/50 text-white px-3 py-1.5 rounded-full text-xs">
+                  <span>✓</span>
+                  Cover Photo
+                </div>
+              )}
+              {/* Delete Photo Button */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm('Are you sure you want to delete this photo? This cannot be undone.')) {
+                    deletePhoto(enlargedPhoto.id);
+                    closePhotoModal();
+                  }
+                }}
+                className="flex items-center gap-1.5 bg-red-500/20 backdrop-blur-sm border border-red-400/30 text-red-200 px-3 py-1.5 rounded-full text-xs hover:bg-red-500/40 hover:border-red-400/50 hover:text-white transition-all"
+                title="Delete photo"
+              >
+                <Trash2 size={14} />
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+        {/* Rename Album Modal */}
+        {showRenameModal && (
+          <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-6 rounded-xl max-w-md w-full shadow-2xl border border-white/50 dark:border-gray-700">
+              <h2 className="text-xl font-bold mb-4" style={{ fontFamily: 'var(--font-header)', color: 'var(--vine-dark)' }}>
+                Edit Album
+              </h2>
+              <form onSubmit={handleSaveAlbum} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
+                    Album Title
+                  </label>
+                  <input
+                    type="text"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all"
+                    placeholder="Album title"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
+                    Description
+                  </label>
+                  <textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-4 py-2.5 h-24 bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all resize-none"
+                    placeholder="Album description (optional)"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
+                    Event Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editEventDate}
+                    onChange={(e) => setEditEventDate(e.target.value)}
+                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all"
+                  />
+                  <p className="text-xs mt-1" style={{ color: 'var(--vine-sage)' }}>
+                    When were these photos taken?
+                  </p>
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="flex-1 px-4 py-2.5 rounded-lg text-white text-sm font-medium transition-all disabled:opacity-50"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))',
+                      boxShadow: '0 2px 8px rgba(45, 79, 30, 0.25)',
+                    }}
+                  >
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRenameModal(false)}
+                    className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border border-vine-200 dark:border-gray-600 text-vine-dark dark:text-gray-300 hover:bg-vine-50 dark:hover:bg-gray-700 transition-all"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Photo Tagging Modal */}
         {showTagger && selectedPhoto && (
@@ -853,6 +1115,16 @@ const AlbumView = () => {
           imageFile={cropImageFile}
           onCropComplete={handleCropComplete}
           onCancel={handleCropCancel}
+        />
+      )}
+
+        {/* NEW: Unified Photo Editor Modal */}
+        {showPhotoEditor && selectedPhotoForEdit && (
+        <PhotoEditorModal
+          photo={selectedPhotoForEdit}
+          albumId={id}
+          onSave={handlePhotoSaved}
+          onClose={() => setShowPhotoEditor(false)}
         />
       )}
 

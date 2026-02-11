@@ -61,15 +61,29 @@ router.post('/', upload.single('heroImage'), async (req, res) => {
   }
 });
 
-// GET - Retrieve all hero images
+// GET - Retrieve all hero images with tagged member details
 router.get('/', async (req, res) => {
   try {
     const query = `
-      SELECT * FROM photos 
-      WHERE is_hero_image = true 
-      ORDER BY uploaded_at DESC
+      SELECT p.*,
+        COALESCE(
+          (
+            SELECT json_agg(json_build_object(
+              'id', m.id,
+              'first_name', m.first_name,
+              'last_name', m.last_name,
+              'photo_url', m.photo_url
+            ))
+            FROM members m
+            WHERE m.id = ANY(p.hero_tagged_ids)
+          ),
+          '[]'::json
+        ) AS tagged_members
+      FROM photos p
+      WHERE p.is_hero_image = true
+      ORDER BY p.uploaded_at DESC
     `;
-    
+
     const result = await pool.query(query);
     res.json(result.rows);
   } catch (error) {
@@ -78,20 +92,85 @@ router.get('/', async (req, res) => {
   }
 });
 
+// PUT - Update hero image curator fields (blurb, location, tagged members)
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { hero_blurb, hero_location_override, hero_tagged_ids, caption } = req.body;
+
+    const fields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (hero_blurb !== undefined) {
+      fields.push(`hero_blurb = $${paramIndex++}`);
+      values.push(hero_blurb);
+    }
+    if (hero_location_override !== undefined) {
+      fields.push(`hero_location_override = $${paramIndex++}`);
+      values.push(hero_location_override);
+    }
+    if (hero_tagged_ids !== undefined) {
+      fields.push(`hero_tagged_ids = $${paramIndex++}`);
+      values.push(hero_tagged_ids);
+    }
+    if (caption !== undefined) {
+      fields.push(`caption = $${paramIndex++}`);
+      values.push(caption);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: 'No fields to update' });
+    }
+
+    values.push(id);
+    const query = `
+      UPDATE photos
+      SET ${fields.join(', ')}
+      WHERE id = $${paramIndex} AND is_hero_image = true
+      RETURNING *
+    `;
+
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Hero image not found' });
+    }
+
+    // Fetch tagged member details for the response
+    const photo = result.rows[0];
+    if (photo.hero_tagged_ids && photo.hero_tagged_ids.length > 0) {
+      const membersResult = await pool.query(
+        `SELECT id, first_name, last_name, photo_url FROM members WHERE id = ANY($1)`,
+        [photo.hero_tagged_ids]
+      );
+      photo.tagged_members = membersResult.rows;
+    } else {
+      photo.tagged_members = [];
+    }
+
+    res.json(photo);
+
+  } catch (error) {
+    logger.error('Error updating hero image:', error);
+    res.status(500).json({ error: 'Failed to update hero image' });
+  }
+});
+
 // DELETE - Remove a hero image
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const result = await pool.query(
-      'DELETE FROM photos WHERE id = $1 AND is_hero_image = true RETURNING *', 
+      'DELETE FROM photos WHERE id = $1 AND is_hero_image = true RETURNING *',
       [id]
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Hero image not found' });
     }
-    
+
     res.json({ message: 'Hero image deleted successfully' });
   } catch (error) {
     logger.error('Error deleting hero image:', error);

@@ -1,6 +1,7 @@
-import React, { useEffect, useState, lazy, Suspense } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Navigation from './components/Navigation';
 import OfflineIndicator from './components/OfflineIndicator';
 import InstallPrompt from './components/InstallPrompt';
@@ -30,216 +31,88 @@ const AddEditStory = lazy(() => import('./pages/AddEditStory'));
 const RecipesPage = lazy(() => import('./pages/RecipesPage'));
 const RecipeView = lazy(() => import('./pages/RecipeView'));
 
+// Loading Spinner Component
+const LoadingSpinner = ({ message = 'Loading...' }) => (
+  <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F9F8F3' }}>
+    <div className="text-center">
+      <div className="w-16 h-16 border-4 border-vine-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <p className="text-vine-sage font-body">{message}</p>
+    </div>
+  </div>
+);
+
 // Component to protect routes - redirects to login if not authenticated
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Authenticating..." />;
   }
 
   if (!isAuthenticated) {
-    // Redirect to login page if not authenticated
     return <Navigate to="/login" replace />;
   }
 
-  // If authenticated, show the requested page
   return children;
 };
 
+function AppContent() {
+  return (
+    <div className="min-h-screen transition-colors duration-200 main-content" style={{ backgroundColor: 'transparent' }}>
+      {/* Navigation */}
+      <Navigation />
+
+      {/* Vine accent bar — sage → leaf → mardi gras → leaf → sage */}
+      <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #86A789, #4A7C3F, #800080, #4A7C3F, #86A789)' }}></div>
+
+      {/* PWA Components */}
+      <OfflineIndicator />
+      <InstallPrompt />
+
+      {/* Suspense boundary for lazy-loaded routes */}
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+          {/* Protected routes */}
+          <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+          <Route path="/tree" element={<ProtectedRoute><FamilyTreePage /></ProtectedRoute>} />
+          <Route path="/add" element={<ProtectedRoute><AddMember /></ProtectedRoute>} />
+          <Route path="/members" element={<ProtectedRoute><MemberList /></ProtectedRoute>} />
+          <Route path="/members/:id" element={<ProtectedRoute><MemberPage /></ProtectedRoute>} />
+          <Route path="/members/:id/edit" element={<ProtectedRoute><EditMember /></ProtectedRoute>} />
+          <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
+          <Route path="/import-csv" element={<ProtectedRoute><CSVImport /></ProtectedRoute>} />
+          <Route path="/gallery" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
+          <Route path="/gallery/:id" element={<ProtectedRoute><AlbumView /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/timeline" element={<ProtectedRoute><TimelinePage /></ProtectedRoute>} />
+          <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+          <Route path="/stories" element={<ProtectedRoute><StoriesPage /></ProtectedRoute>} />
+          <Route path="/stories/new" element={<ProtectedRoute><AddEditStory /></ProtectedRoute>} />
+          <Route path="/stories/:id" element={<ProtectedRoute><StoryView /></ProtectedRoute>} />
+          <Route path="/stories/:id/edit" element={<ProtectedRoute><AddEditStory /></ProtectedRoute>} />
+          <Route path="/recipes" element={<ProtectedRoute><RecipesPage /></ProtectedRoute>} />
+          <Route path="/recipes/:id" element={<ProtectedRoute><RecipeView /></ProtectedRoute>} />
+        </Routes>
+      </Suspense>
+    </div>
+  );
+}
+
 function App() {
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-
-  useEffect(() => {
-    // Load and apply theme on app start
-    const savedSettings = localStorage.getItem('familyVineSettings');
-    if (savedSettings) {
-      const { theme } = JSON.parse(savedSettings);
-      applyTheme(theme || 'light');
-    }
-
-    // Listen for storage changes from other tabs/windows
-    const handleStorageChange = (e) => {
-      if (e.key === 'familyVineSettings') {
-        const newSettings = JSON.parse(e.newValue);
-        applyTheme(newSettings.theme || 'light');
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Quick auth check (you can make this more sophisticated later)
-    setIsCheckingAuth(false);
-    
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  const applyTheme = (theme) => {
-    const root = document.documentElement;
-    
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else if (theme === 'light') {
-      root.classList.remove('dark');
-    } else { // auto
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
-    }
-  };
-
-  // Show loading while checking authentication
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading FamilyVine...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <ScrollToTop />
-        {/* REMOVED: mb-6 class to eliminate gap between navbar and content */}
-        <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200 main-content">
-          {/* Navigation will automatically hide on login page */}
-          <Navigation />
-          {/* Global gradient bar - appears on all pages */}
-          <div className="h-1 w-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 dark:from-blue-600 dark:via-purple-600 dark:to-pink-600"></div>
-
-          {/* PWA Components */}
-          <OfflineIndicator />
-          <InstallPrompt />
-
-          {/* Suspense boundary for lazy-loaded routes */}
-          <Suspense fallback={
-            <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center">
-              <div className="text-center">
-                <div className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Loading...</p>
-              </div>
-            </div>
-          }>
-            <Routes>
-              {/* Public routes - accessible without authentication */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-
-            {/* All other routes are protected */}
-          <Route path="/" element={
-            <ProtectedRoute>
-              <HomePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/tree" element={
-            <ProtectedRoute>
-              <FamilyTreePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/add" element={
-            <ProtectedRoute>
-              <AddMember />
-            </ProtectedRoute>
-          } />
-          <Route path="/members" element={
-            <ProtectedRoute>
-              <MemberList />
-            </ProtectedRoute>
-          } />
-          <Route path="/members/:id" element={
-            <ProtectedRoute>
-              <MemberPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/members/:id/edit" element={
-            <ProtectedRoute>
-              <EditMember />
-            </ProtectedRoute>
-          } />
-          <Route path="/map" element={
-            <ProtectedRoute>
-              <MapPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/import-csv" element={
-            <ProtectedRoute>
-              <CSVImport />
-            </ProtectedRoute>
-          } />
-          <Route path="/gallery" element={
-            <ProtectedRoute>
-              <Gallery />
-            </ProtectedRoute>
-          } />
-          <Route path="/gallery/:id" element={
-            <ProtectedRoute>
-              <AlbumView />
-            </ProtectedRoute>
-          } />
-          <Route path="/settings" element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          } />
-          <Route path="/timeline" element={
-            <ProtectedRoute>
-              <TimelinePage />
-            </ProtectedRoute>
-          } />
-          <Route path="/calendar" element={
-            <ProtectedRoute>
-              <CalendarPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/stories" element={
-            <ProtectedRoute>
-              <StoriesPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/stories/new" element={
-            <ProtectedRoute>
-              <AddEditStory />
-            </ProtectedRoute>
-          } />
-          <Route path="/stories/:id" element={
-            <ProtectedRoute>
-              <StoryView />
-            </ProtectedRoute>
-          } />
-          <Route path="/stories/:id/edit" element={
-            <ProtectedRoute>
-              <AddEditStory />
-            </ProtectedRoute>
-          } />
-          <Route path="/recipes" element={
-            <ProtectedRoute>
-              <RecipesPage />
-            </ProtectedRoute>
-          } />
-          <Route path="/recipes/:id" element={
-            <ProtectedRoute>
-              <RecipeView />
-            </ProtectedRoute>
-          } />
-            </Routes>
-          </Suspense>
-        </div>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ScrollToTop />
+          <AppContent />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

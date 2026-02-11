@@ -82,11 +82,11 @@ Robert,Johnson,,Male,1950-03-10,Boston,Boston,Retired,robert@example.com,555-078
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Import Family Members from CSV</h1>
+      <h1 className="text-3xl font-bold font-heading text-vine-dark dark:text-white mb-6">Import Family Members from CSV</h1>
       
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-        <h2 className="text-lg font-semibold mb-2">CSV Format Requirements</h2>
-        <p className="text-sm text-gray-700 mb-3">
+      <div className="bg-vine-50 border border-vine-200 rounded-lg p-4 mb-6">
+        <h2 className="text-lg font-semibold font-heading text-vine-dark mb-2">CSV Format Requirements</h2>
+        <p className="text-sm text-vine-sage mb-3">
           Your CSV file should include the following columns. Only first_name and last_name are required:
         </p>
         <div className="grid grid-cols-2 gap-2 text-sm">
@@ -99,23 +99,23 @@ Robert,Johnson,,Male,1950-03-10,Boston,Boston,Retired,robert@example.com,555-078
         </div>
         <button 
           onClick={downloadSampleCSV}
-          className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+          className="mt-3 bg-gradient-to-r from-vine-500 to-vine-600 text-white px-4 py-2 rounded-lg hover:from-vine-600 hover:to-vine-dark text-sm"
         >
           Download Sample CSV
         </button>
       </div>
 
-      <div className="bg-white shadow rounded-lg p-6">
+      <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl shadow p-6">
         <form onSubmit={handleImport} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-vine-dark mb-2">
               Select CSV File
             </label>
             <input
               type="file"
               accept=".csv"
               onChange={handleFileChange}
-              className="w-full border border-gray-300 rounded-md p-2"
+              className="w-full border border-vine-200 rounded-lg p-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500"
               required
             />
           </div>
@@ -169,7 +169,7 @@ Robert,Johnson,,Male,1950-03-10,Boston,Boston,Retired,robert@example.com,555-078
                 <div key={index} className="text-sm text-red-700 mb-2 p-2 bg-white rounded">
                   <strong>Row {error.row}:</strong> {error.error}
                   {error.data && (
-                    <div className="text-xs text-gray-600 mt-1">
+                    <div className="text-xs text-vine-sage mt-1">
                       Data: {JSON.stringify(error.data)}
                     </div>
                   )}

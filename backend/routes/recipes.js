@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
     let query = `
       SELECT
         r.*,
-        m.first_name || ' ' || m.last_name as contributor_name,
+        m.first_name || ' ' || m.last_name || COALESCE(' ' || NULLIF(m.suffix, ''), '') as contributor_name,
         m.photo_url as contributor_photo,
         rp.file_path as photo_url,
         rp.caption as photo_caption,
@@ -146,7 +146,7 @@ router.get('/:id', async (req, res) => {
       SELECT
         r.*,
         m.id as contributor_id,
-        m.first_name || ' ' || m.last_name as contributor_name,
+        m.first_name || ' ' || m.last_name || COALESCE(' ' || NULLIF(m.suffix, ''), '') as contributor_name,
         m.photo_url as contributor_photo,
         rp.id as photo_id,
         rp.file_path as photo_url,
@@ -170,7 +170,7 @@ router.get('/:id', async (req, res) => {
     const commentsResult = await pool.query(`
       SELECT
         rc.*,
-        m.first_name || ' ' || m.last_name as member_name,
+        m.first_name || ' ' || m.last_name || COALESCE(' ' || NULLIF(m.suffix, ''), '') as member_name,
         m.photo_url as member_photo
       FROM recipe_comments rc
       LEFT JOIN members m ON rc.member_id = m.id
@@ -237,7 +237,8 @@ router.post('/', async (req, res) => {
       tags,
       contributed_by,
       difficulty_level,
-      is_family_favorite
+      is_family_favorite,
+      chef_notes
     } = req.body;
 
     // Validate required fields
@@ -253,8 +254,8 @@ router.post('/', async (req, res) => {
         title, description, ingredients, instructions,
         prep_time, cook_time, total_time, servings,
         category, tags, contributed_by, difficulty_level,
-        is_family_favorite, created_by, version
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 1)
+        is_family_favorite, created_by, version, chef_notes
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 1, $15)
       RETURNING *
     `, [
       title,
@@ -270,7 +271,8 @@ router.post('/', async (req, res) => {
       parseInt(contributed_by) || null,
       difficulty_level || null,
       is_family_favorite === 'true' || is_family_favorite === true,
-      req.user?.id || null
+      req.user?.id || null,
+      chef_notes || null
     ]);
 
     const recipe = recipeResult.rows[0];
@@ -280,8 +282,8 @@ router.post('/', async (req, res) => {
       INSERT INTO recipe_versions (
         recipe_id, version_number, title, description,
         ingredients, instructions, prep_time, cook_time,
-        total_time, servings, change_description, created_by
-      ) VALUES ($1, 1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        total_time, servings, change_description, created_by, chef_notes
+      ) VALUES ($1, 1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     `, [
       recipe.id,
       title,
@@ -293,7 +295,8 @@ router.post('/', async (req, res) => {
       total_time,
       servings,
       'Initial version',
-      req.user?.id || null
+      req.user?.id || null,
+      chef_notes || null
     ]);
 
     // Insert tags into recipe_tags table
@@ -348,7 +351,8 @@ router.put('/:id', async (req, res) => {
       contributed_by,
       difficulty_level,
       is_family_favorite,
-      change_description
+      change_description,
+      chef_notes
     } = req.body;
 
     // Get current version
@@ -381,8 +385,9 @@ router.put('/:id', async (req, res) => {
         difficulty_level = $12,
         is_family_favorite = $13,
         version = $14,
+        chef_notes = $15,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $15
+      WHERE id = $16
       RETURNING *
     `, [
       title || currentRecipe.title,
@@ -399,6 +404,7 @@ router.put('/:id', async (req, res) => {
       difficulty_level !== undefined ? difficulty_level : currentRecipe.difficulty_level,
       is_family_favorite !== undefined ? (is_family_favorite === 'true' || is_family_favorite === true) : currentRecipe.is_family_favorite,
       newVersion,
+      chef_notes !== undefined ? (chef_notes || null) : currentRecipe.chef_notes,
       id
     ]);
 
@@ -409,8 +415,8 @@ router.put('/:id', async (req, res) => {
       INSERT INTO recipe_versions (
         recipe_id, version_number, title, description,
         ingredients, instructions, prep_time, cook_time,
-        total_time, servings, change_description, created_by
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        total_time, servings, change_description, created_by, chef_notes
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     `, [
       id,
       newVersion,
@@ -423,7 +429,8 @@ router.put('/:id', async (req, res) => {
       updatedRecipe.total_time,
       updatedRecipe.servings,
       change_description || `Updated to version ${newVersion}`,
-      req.user?.id || null
+      req.user?.id || null,
+      updatedRecipe.chef_notes
     ]);
 
     // Update tags if provided

@@ -91,8 +91,8 @@ export class NodeRenderer {
     const rect = document.createElementNS(SVG_NS, 'rect');
     rect.setAttribute('width', this.config.nodeWidth);
     rect.setAttribute('height', this.config.nodeHeight);
-    rect.setAttribute('rx', '8'); // Rounded corners
-    rect.setAttribute('ry', '8');
+    rect.setAttribute('rx', '6'); // Rounded corners
+    rect.setAttribute('ry', '6');
     rect.setAttribute('fill', `url(#${gradientId})`);
     rect.setAttribute('stroke', 'rgba(255, 255, 255, 0.3)');
     rect.setAttribute('stroke-width', '2');
@@ -109,36 +109,42 @@ export class NodeRenderer {
 
     group.appendChild(rect);
 
+    // Layout constants for centering
+    const imageRadius = 26;
+    const imageTopPadding = 6;
+    const imageCenterY = imageTopPadding + imageRadius;
+    const centerX = this.config.nodeWidth / 2;
+
     // Create circular clipping path for profile image
     const clipPathId = `clip-circle-${node.id}`;
     const clipPath = document.createElementNS(SVG_NS, 'clipPath');
     clipPath.setAttribute('id', clipPathId);
 
     const clipCircle = document.createElementNS(SVG_NS, 'circle');
-    clipCircle.setAttribute('cx', this.config.nodeWidth / 2);
-    clipCircle.setAttribute('cy', 50); // 12px padding + 50px radius
-    clipCircle.setAttribute('r', 50);
+    clipCircle.setAttribute('cx', centerX);
+    clipCircle.setAttribute('cy', imageCenterY);
+    clipCircle.setAttribute('r', imageRadius);
     clipPath.appendChild(clipCircle);
 
     defs.appendChild(clipPath);
 
     // Create white circle border for profile image
     const borderCircle = document.createElementNS(SVG_NS, 'circle');
-    borderCircle.setAttribute('cx', this.config.nodeWidth / 2);
-    borderCircle.setAttribute('cy', 50);
-    borderCircle.setAttribute('r', 50);
+    borderCircle.setAttribute('cx', centerX);
+    borderCircle.setAttribute('cy', imageCenterY);
+    borderCircle.setAttribute('r', imageRadius);
     borderCircle.setAttribute('fill', 'white');
     borderCircle.setAttribute('stroke', 'white');
-    borderCircle.setAttribute('stroke-width', '4');
+    borderCircle.setAttribute('stroke-width', '2');
     group.appendChild(borderCircle);
 
     // Add profile image if available
     if (node.photoUrl) {
       const image = document.createElementNS(SVG_NS, 'image');
-      image.setAttribute('x', this.config.nodeWidth / 2 - 50);
-      image.setAttribute('y', 0);
-      image.setAttribute('width', 100);
-      image.setAttribute('height', 100);
+      image.setAttribute('x', centerX - imageRadius);
+      image.setAttribute('y', imageTopPadding);
+      image.setAttribute('width', imageRadius * 2);
+      image.setAttribute('height', imageRadius * 2);
       image.setAttribute('href', node.photoUrl);
       image.setAttribute('clip-path', `url(#${clipPathId})`);
       image.setAttribute('preserveAspectRatio', 'xMidYMid slice');
@@ -152,41 +158,49 @@ export class NodeRenderer {
       group.appendChild(image);
     }
 
-    // Add name text
+    // Add name text (centered below image)
     const fullName = `${node.firstName} ${node.lastName}`.trim();
     const nameText = document.createElementNS(SVG_NS, 'text');
-    nameText.setAttribute('x', this.config.nodeWidth / 2);
-    nameText.setAttribute('y', 115); // Below image
+    nameText.setAttribute('x', centerX);
+    nameText.setAttribute('y', imageCenterY + imageRadius + 12); // Below image with padding
     nameText.setAttribute('text-anchor', 'middle');
+    nameText.setAttribute('dominant-baseline', 'middle');
     nameText.setAttribute('fill', 'white');
     nameText.setAttribute('font-weight', 'bold');
-    nameText.setAttribute('font-size', '16');
+    nameText.setAttribute('font-size', '11');
+    nameText.setAttribute('font-family', 'system-ui, -apple-system, sans-serif');
     nameText.setAttribute('class', 'node-name');
     nameText.textContent = fullName;
 
     // Truncate if too long
-    if (fullName.length > 20) {
-      nameText.textContent = fullName.substring(0, 18) + '...';
+    if (fullName.length > 16) {
+      nameText.textContent = fullName.substring(0, 14) + '...';
     }
 
     group.appendChild(nameText);
 
-    // Add birth-death year text
+    // Add birth-death year text with distinct styling
+    const yearText = document.createElementNS(SVG_NS, 'text');
+    yearText.setAttribute('x', centerX);
+    yearText.setAttribute('y', imageCenterY + imageRadius + 24); // Below name
+    yearText.setAttribute('text-anchor', 'middle');
+    yearText.setAttribute('dominant-baseline', 'middle');
+    yearText.setAttribute('fill', '#FAF9F6');
+    yearText.setAttribute('font-weight', 'bold');
+    yearText.setAttribute('font-size', '9');
+    yearText.setAttribute('font-family', 'system-ui, -apple-system, sans-serif');
+    yearText.setAttribute('letter-spacing', '0.5');
+    yearText.setAttribute('class', 'node-years');
+
     if (node.birthYear || node.deathYear) {
-      const yearText = document.createElementNS(SVG_NS, 'text');
-      yearText.setAttribute('x', this.config.nodeWidth / 2);
-      yearText.setAttribute('y', 135); // Below name
-      yearText.setAttribute('text-anchor', 'middle');
-      yearText.setAttribute('fill', 'white');
-      yearText.setAttribute('font-size', '13');
-      yearText.setAttribute('class', 'node-years');
-
       const birthDisplay = node.birthYear || '?';
-      const deathDisplay = node.deathYear ? ` - ${node.deathYear}` : '';
+      const deathDisplay = node.deathYear ? ` — ${node.deathYear}` : '';
       yearText.textContent = `${birthDisplay}${deathDisplay}`;
-
-      group.appendChild(yearText);
+    } else {
+      yearText.textContent = ''; // Empty if no dates
     }
+
+    group.appendChild(yearText);
 
     return group;
   }

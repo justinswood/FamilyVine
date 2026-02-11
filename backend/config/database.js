@@ -1,19 +1,31 @@
 const { Pool } = require('pg');
 const logger = require('./logger');
 
+// Validate required database environment variables
+// Fail fast if credentials are not properly configured
+const requiredEnvVars = ['DB_USER', 'DB_HOST', 'DB_NAME', 'DB_PASSWORD'];
+const missingVars = requiredEnvVars.filter(v => !process.env[v]);
+
+if (missingVars.length > 0) {
+  const error = `FATAL: Missing required database environment variables: ${missingVars.join(', ')}`;
+  logger.error(error);
+  throw new Error(error);
+}
+
 // Centralized database connection pool
-// Uses environment variables with fallback defaults for development
+// NO FALLBACK VALUES - all credentials must come from environment
 const pool = new Pool({
-  user: process.env.DB_USER || 'user',
-  host: process.env.DB_HOST || 'db',
-  database: process.env.DB_NAME || 'familytree',
-  password: process.env.DB_PASSWORD || 'pass',
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
   port: parseInt(process.env.DB_PORT || '5432', 10),
 
   // Connection pool settings
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000, // How long a client is allowed to remain idle before being closed
   connectionTimeoutMillis: 2000, // How long to wait for a connection
+  statement_timeout: 30000, // 30 second query timeout to prevent long-running queries
 });
 
 // Handle pool errors

@@ -66,27 +66,27 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-transparent flex items-center justify-center px-4 py-12">
       <div className="max-w-md w-full">
 
         {/* Logo and Header */}
         <div className="text-center mb-8">
           <Link to="/login" className="inline-block cursor-pointer">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4 shadow-lg hover:shadow-xl transition-shadow">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-vine-500 to-vine-600 rounded-full mb-4 shadow-lg hover:shadow-xl transition-shadow">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:opacity-80 transition-opacity pb-1">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-vine-600 to-vine-dark bg-clip-text text-transparent hover:opacity-80 transition-opacity pb-1">
               FamilyVine
             </h1>
           </Link>
-          <p className="text-gray-600 mt-2">Create your family tree account</p>
+          <p className="text-vine-sage mt-2">Create your family tree account</p>
         </div>
 
         {/* Register Form */}
-        <div className="bg-white rounded-xl shadow-lg p-8 border border-gray-100">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">Sign Up</h2>
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl shadow-xl p-8 border border-white/50">
+          <h2 className="text-2xl font-semibold text-vine-dark mb-6 text-center">Sign Up</h2>
 
           <form onSubmit={handleSubmit}>
 
@@ -100,7 +100,7 @@ const RegisterPage = () => {
           <div className="space-y-4">
             {/* Username Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-vine-dark mb-2">
                 Username
               </label>
               <input
@@ -108,7 +108,7 @@ const RegisterPage = () => {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors hover:border-blue-300"
+                className="w-full px-4 py-3 border border-vine-200 rounded-lg focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-colors hover:border-vine-300"
                 placeholder="Choose a username"
                 disabled={loading}
               />
@@ -116,7 +116,7 @@ const RegisterPage = () => {
 
             {/* Email Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-vine-dark mb-2">
                 Email
               </label>
               <input
@@ -124,7 +124,7 @@ const RegisterPage = () => {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors hover:border-blue-300"
+                className="w-full px-4 py-3 border border-vine-200 rounded-lg focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-colors hover:border-vine-300"
                 placeholder="your@email.com"
                 disabled={loading}
               />
@@ -132,7 +132,7 @@ const RegisterPage = () => {
 
             {/* Password Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-vine-dark mb-2">
                 Password
               </label>
               <div className="relative">
@@ -141,14 +141,14 @@ const RegisterPage = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-12 hover:border-blue-300"
+                  className="w-full px-4 py-3 border border-vine-200 rounded-lg focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-colors pr-12 hover:border-vine-300"
                   placeholder="At least 6 characters"
                   disabled={loading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3.5 text-gray-400 hover:text-blue-600 transition-colors"
+                  className="absolute right-3 top-3.5 text-vine-sage hover:text-vine-600 transition-colors"
                   disabled={loading}
                 >
                   {showPassword ? (
@@ -167,7 +167,7 @@ const RegisterPage = () => {
 
             {/* Confirm Password Field */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-vine-dark mb-2">
                 Confirm Password
               </label>
               <input
@@ -175,15 +175,15 @@ const RegisterPage = () => {
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors hover:border-blue-300"
+                className="w-full px-4 py-3 border border-vine-200 rounded-lg focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-colors hover:border-vine-300"
                 placeholder="Re-enter password"
                 disabled={loading}
               />
             </div>
 
             {/* Info about default role */}
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
+            <div className="p-3 bg-vine-50 border border-vine-200 rounded-lg">
+              <p className="text-sm text-vine-dark">
                 <svg className="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                 </svg>
@@ -195,7 +195,7 @@ const RegisterPage = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105"
+              className="w-full bg-gradient-to-r from-vine-500 to-vine-600 text-white py-3 px-4 rounded-lg hover:from-vine-600 hover:to-vine-dark focus:ring-2 focus:ring-vine-500 focus:ring-offset-2 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105"
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -212,9 +212,9 @@ const RegisterPage = () => {
 
             {/* Login Link */}
             <div className="text-center mt-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-vine-sage">
                 Already have an account?{' '}
-                <Link to="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+                <Link to="/login" className="text-vine-600 hover:text-vine-dark font-medium">
                   Sign in
                 </Link>
               </p>
@@ -225,7 +225,7 @@ const RegisterPage = () => {
 
         {/* Footer */}
         <div className="text-center mt-8">
-          <p className="text-gray-500 text-sm">
+          <p className="text-vine-sage text-sm">
             © 2024 FamilyVine - Connecting Generations
           </p>
         </div>

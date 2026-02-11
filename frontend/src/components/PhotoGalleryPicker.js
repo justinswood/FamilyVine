@@ -64,7 +64,7 @@ const PhotoGalleryPicker = ({ onPhotoSelect, onCancel }) => {
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-vine-500 mx-auto mb-4"></div>
             <p>Loading photos from gallery...</p>
           </div>
         </div>
@@ -76,17 +76,17 @@ const PhotoGalleryPicker = ({ onPhotoSelect, onCancel }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-vine-200">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Choose Photo from Gallery</h2>
             <button
               onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600 text-2xl"
+              className="text-vine-sage hover:text-vine-sage text-2xl"
             >
               ×
             </button>
           </div>
-          <p className="text-gray-600 text-sm mt-1">
+          <p className="text-vine-sage text-sm mt-1">
             Select a photo from your family albums to use as profile picture
           </p>
         </div>
@@ -95,8 +95,8 @@ const PhotoGalleryPicker = ({ onPhotoSelect, onCancel }) => {
         <div className="p-4 overflow-y-auto max-h-96">
           {allPhotos.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">No photos found in your gallery.</p>
-              <p className="text-gray-400 text-sm mt-2">
+              <p className="text-vine-sage">No photos found in your gallery.</p>
+              <p className="text-vine-sage text-sm mt-2">
                 Upload photos to albums first to use them as profile pictures.
               </p>
             </div>
@@ -107,8 +107,8 @@ const PhotoGalleryPicker = ({ onPhotoSelect, onCancel }) => {
                   key={photo.id}
                   className={`relative cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
                     selectedPhoto?.id === photo.id
-                      ? 'border-blue-500 ring-2 ring-blue-200'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-vine-500 ring-2 ring-vine-200'
+                      : 'border-vine-200 hover:border-vine-200'
                   }`}
                   onClick={() => handlePhotoClick(photo)}
                 >
@@ -120,7 +120,7 @@ const PhotoGalleryPicker = ({ onPhotoSelect, onCancel }) => {
                   
                   {/* Selection indicator */}
                   {selectedPhoto?.id === photo.id && (
-                    <div className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-6 h-6 flex items-center justify-center">
+                    <div className="absolute top-2 right-2 bg-vine-600 text-white rounded-full w-6 h-6 flex items-center justify-center">
                       ✓
                     </div>
                   )}
@@ -136,9 +136,9 @@ const PhotoGalleryPicker = ({ onPhotoSelect, onCancel }) => {
         </div>
 
         {/* Footer with buttons */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <div className="p-4 border-t border-vine-200 bg-vine-50">
           <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-vine-sage">
               {selectedPhoto ? (
                 <span>Selected: Photo from "{selectedPhoto.albumTitle}"</span>
               ) : (
@@ -149,14 +149,14 @@ const PhotoGalleryPicker = ({ onPhotoSelect, onCancel }) => {
             <div className="flex space-x-3">
               <button
                 onClick={onCancel}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 text-vine-sage hover:text-vine-dark border border-vine-200 rounded-lg hover:bg-vine-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmSelection}
                 disabled={!selectedPhoto}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-vine-600 text-white rounded-lg hover:bg-vine-dark disabled:bg-secondary-400 disabled:cursor-not-allowed"
               >
                 Use This Photo
               </button>

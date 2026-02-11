@@ -11,7 +11,7 @@ ENV REACT_APP_API=$REACT_APP_API
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .

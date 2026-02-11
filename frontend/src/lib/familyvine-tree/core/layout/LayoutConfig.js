@@ -5,45 +5,55 @@
 
 export const LayoutConfig = {
   // Vertical spacing
-  GENERATION_HEIGHT: 250,
+  GENERATION_HEIGHT: 200,   // Vertical spacing between generation lanes
+  GENERATION_GAP: 80,       // Minimum vertical buffer between generations
 
   // Node dimensions
-  NODE_WIDTH: 200,
-  NODE_HEIGHT: 155,
+  NODE_WIDTH: 180,
+  NODE_HEIGHT: 120,
 
   // Horizontal spacing
-  SIBLING_SPACING: 250,
-  SPOUSE_GAP: 30,
-  SUBTREE_SEPARATION: 100,
+  SIBLING_SPACING: 28,      // Default gap between siblings (mixed leaf/branch)
+  LEAF_SIBLING_SPACING: 20, // Tight gap between childless siblings
+  BRANCH_SIBLING_SPACING: 40, // Gap between subtree bounding box edges
+  SPOUSE_GAP: 24,           // Gap between partners in a union unit
+  SUBTREE_SEPARATION: 40,   // Gap between different family subtrees
 
-  // Zoom settings
-  ZOOM_MIN: 0.1,
-  ZOOM_MAX: 2,
-  ZOOM_INITIAL: 0.7,
+  // Zoom settings (pan & zoom handles wide trees)
+  ZOOM_MIN: 0.2,
+  ZOOM_MAX: 2.5,
+  ZOOM_INITIAL: 1.0,
+  FIT_MIN_ZOOM: 0.35,
 
-  // Color gradients for nodes
+  // 2-column layout disabled - use horizontal layout with pan/zoom
+  SIBLING_SPLIT_THRESHOLD: 999,
+  TWO_COL_GAP: 16,
+  TWO_COL_ROW_GAP: 24,
+  GHOST_PADDING: 16,
+
+  // Color gradients for nodes (Greenhouse palette)
   COLORS: {
     male: {
-      light: '#dbeafe',
-      medium: '#60a5fa',
-      dark: '#3b82f6'
+      light: '#A8C5A0',
+      medium: '#4A7C3F',
+      dark: '#2D4F1E'
     },
     female: {
-      light: '#fce7f3',
-      medium: '#f472b6',
-      dark: '#ec4899'
+      light: '#D4B8A0',
+      medium: '#A07050',
+      dark: '#634832'
     },
     unknown: {
-      light: '#e5e7eb',
-      medium: '#9ca3af',
-      dark: '#6b7280'
+      light: '#D5D5D0',
+      medium: '#9CA3AF',
+      dark: '#6B7280'
     }
   },
 
   // Visual settings
-  CONNECTOR_SIZE: 10,
-  STROKE_WIDTH: 3,
-  SPOUSE_STROKE_WIDTH: 4,
+  CONNECTOR_SIZE: 8,
+  STROKE_WIDTH: 2,
+  SPOUSE_STROKE_WIDTH: 2.5,
 
   // Animation settings
   TRANSITION_DURATION: 300,
@@ -51,11 +61,11 @@ export const LayoutConfig = {
   // Layout algorithm settings (Walker's algorithm)
   WALKER: {
     // Minimum distance between siblings
-    MIN_SIBLING_DISTANCE: 250,
+    MIN_SIBLING_DISTANCE: 16,
     // Distance between different family subtrees
-    SUBTREE_SEPARATION: 100,
+    SUBTREE_SEPARATION: 40,
     // Distance between spouse partners
-    SPOUSE_DISTANCE: 30,
+    SPOUSE_DISTANCE: 24,
     // Modifier value adjustment factor
     MOD_FACTOR: 1
   }

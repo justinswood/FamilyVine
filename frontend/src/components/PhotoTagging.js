@@ -129,7 +129,7 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-vine-500 mx-auto"></div>
         <p className="text-center mt-2">Loading photo tags...</p>
       </div>
     );
@@ -138,13 +138,13 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden max-w-4xl mx-auto">
       {/* Header */}
-      <div className="p-4 border-b bg-gray-50">
+      <div className="p-4 border-b bg-vine-50">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-800">Tag People in Photo</h2>
+          <h2 className="text-xl font-semibold text-vine-dark">Tag People in Photo</h2>
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-2 text-vine-sage hover:text-vine-sage transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -176,7 +176,7 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
             {/* Face Tag Marker - Hidden by default, visible on hover */}
             <div className="relative">
               <div className={`w-16 h-20 border-4 rounded-lg bg-opacity-20 opacity-0 group-hover:opacity-100 transition-opacity ${
-                tag.is_verified ? 'border-blue-500 bg-blue-500' : 'border-yellow-500 bg-yellow-500'
+                tag.is_verified ? 'border-vine-500 bg-vine-500' : 'border-yellow-500 bg-yellow-500'
               }`}></div>
               
               {/* Name Label */}
@@ -212,26 +212,26 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
         {isTagging && (
           <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
             <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 text-center">
-              <User className="w-8 h-8 mx-auto mb-2 text-blue-500" />
-              <p className="text-sm text-gray-700">Click on a face to tag someone</p>
+              <User className="w-8 h-8 mx-auto mb-2 text-vine-600" />
+              <p className="text-sm text-vine-dark">Click on a face to tag someone</p>
             </div>
           </div>
         )}
       </div>
       
       {/* Controls */}
-      <div className="p-4 bg-gray-50">
+      <div className="p-4 bg-vine-50">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-medium text-gray-800">
+          <h3 className="text-lg font-medium text-vine-dark">
             {photo.caption || photo.original_name || "Family Photo"}
           </h3>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowExistingTags(!showExistingTags)}
               className={`p-2 rounded-lg transition-colors ${
-                showExistingTags 
-                  ? 'bg-blue-100 text-blue-700' 
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                showExistingTags
+                  ? 'bg-vine-100 text-vine-dark'
+                  : 'bg-vine-50 text-vine-sage hover:bg-vine-100'
               }`}
               title={showExistingTags ? 'Hide tags' : 'Show tags'}
             >
@@ -240,7 +240,7 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
             {!isTagging ? (
               <button
                 onClick={() => setIsTagging(true)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                className="px-4 py-2 bg-vine-600 text-white rounded-lg hover:bg-vine-dark transition-colors"
               >
                 Tag People
               </button>
@@ -256,7 +256,7 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
         </div>
         
         {/* Photo Info */}
-        <div className="text-sm text-gray-600 mb-3">
+        <div className="text-sm text-vine-sage mb-3">
           <p>Tagged: {existingTags.length} people</p>
           {photo.taken_date && <p>Date: {new Date(photo.taken_date).toLocaleDateString()}</p>}
           {photo.caption && <p>Caption: {photo.caption}</p>}
@@ -265,19 +265,19 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
         {/* Tagging Interface */}
         {taggingPosition && (
           <div className="bg-white rounded-lg p-4 border space-y-3">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-vine-dark">
               Who is this person?
             </label>
             
             {/* Search Input */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-vine-sage w-4 h-4" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search family members..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-vine-200 rounded-lg focus:ring-2 focus:ring-vine-500 focus:border-transparent"
               />
             </div>
             
@@ -285,7 +285,7 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
             <select
               value={selectedMember}
               onChange={(e) => setSelectedMember(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full p-2 border border-vine-200 rounded-lg focus:ring-2 focus:ring-vine-500 focus:border-transparent"
             >
               <option value="">Select a family member</option>
               {filteredMembers.map((member) => (
@@ -319,14 +319,14 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
         {/* Tagged People List */}
         {existingTags.length > 0 && (
           <div className="mt-4">
-            <h4 className="text-sm font-medium text-gray-700 mb-2">People in this photo:</h4>
+            <h4 className="text-sm font-medium text-vine-dark mb-2">People in this photo:</h4>
             <div className="flex flex-wrap gap-2">
               {existingTags.map((tag) => (
                 <span
                   key={tag.id}
                   className={`inline-flex items-center px-3 py-1 text-sm rounded-full ${
-                    tag.is_verified 
-                      ? 'bg-blue-100 text-blue-800' 
+                    tag.is_verified
+                      ? 'bg-vine-100 text-vine-dark'
                       : 'bg-yellow-100 text-yellow-800'
                   }`}
                 >

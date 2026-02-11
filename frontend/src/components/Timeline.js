@@ -97,7 +97,7 @@ const Timeline = () => {
 
   return (
     <div className="w-full">
-      <h1 className="text-3xl font-bold mb-4 text-center">Family Timeline</h1>
+      <h1 className="text-3xl font-heading font-bold mb-4 text-center">Family Timeline</h1>
 
       <div className="flex justify-center items-center gap-4 mb-6">
         {/* Filter buttons */}
@@ -105,9 +105,9 @@ const Timeline = () => {
           <button
             onClick={() => setFilter('all')}
             className={`px-4 py-2 text-sm font-medium rounded-l-lg ${filter === 'all'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-              } border border-gray-300`}
+                ? 'bg-vine-600 text-white'
+                : 'bg-white text-vine-dark hover:bg-vine-50'
+              } border border-vine-200`}
           >
             All Events
           </button>
@@ -115,17 +115,17 @@ const Timeline = () => {
             onClick={() => setFilter('birth')}
             className={`px-4 py-2 text-sm font-medium ${filter === 'birth'
                 ? 'bg-green-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-              } border-t border-b border-gray-300`}
+                : 'bg-white text-vine-dark hover:bg-vine-50'
+              } border-t border-b border-vine-200`}
           >
             Births
           </button>
           <button
             onClick={() => setFilter('death')}
             className={`px-4 py-2 text-sm font-medium rounded-r-lg ${filter === 'death'
-                ? 'bg-gray-600 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-50'
-              } border border-gray-300`}
+                ? 'bg-vine-sage text-white'
+                : 'bg-white text-vine-dark hover:bg-vine-50'
+              } border border-vine-200`}
           >
             Deaths
           </button>
@@ -134,7 +134,7 @@ const Timeline = () => {
 
       {/* Timeline content - always vertical */}
       {filteredEvents.length === 0 ? (
-        <div className="text-center text-gray-500 mt-8">
+        <div className="text-center text-vine-sage mt-8">
           <p>No events to display.</p>
           <p className="text-sm mt-2">Try adding birth dates to family members.</p>
         </div>
@@ -160,24 +160,24 @@ const Timeline = () => {
                               <ProfileImage
                                 member={event.member}
                                 size="small"
-                                className="border-2 border-gray-200"
+                                className="border-2 border-vine-200"
                               />
                             </div>
                             <div>
-                              <span className="text-lg font-semibold text-gray-700">{event.year}</span>
+                              <span className="text-lg font-semibold text-vine-dark">{event.year}</span>
                               <div className={`text-sm px-3 py-1 rounded-full inline-block ml-2 font-medium ${event.type === 'birth'
                                   ? 'bg-green-100 text-green-800'
-                                  : 'bg-gray-100 text-gray-800'
+                                  : 'bg-vine-100 text-vine-dark'
                                 }`}>
                                 {event.type === 'birth' ? 'Birth' : 'Death'}
                               </div>
                             </div>
                           </div>
                           <h3 className="font-semibold text-lg mb-2">{event.description}</h3>
-                          <p className="text-base text-gray-600 mb-3">{event.location}</p>
+                          <p className="text-base text-vine-sage mb-3">{event.location}</p>
                           <Link
                             to={`/members/${event.memberId}`}
-                            className="text-blue-600 hover:underline text-base font-medium inline-block"
+                            className="text-vine-600 hover:underline text-base font-medium inline-block"
                           >
                             View Profile
                           </Link>

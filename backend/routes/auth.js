@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const pool = require('../config/database');
 const { validateRegister, validateLogin } = require('../middleware/authValidators');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 const { getEnvVar } = require('../config/env');
 const logger = require('../config/logger');
 const { sendPasswordResetEmail, sendWelcomeEmail } = require('../services/emailService');
@@ -712,6 +713,240 @@ router.post('/reset-password', async (req, res) => {
   } catch (error) {
     logger.error('Error resetting password', { error: error.message });
     res.status(500).json({ error: 'Failed to reset password' });
+  }
+});
+
+// ==========================================
+// ADMIN USER MANAGEMENT ENDPOINTS
+// ==========================================
+
+/**
+ * GET /api/auth/users
+ * List all users (admin only)
+ */
+router.get('/users', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, username, email, role, is_active, last_login, created_at
+       FROM users
+       ORDER BY created_at DESC`
+    );
+
+    res.json({ users: result.rows });
+  } catch (error) {
+    logger.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+/**
+ * POST /api/auth/users
+ * Create a new user (admin only)
+ */
+router.post('/users', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { username, email, password, role = 'viewer' } = req.body;
+
+    // Validation
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    // Validate role
+    const validRoles = ['admin', 'editor', 'viewer'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ error: 'Invalid role. Must be admin, editor, or viewer' });
+    }
+
+    // Check if username or email already exists
+    const existingUser = await pool.query(
+      'SELECT id FROM users WHERE username = $1 OR (email = $2 AND email IS NOT NULL)',
+      [username, email || null]
+    );
+
+    if (existingUser.rows.length > 0) {
+      return res.status(409).json({ error: 'Username or email already exists' });
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const password_hash = await bcrypt.hash(password, saltRounds);
+
+    // Insert new user
+    const result = await pool.query(
+      `INSERT INTO users (username, email, password_hash, role)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, username, email, role, is_active, created_at`,
+      [username, email || null, password_hash, role]
+    );
+
+    const newUser = result.rows[0];
+
+    logger.info('Admin created new user', {
+      adminId: req.user.id,
+      newUserId: newUser.id,
+      username: newUser.username,
+      role: newUser.role
+    });
+
+    res.status(201).json({
+      message: 'User created successfully',
+      user: newUser
+    });
+  } catch (error) {
+    logger.error('Error creating user:', error);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+/**
+ * PUT /api/auth/users/:id/password
+ * Change a user's password (admin only)
+ */
+router.put('/users/:id/password', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { password } = req.body;
+
+    // Validation
+    if (!password) {
+      return res.status(400).json({ error: 'New password is required' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    // Check if user exists
+    const userResult = await pool.query(
+      'SELECT id, username FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const targetUser = userResult.rows[0];
+
+    // Hash new password
+    const saltRounds = 10;
+    const password_hash = await bcrypt.hash(password, saltRounds);
+
+    // Update password
+    await pool.query(
+      'UPDATE users SET password_hash = $1 WHERE id = $2',
+      [password_hash, id]
+    );
+
+    logger.info('Admin changed user password', {
+      adminId: req.user.id,
+      targetUserId: id,
+      targetUsername: targetUser.username
+    });
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    logger.error('Error changing password:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+/**
+ * PUT /api/auth/users/:id/role
+ * Change a user's role (admin only)
+ */
+router.put('/users/:id/role', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    // Validate role
+    const validRoles = ['admin', 'editor', 'viewer'];
+    if (!role || !validRoles.includes(role)) {
+      return res.status(400).json({ error: 'Invalid role. Must be admin, editor, or viewer' });
+    }
+
+    // Check if user exists
+    const userResult = await pool.query(
+      'SELECT id, username, role FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const targetUser = userResult.rows[0];
+
+    // Prevent admin from demoting themselves
+    if (parseInt(id) === req.user.id && role !== 'admin') {
+      return res.status(400).json({ error: 'Cannot change your own role' });
+    }
+
+    // Update role
+    await pool.query(
+      'UPDATE users SET role = $1 WHERE id = $2',
+      [role, id]
+    );
+
+    logger.info('Admin changed user role', {
+      adminId: req.user.id,
+      targetUserId: id,
+      targetUsername: targetUser.username,
+      oldRole: targetUser.role,
+      newRole: role
+    });
+
+    res.json({ message: 'Role updated successfully' });
+  } catch (error) {
+    logger.error('Error changing role:', error);
+    res.status(500).json({ error: 'Failed to change role' });
+  }
+});
+
+/**
+ * DELETE /api/auth/users/:id
+ * Delete a user (admin only)
+ */
+router.delete('/users/:id', authenticateToken, requireRole('admin'), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const userResult = await pool.query(
+      'SELECT id, username FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const targetUser = userResult.rows[0];
+
+    // Prevent admin from deleting themselves
+    if (parseInt(id) === req.user.id) {
+      return res.status(400).json({ error: 'Cannot delete your own account' });
+    }
+
+    // Delete user
+    await pool.query('DELETE FROM users WHERE id = $1', [id]);
+
+    logger.info('Admin deleted user', {
+      adminId: req.user.id,
+      deletedUserId: id,
+      deletedUsername: targetUser.username
+    });
+
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    logger.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Failed to delete user' });
   }
 });
 

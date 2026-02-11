@@ -317,9 +317,10 @@ export class PanZoomController {
     const scaleY = (svgHeight - padding * 2) / treeHeight;
     const newZoom = Math.min(scaleX, scaleY);
 
-    // Clamp zoom
+    // Clamp zoom - use FIT_MIN_ZOOM so auto-fit doesn't shrink tree too small
+    const fitMinZoom = LayoutConfig.FIT_MIN_ZOOM || this.config.minZoom;
     this.currentZoom = Math.max(
-      this.config.minZoom,
+      fitMinZoom,
       Math.min(this.config.maxZoom, newZoom)
     );
 

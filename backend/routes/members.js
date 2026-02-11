@@ -2,18 +2,13 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { Pool } = require('pg');
 const csv = require('csv-parser');
 const fs = require('fs');
 const { processImage, isImageSupported } = require('../utils/imageProcessor');
-
-const pool = new Pool({
-  user: process.env.DB_USER || 'user',
-  host: process.env.DB_HOST || 'db',
-  database: process.env.DB_NAME || 'familytree',
-  password: process.env.DB_PASSWORD || 'pass',
-  port: parseInt(process.env.DB_PORT) || 5432,
-});
+const pool = require('../config/database');
+const logger = require('../config/logger');
+const { validateId, validateMember, validateSearchQuery } = require('../middleware/validators');
+const { geocodeLocation } = require('../services/geocodingService');
 
 // Fix: Use absolute path to ensure uploads go to backend/uploads
 const storage = multer.diskStorage({
@@ -77,7 +72,7 @@ const parseDate = (dateStr) => {
       return date.toISOString().split('T')[0];
     }
   } catch (e) {
-    console.warn(`Could not parse date: ${dateStr}`);
+    logger.warn('Could not parse date', { dateStr });
   }
 
   return null;
@@ -92,7 +87,7 @@ const linkSpouses = async (memberId, spouseId, marriageDate) => {
     // Only proceed if we have both member IDs
     if (!memberId || !spouseId) return;
 
-    console.log(`Linking spouses: Member ${memberId} ↔ Member ${spouseId}`);
+    logger.debug('Linking spouses', { memberId, spouseId });
 
     // Update the spouse to also show they're married to this member
     const updateSpouseQuery = `
@@ -104,10 +99,10 @@ const linkSpouses = async (memberId, spouseId, marriageDate) => {
     `;
 
     await pool.query(updateSpouseQuery, [memberId, marriageDate, spouseId]);
-    console.log(`Successfully linked spouse ${spouseId} to member ${memberId}`);
+    logger.debug('Successfully linked spouse', { spouseId, memberId });
 
   } catch (error) {
-    console.error('Error linking spouses:', error);
+    logger.error('Error linking spouses', { error: error.message });
     // Don't throw the error - we want the main operation to succeed even if spouse linking fails
   }
 };
@@ -119,7 +114,7 @@ const unlinkSpouses = async (memberId, oldSpouseId) => {
   try {
     if (!oldSpouseId) return;
 
-    console.log(`Unlinking spouse: removing marriage link from member ${oldSpouseId}`);
+    logger.debug('Unlinking spouse', { oldSpouseId });
 
     // Remove the marriage link from the old spouse
     const unlinkQuery = `
@@ -131,20 +126,125 @@ const unlinkSpouses = async (memberId, oldSpouseId) => {
     `;
 
     await pool.query(unlinkQuery, [oldSpouseId, memberId]);
-    console.log(`Successfully unlinked spouse ${oldSpouseId}`);
+    logger.debug('Successfully unlinked spouse', { oldSpouseId });
 
   } catch (error) {
-    console.error('Error unlinking spouse:', error);
+    logger.error('Error unlinking spouse', { error: error.message });
   }
 };
 
 router.get('/', async (req, res) => {
-  const result = await pool.query('SELECT * FROM members ORDER BY id DESC');
-  res.json(result.rows);
+  try {
+    // Check if pagination is explicitly requested
+    const usePagination = req.query.page !== undefined || req.query.limit !== undefined;
+
+    // Pagination parameters with defaults
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset = (page - 1) * limit;
+
+    // Optional filters
+    const { is_alive, gender, sort = 'id', order = 'desc' } = req.query;
+
+    // Build WHERE clause
+    const conditions = [];
+    const params = [];
+    let paramIndex = 1;
+
+    if (is_alive !== undefined) {
+      conditions.push(`is_alive = $${paramIndex++}`);
+      params.push(is_alive === 'true');
+    }
+
+    if (gender) {
+      conditions.push(`gender = $${paramIndex++}`);
+      params.push(gender);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    // Validate sort column to prevent SQL injection
+    const allowedSorts = ['id', 'first_name', 'last_name', 'birth_date', 'created_at'];
+    const sortColumn = allowedSorts.includes(sort) ? sort : 'id';
+    const sortOrder = order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+    if (usePagination) {
+      // Get total count for pagination metadata
+      const countResult = await pool.query(
+        `SELECT COUNT(*) FROM members ${whereClause}`,
+        params
+      );
+      const total = parseInt(countResult.rows[0].count);
+
+      // Get paginated results
+      const result = await pool.query(
+        `SELECT * FROM members ${whereClause} ORDER BY ${sortColumn} ${sortOrder} LIMIT $${paramIndex++} OFFSET $${paramIndex}`,
+        [...params, limit, offset]
+      );
+
+      res.json({
+        data: result.rows,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+          hasNext: page * limit < total,
+          hasPrev: page > 1
+        }
+      });
+    } else {
+      // Backwards compatible: return array directly when no pagination requested
+      const result = await pool.query(
+        `SELECT * FROM members ${whereClause} ORDER BY ${sortColumn} ${sortOrder}`,
+        params
+      );
+      res.json(result.rows);
+    }
+  } catch (error) {
+    logger.error('Error fetching members', { error: error.message });
+    res.status(500).json({ error: 'Failed to fetch members' });
+  }
+});
+
+// Memory counts: stories + photo tags per member
+router.get('/memory-counts', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        m.id AS member_id,
+        COALESCE(s.story_count, 0) AS story_count,
+        COALESCE(p.photo_count, 0) AS photo_count
+      FROM members m
+      LEFT JOIN (
+        SELECT member_id, COUNT(*) AS story_count
+        FROM story_members
+        GROUP BY member_id
+      ) s ON s.member_id = m.id
+      LEFT JOIN (
+        SELECT member_id, COUNT(*) AS photo_count
+        FROM photo_tags
+        GROUP BY member_id
+      ) p ON p.member_id = m.id
+      WHERE COALESCE(s.story_count, 0) > 0 OR COALESCE(p.photo_count, 0) > 0
+    `);
+    // Return as a map { memberId: { stories, photos } }
+    const counts = {};
+    result.rows.forEach(row => {
+      counts[row.member_id] = {
+        stories: parseInt(row.story_count),
+        photos: parseInt(row.photo_count)
+      };
+    });
+    res.json(counts);
+  } catch (error) {
+    logger.error('Error fetching memory counts', { error: error.message });
+    res.status(500).json({ error: 'Failed to fetch memory counts' });
+  }
 });
 
 // NEW: Search endpoint for global search functionality (MUST come before /:id route)
-router.get('/search', async (req, res) => {
+router.get('/search', validateSearchQuery, async (req, res) => {
   try {
     const { q } = req.query;
     
@@ -156,17 +256,17 @@ router.get('/search', async (req, res) => {
     
     // Search in first_name, last_name, middle_name, and location
     const result = await pool.query(`
-      SELECT id, first_name, middle_name, last_name, birth_date, birth_place, photo_url
-      FROM members 
-      WHERE 
-        LOWER(first_name) LIKE $1 OR 
-        LOWER(last_name) LIKE $1 OR 
+      SELECT id, first_name, middle_name, last_name, suffix, birth_date, birth_place, photo_url
+      FROM members
+      WHERE
+        LOWER(first_name) LIKE $1 OR
+        LOWER(last_name) LIKE $1 OR
         LOWER(middle_name) LIKE $1 OR
         LOWER(CONCAT(first_name, ' ', last_name)) LIKE $1 OR
         LOWER(birth_place) LIKE $1
-      ORDER BY 
+      ORDER BY
         -- Prioritize exact matches first
-        CASE 
+        CASE
           WHEN LOWER(first_name) = LOWER($2) THEN 1
           WHEN LOWER(last_name) = LOWER($2) THEN 2
           WHEN LOWER(CONCAT(first_name, ' ', last_name)) = LOWER($2) THEN 3
@@ -178,50 +278,136 @@ router.get('/search', async (req, res) => {
     
     res.json(result.rows);
   } catch (error) {
-    console.error('Search error:', error);
+    logger.error('Search error', { error: error.message });
     res.status(500).json({ error: 'Search failed' });
   }
 });
 
-router.get('/:id', async (req, res) => {
-  const result = await pool.query('SELECT * FROM members WHERE id = $1', [req.params.id]);
-  res.json(result.rows[0]);
+// GET living members with geocoded coordinates for map display
+// Returns pre-geocoded data to avoid client-side geocoding
+router.get('/living-with-coordinates', async (req, res) => {
+  try {
+    // Query living members with locations, joined with geocode cache
+    const result = await pool.query(`
+      WITH member_locations AS (
+        SELECT
+          m.id,
+          TRIM(CONCAT(COALESCE(m.first_name, ''), ' ', COALESCE(m.last_name, ''), CASE WHEN m.suffix IS NOT NULL AND m.suffix != '' THEN ' ' || m.suffix ELSE '' END)) as name,
+          m.photo_url as photo,
+          m.birth_date,
+          TRIM(m.location) as location,
+          TRIM(m.birth_place) as birth_place
+        FROM members m
+        WHERE m.death_date IS NULL
+          AND m.location IS NOT NULL
+          AND TRIM(m.location) != ''
+          AND LOWER(COALESCE(m.first_name, '')) NOT LIKE '%unknown%'
+      )
+      SELECT
+        ml.location,
+        gc.latitude as lat,
+        gc.longitude as lon,
+        gc.display_name,
+        json_agg(
+          json_build_object(
+            'id', ml.id,
+            'name', ml.name,
+            'photo', ml.photo,
+            'birth_date', ml.birth_date,
+            'birth_place', ml.birth_place
+          )
+        ) as members
+      FROM member_locations ml
+      LEFT JOIN geocode_cache gc ON LOWER(TRIM(ml.location)) = gc.location_string
+      WHERE gc.latitude IS NOT NULL
+      GROUP BY ml.location, gc.latitude, gc.longitude, gc.display_name
+      ORDER BY ml.location
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    logger.error('Error fetching living members with coordinates', { error: error.message });
+    res.status(500).json({ error: 'Failed to fetch member locations' });
+  }
+});
+
+// Get migration paths (birth_place → current location) with coordinates
+router.get('/migration-paths', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        m.id,
+        TRIM(CONCAT(COALESCE(m.first_name, ''), ' ', COALESCE(m.last_name, ''), CASE WHEN m.suffix IS NOT NULL AND m.suffix != '' THEN ' ' || m.suffix ELSE '' END)) as name,
+        TRIM(m.birth_place) as birth_place,
+        TRIM(m.location) as current_location,
+        gc_birth.latitude as birth_lat,
+        gc_birth.longitude as birth_lon,
+        gc_current.latitude as current_lat,
+        gc_current.longitude as current_lon
+      FROM members m
+      LEFT JOIN geocode_cache gc_birth ON LOWER(TRIM(m.birth_place)) = gc_birth.location_string
+      LEFT JOIN geocode_cache gc_current ON LOWER(TRIM(m.location)) = gc_current.location_string
+      WHERE m.death_date IS NULL
+        AND m.birth_place IS NOT NULL AND TRIM(m.birth_place) != ''
+        AND m.location IS NOT NULL AND TRIM(m.location) != ''
+        AND LOWER(TRIM(m.birth_place)) != LOWER(TRIM(m.location))
+        AND gc_birth.latitude IS NOT NULL
+        AND gc_current.latitude IS NOT NULL
+        AND LOWER(COALESCE(m.first_name, '')) NOT LIKE '%unknown%'
+      ORDER BY m.id
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    logger.error('Error fetching migration paths', { error: error.message });
+    res.status(500).json({ error: 'Failed to fetch migration paths' });
+  }
+});
+
+router.get('/:id', validateId('id'), async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM members WHERE id = $1', [req.params.id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Member not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    logger.error('Error fetching member', { error: error.message, memberId: req.params.id });
+    res.status(500).json({ error: 'Failed to fetch member' });
+  }
 });
 
 // UPDATED POST route with marriage fields and automatic spouse linking
 router.post('/', upload.single('photo'), async (req, res) => {
   const {
-    first_name, middle_name, last_name, nickname, relationship,
+    first_name, middle_name, last_name, nickname, suffix, relationship,
     gender, is_alive, birth_date, death_date,
     birth_place, death_place, location,
     occupation, pronouns, email, phone,
-    is_married, marriage_date, spouse_id  // NEW: Add marriage fields
+    is_married, marriage_date, spouse_id
   } = req.body;
 
   let photo_url = null;
-  
+
   try {
     // Process uploaded photo if present
     if (req.file) {
-      console.log(`Processing profile photo for ${first_name} ${last_name}`);
-      
       const finalPath = path.join('uploads/', `profile_${Date.now()}`);
       const processResult = await processImage(req.file, finalPath);
-      
+
       if (processResult.success) {
         photo_url = `uploads/${processResult.filename}`;
-        console.log(`Profile photo processed: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
+        logger.debug('Profile photo processed', { filename: processResult.filename, converted: processResult.wasConverted });
       } else {
-        console.error('Failed to process profile photo:', processResult.error);
+        logger.error('Failed to process profile photo', { error: processResult.error });
         // Continue without photo rather than failing the entire request
       }
     }
 
     // First, create the new member
     const result = await pool.query(
-      'INSERT INTO members (first_name, middle_name, last_name, nickname, relationship, gender, is_alive, birth_date, death_date, birth_place, death_place, location, occupation, pronouns, email, phone, photo_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *',
+      'INSERT INTO members (first_name, middle_name, last_name, nickname, suffix, relationship, gender, is_alive, birth_date, death_date, birth_place, death_place, location, occupation, pronouns, email, phone, photo_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *',
       [
-        first_name, middle_name, last_name, nickname || null, relationship, gender, is_alive === 'true',
+        first_name, middle_name, last_name, nickname || null, suffix || null, relationship, gender, is_alive === 'true',
         parseDate(birth_date), parseDate(death_date),
         birth_place || null, death_place || null,
         location || null, occupation || null, pronouns || null, email || null, phone || null, photo_url
@@ -229,83 +415,150 @@ router.post('/', upload.single('photo'), async (req, res) => {
     );
 
     const newMember = result.rows[0];
+    const newMemberId = newMember.id;
+    const isMarriedBool = is_married === 'true' || is_married === true;
+    const spouseIdInt = spouse_id ? parseInt(spouse_id) : null;
+
+    // If married with a spouse, create union and spouse relationships
+    if (isMarriedBool && spouseIdInt) {
+      try {
+        logger.debug('New member married — creating union', { newMemberId, spouseId: spouseIdInt });
+
+        // Update member record with marriage fields
+        await pool.query(
+          'UPDATE members SET is_married = true, marriage_date = $1, spouse_id = $2 WHERE id = $3',
+          [parseDate(marriage_date), spouseIdInt, newMemberId]
+        );
+
+        // Order partner IDs (unions table requires partner1_id < partner2_id)
+        const partner1 = Math.min(newMemberId, spouseIdInt);
+        const partner2 = Math.max(newMemberId, spouseIdInt);
+
+        // Check if union already exists
+        const existingUnion = await pool.query(
+          'SELECT id FROM unions WHERE partner1_id = $1 AND partner2_id = $2',
+          [partner1, partner2]
+        );
+
+        if (existingUnion.rows.length === 0) {
+          await pool.query(
+            'INSERT INTO unions (partner1_id, partner2_id, union_type, union_date, is_primary) VALUES ($1, $2, $3, $4, true)',
+            [partner1, partner2, 'marriage', parseDate(marriage_date)]
+          );
+          logger.debug('Created union for new member', { partner1, partner2 });
+        }
+
+        // Get spouse gender for relationship type
+        const spouseInfo = await pool.query('SELECT gender FROM members WHERE id = $1', [spouseIdInt]);
+        const spouseGender = spouseInfo.rows[0]?.gender;
+        const memberGender = gender;
+
+        const memberRelType = memberGender === 'Male' ? 'husband' : 'wife';
+        const spouseRelType = spouseGender === 'Male' ? 'husband' : 'wife';
+
+        // Member -> Spouse relationship
+        const existingRel1 = await pool.query(
+          'SELECT id FROM relationships WHERE member1_id = $1 AND member2_id = $2 AND relationship_type IN ($3, $4)',
+          [newMemberId, spouseIdInt, 'husband', 'wife']
+        );
+        if (existingRel1.rows.length === 0) {
+          await pool.query(
+            'INSERT INTO relationships (member1_id, member2_id, relationship_type) VALUES ($1, $2, $3)',
+            [newMemberId, spouseIdInt, memberRelType]
+          );
+        }
+
+        // Spouse -> Member relationship
+        const existingRel2 = await pool.query(
+          'SELECT id FROM relationships WHERE member1_id = $1 AND member2_id = $2 AND relationship_type IN ($3, $4)',
+          [spouseIdInt, newMemberId, 'husband', 'wife']
+        );
+        if (existingRel2.rows.length === 0) {
+          await pool.query(
+            'INSERT INTO relationships (member1_id, member2_id, relationship_type) VALUES ($1, $2, $3)',
+            [spouseIdInt, newMemberId, spouseRelType]
+          );
+        }
+
+        // Update spouse's member record
+        await pool.query(
+          'UPDATE members SET is_married = true, spouse_id = $1, marriage_date = $2 WHERE id = $3',
+          [newMemberId, parseDate(marriage_date), spouseIdInt]
+        );
+        logger.debug('Linked new member with spouse', { newMemberId, spouseId: spouseIdInt });
+      } catch (spouseError) {
+        logger.error('Error linking new member to spouse (member was still created)', { error: spouseError.message });
+        // Don't fail the whole request — the member was created successfully
+      }
+    }
+
+    // Geocode location in the background (don't block response)
+    if (location && location.trim()) {
+      geocodeLocation(location.trim()).catch(err =>
+        logger.error('Background geocoding failed for new member', { location, error: err.message })
+      );
+    }
 
     res.status(201).json(newMember);
 
   } catch (err) {
-    console.error(err);
+    logger.error('Failed to add member', { error: err.message });
     res.status(500).json({ error: 'Failed to add member.' });
   }
 });
 
 // UPDATED PUT route with marriage fields and automatic spouse linking
-router.put('/:id', upload.single('photo'), async (req, res) => {
-  console.log('=== MEMBER UPDATE DEBUG ===');
-  console.log('Request body:', req.body);
-  console.log('Uploaded file:', req.file ? req.file.filename : 'No file uploaded');
-  console.log('All form fields:');
-  Object.keys(req.body).forEach(key => {
-    console.log(`  ${key}: "${req.body[key]}" (type: ${typeof req.body[key]})`);
-  });
+router.put('/:id', validateId('id'), upload.single('photo'), async (req, res) => {
+  logger.debug('Member update request', { memberId: req.params.id, hasFile: !!req.file });
 
   const {
-    first_name, middle_name, last_name, nickname, relationship,
+    first_name, middle_name, last_name, nickname, suffix, relationship,
     gender, is_alive, birth_date, death_date,
     birth_place, death_place, location,
     occupation, pronouns, email, phone, photo_url,
-    is_married, marriage_date, spouse_id  // NEW: Add marriage fields
+    is_married, marriage_date, spouse_id
   } = req.body;
 
-  console.log('Extracted first_name:', first_name);
-  console.log('Extracted last_name:', last_name);
-
-  // Add better validation with detailed error messages
+  // Validate required fields
   if (!first_name || first_name.trim() === '') {
-    console.log('ERROR: first_name is missing or empty');
     return res.status(400).json({ error: 'First name is required and cannot be empty.' });
   }
 
   if (!last_name || last_name.trim() === '') {
-    console.log('ERROR: last_name is missing or empty');
     return res.status(400).json({ error: 'Last name is required and cannot be empty.' });
   }
 
   // Handle photo during update
   let finalPhotoUrl = photo_url || null;
   if (req.file) {
-    console.log(`Processing updated profile photo for member ${req.params.id}`);
-    
     try {
       const finalPath = path.join('uploads/', `profile_update_${Date.now()}`);
       const processResult = await processImage(req.file, finalPath);
-      
+
       if (processResult.success) {
         finalPhotoUrl = `uploads/${processResult.filename}`;
-        console.log(`Profile photo updated: ${processResult.filename}${processResult.wasConverted ? ' (converted from HEIC)' : ''}`);
+        logger.debug('Profile photo updated', { filename: processResult.filename, converted: processResult.wasConverted });
       } else {
-        console.error('Failed to process updated profile photo:', processResult.error);
+        logger.error('Failed to process updated profile photo', { error: processResult.error });
         // Keep existing photo if processing fails
-        console.log('Keeping existing photo due to processing error');
       }
     } catch (photoError) {
-      console.error('Error processing profile photo:', photoError);
+      logger.error('Error processing profile photo', { error: photoError.message });
       // Keep existing photo if processing fails
     }
-  } else {
-    console.log('Using existing photo_url:', finalPhotoUrl);
   }
 
   try {
-    console.log('Attempting database update...');
+    logger.debug('Attempting database update');
     const memberId = parseInt(req.params.id);
     const spouseIdInt = spouse_id ? parseInt(spouse_id) : null;
     const isMarriedBool = is_married === 'true' || is_married === true;
 
     // Update member record including marriage fields
     const result = await pool.query(
-      'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, nickname = $4, relationship = $5, gender = $6, is_alive = $7, birth_date = $8, death_date = $9, birth_place = $10, death_place = $11, location = $12, occupation = $13, pronouns = $14, email = $15, phone = $16, photo_url = $17, is_married = $18, marriage_date = $19, spouse_id = $20 WHERE id = $21 RETURNING *',
+      'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, nickname = $4, suffix = $5, relationship = $6, gender = $7, is_alive = $8, birth_date = $9, death_date = $10, birth_place = $11, death_place = $12, location = $13, occupation = $14, pronouns = $15, email = $16, phone = $17, photo_url = $18, is_married = $19, marriage_date = $20, spouse_id = $21 WHERE id = $22 RETURNING *',
       [
-        first_name, middle_name, last_name, nickname || null,
+        first_name, middle_name, last_name, nickname || null, suffix || null,
         relationship, gender, is_alive === 'true',
         parseDate(birth_date), parseDate(death_date),
         birth_place || null, death_place || null,
@@ -320,7 +573,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
 
     // If married with a spouse, create union and spouse relationships
     if (isMarriedBool && spouseIdInt) {
-      console.log(`Creating/updating union for member ${memberId} and spouse ${spouseIdInt}`);
+      logger.debug('Creating/updating union', { memberId, spouseId: spouseIdInt });
 
       // Order partner IDs (unions table requires partner1_id < partner2_id)
       const partner1 = Math.min(memberId, spouseIdInt);
@@ -338,7 +591,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
           'INSERT INTO unions (partner1_id, partner2_id, union_type, union_date, is_primary) VALUES ($1, $2, $3, $4, true)',
           [partner1, partner2, 'marriage', parseDate(marriage_date)]
         );
-        console.log(`Created union for ${partner1} and ${partner2}`);
+        logger.debug('Created union', { partner1, partner2 });
       } else {
         // Update existing union date if provided
         if (marriage_date) {
@@ -347,7 +600,7 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
             [parseDate(marriage_date), partner1, partner2]
           );
         }
-        console.log(`Union already exists for ${partner1} and ${partner2}`);
+        logger.debug('Union already exists', { partner1, partner2 });
       }
 
       // Get spouse gender for relationship type
@@ -388,19 +641,25 @@ router.put('/:id', upload.single('photo'), async (req, res) => {
         'UPDATE members SET is_married = true, spouse_id = $1, marriage_date = $2 WHERE id = $3',
         [memberId, parseDate(marriage_date), spouseIdInt]
       );
-      console.log(`Updated spouse ${spouseIdInt} with marriage info`);
+      logger.debug('Updated spouse with marriage info', { spouseId: spouseIdInt });
     }
 
-    console.log('Database update successful');
-    console.log('Updated member:', updatedMember);
+    // Geocode location in the background (don't block response)
+    if (location && location.trim()) {
+      geocodeLocation(location.trim()).catch(err =>
+        logger.error('Background geocoding failed for updated member', { location, error: err.message })
+      );
+    }
+
+    logger.debug('Database update successful', { memberId: updatedMember.id });
     res.json(updatedMember);
   } catch (err) {
-    console.error('Database update error:', err);
+    logger.error('Database update error', { error: err.message, memberId: req.params.id });
     res.status(500).json({ error: 'Failed to update member.' });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', validateId('id'), async (req, res) => {
   try {
     const result = await pool.query('DELETE FROM members WHERE id = $1 RETURNING *', [req.params.id]);
     if (result.rows.length === 0) {
@@ -408,7 +667,7 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ message: 'Member deleted successfully' });
   } catch (err) {
-    console.error(err);
+    logger.error('Failed to delete member', { error: err.message, memberId: req.params.id });
     res.status(500).json({ error: 'Failed to delete member' });
   }
 });
@@ -427,10 +686,10 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
     // Define expected CSV columns (UPDATED to include marriage fields)
     const requiredColumns = ['first_name', 'last_name'];
     const allowedColumns = [
-      'first_name', 'middle_name', 'last_name', 'nickname', 'gender', 'birth_date',
+      'first_name', 'middle_name', 'last_name', 'nickname', 'suffix', 'gender', 'birth_date',
       'birth_place', 'death_date', 'death_place', 'location', 'occupation',
       'email', 'phone', 'is_alive', 'relationship', 'pronouns',
-      'is_married', 'marriage_date'  // NEW: Add marriage fields (note: spouse_id would need special handling)
+      'is_married', 'marriage_date'
     ];
 
     // Read and parse CSV
@@ -512,7 +771,7 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
 
     // Delete the uploaded file
     fs.unlink(req.file.path, (err) => {
-      if (err) console.error('Error deleting temp file:', err);
+      if (err) logger.error('Error deleting temp file', { error: err.message });
     });
 
     if (errors.length > 0) {
@@ -532,11 +791,11 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
       try {
         const insertQuery = `
           INSERT INTO members (
-            first_name, middle_name, last_name, nickname, gender, birth_date, birth_place,
+            first_name, middle_name, last_name, nickname, suffix, gender, birth_date, birth_place,
             death_date, death_place, location, occupation, email, phone,
             is_alive, relationship, pronouns, is_married, marriage_date
           ) VALUES (
-            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19
           ) RETURNING id
         `;
 
@@ -545,6 +804,7 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
           member.middle_name || null,
           member.last_name,
           member.nickname || null,
+          member.suffix || null,
           member.gender || null,
           parseDate(member.birth_date), // Fix: Use parseDate function
           member.birth_place || null,
@@ -567,7 +827,7 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
           name: `${member.first_name} ${member.last_name}`
         });
       } catch (error) {
-        console.error('Database insert error:', error);
+        logger.error('Database insert error', { error: error.message });
         insertErrors.push({
           member: `${member.first_name} ${member.last_name}`,
           error: error.message
@@ -584,7 +844,7 @@ router.post('/import-csv', upload.single('csvFile'), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('CSV import error:', error);
+    logger.error('CSV import error', { error: error.message });
     res.status(500).json({ error: 'Failed to process CSV file' });
   }
 });
@@ -635,7 +895,7 @@ router.put('/:id/profile-photo/:photoId', async (req, res) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error setting profile photo:', error);
+    logger.error('Error setting profile photo', { error: error.message });
     res.status(500).json({ error: 'Failed to set profile photo' });
   }
 });

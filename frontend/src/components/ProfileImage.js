@@ -22,8 +22,8 @@ const ProfileImage = ({
   // Safety check: if member is undefined or null, show a default placeholder
   if (!member) {
     return (
-      <div className={`${sizeClass} bg-gray-200 rounded-full flex items-center justify-center ${className}`}>
-        <span className="text-gray-400 text-2xl">?</span>
+      <div className={`${sizeClass} bg-vine-50 rounded-full flex items-center justify-center ${className}`}>
+        <span className="text-vine-sage text-2xl">?</span>
       </div>
     );
   }

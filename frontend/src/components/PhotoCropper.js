@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import ReactCrop from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
-import { RotateCcw, RotateCw } from 'lucide-react';
+import { RotateCcw, RotateCw, Eye } from 'lucide-react';
 
 const PhotoCropper = ({
   onCropComplete,
@@ -9,7 +9,9 @@ const PhotoCropper = ({
   imageFile,
   aspectRatio = 1, // Default to square (1:1), can be overridden (e.g., 3/2 for landscape)
   title = "Crop Profile Photo",
-  description = "Adjust the crop area to focus on the person's face."
+  description = "Adjust the crop area to focus on the person's face.",
+  showPreview = false, // Enable preview mode
+  PreviewComponent = null // Component to render in preview mode
 }) => {
   const [crop, setCrop] = useState();
   const [completedCrop, setCompletedCrop] = useState();
@@ -18,6 +20,8 @@ const PhotoCropper = ({
   const [imageError, setImageError] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [rotation, setRotation] = useState(0);
+  const [previewMode, setPreviewMode] = useState(false);
+  const [previewBlob, setPreviewBlob] = useState(null);
   const imgRef = useRef(null);
   const canvasRef = useRef(null);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
@@ -283,6 +287,37 @@ const PhotoCropper = ({
     });
   }, []);
 
+  // Generate preview without saving
+  const handlePreview = async () => {
+    if (!imgRef.current || !completedCrop) {
+      alert('Please adjust the crop area before previewing');
+      return;
+    }
+
+    setProcessing(true);
+
+    try {
+      const croppedFile = await getCroppedImage(imgRef.current, completedCrop, rotation);
+      if (croppedFile) {
+        const blobUrl = URL.createObjectURL(croppedFile);
+        setPreviewBlob(blobUrl);
+        setPreviewMode(true);
+      }
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      alert('Error generating preview. Please try again.');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // Return from preview to crop
+  const handleBackToCrop = () => {
+    if (previewBlob) URL.revokeObjectURL(previewBlob);
+    setPreviewBlob(null);
+    setPreviewMode(false);
+  };
+
   const handleSaveCrop = async () => {
     if (!imgRef.current || !completedCrop) {
       alert('Please adjust the crop area before saving');
@@ -297,6 +332,10 @@ const PhotoCropper = ({
 
       if (croppedFile) {
         console.log('Crop successful, file size:', croppedFile.size);
+        // Clean up preview blob if it exists
+        if (previewBlob) URL.revokeObjectURL(previewBlob);
+        setPreviewBlob(null);
+        setPreviewMode(false);
         onCropComplete(croppedFile);
       } else {
         throw new Error('Failed to generate cropped image');
@@ -312,9 +351,9 @@ const PhotoCropper = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg max-w-6xl w-full max-h-[95vh] overflow-auto shadow-2xl">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-          <p className="text-gray-600 mt-1">
+        <div className="p-6 border-b border-vine-200">
+          <h2 className="text-2xl font-bold text-vine-dark">{title}</h2>
+          <p className="text-vine-sage mt-1">
             {description}
             {imageSize.width > 0 && ` Original size: ${imageSize.width} × ${imageSize.height} pixels`}
           </p>
@@ -323,8 +362,8 @@ const PhotoCropper = ({
         <div className="overflow-auto" style={{ maxHeight: 'calc(95vh - 180px)' }}>
           {processing && (
             <div className="p-8 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-vine-500 mx-auto mb-4"></div>
+              <p className="text-vine-sage">
                 {imageFile?.size > 5 * 1024 * 1024 ? 'Resizing large image...' : 'Loading image...'}
               </p>
             </div>
@@ -376,15 +415,15 @@ const PhotoCropper = ({
                 </svg>
               </div>
               <p className="text-lg text-red-600">Failed to load image</p>
-              <p className="text-gray-600 mt-2">Please try selecting a different image file</p>
+              <p className="text-vine-sage mt-2">Please try selecting a different image file</p>
             </div>
           )}
         </div>
 
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
+        <div className="p-6 border-t border-vine-200 bg-vine-50">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-vine-sage">
                 {completedCrop && completedCrop.width && completedCrop.height && (
                   <span>
                     Crop size: {Math.round(completedCrop.width)} × {Math.round(completedCrop.height)} pixels
@@ -398,20 +437,20 @@ const PhotoCropper = ({
               </div>
 
               {/* Rotation buttons */}
-              <div className="flex items-center space-x-2 pl-4 border-l border-gray-300">
+              <div className="flex items-center space-x-2 pl-4 border-l border-vine-200">
                 <button
                   onClick={handleRotateLeft}
                   disabled={processing}
-                  className="p-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  className="p-2 border border-vine-200 text-vine-dark rounded-lg hover:bg-vine-100 transition-colors disabled:opacity-50"
                   title="Rotate left 90°"
                 >
                   <RotateCcw className="w-5 h-5" />
                 </button>
-                <span className="text-sm text-gray-600">{rotation}°</span>
+                <span className="text-sm text-vine-sage">{rotation}°</span>
                 <button
                   onClick={handleRotateRight}
                   disabled={processing}
-                  className="p-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  className="p-2 border border-vine-200 text-vine-dark rounded-lg hover:bg-vine-100 transition-colors disabled:opacity-50"
                   title="Rotate right 90°"
                 >
                   <RotateCw className="w-5 h-5" />
@@ -423,14 +462,24 @@ const PhotoCropper = ({
               <button
                 onClick={onCancel}
                 disabled={processing}
-                className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                className="px-6 py-2 border border-vine-200 text-vine-dark rounded-lg hover:bg-vine-100 transition-colors disabled:opacity-50"
               >
                 Cancel
               </button>
+              {showPreview && PreviewComponent && (
+                <button
+                  onClick={handlePreview}
+                  disabled={!completedCrop || !imageLoaded || processing}
+                  className="px-6 py-2 border border-vine-200 text-vine-dark rounded-lg hover:bg-vine-100 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  {processing ? 'Generating...' : 'Preview on Homepage'}
+                </button>
+              )}
               <button
                 onClick={handleSaveCrop}
                 disabled={!completedCrop || !imageLoaded || processing}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                className="px-6 py-2 bg-vine-600 text-white rounded-lg hover:bg-vine-dark disabled:bg-secondary-400 disabled:cursor-not-allowed transition-colors"
               >
                 {processing ? 'Processing...' : 'Save Cropped Photo'}
               </button>
@@ -441,6 +490,16 @@ const PhotoCropper = ({
         {/* Hidden canvas for image processing */}
         <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>
+
+      {/* Preview Modal - rendered on top of cropper */}
+      {previewMode && previewBlob && PreviewComponent && (
+        <PreviewComponent
+          imageUrl={previewBlob}
+          onSave={handleSaveCrop}
+          onBack={handleBackToCrop}
+          onCancel={onCancel}
+        />
+      )}
     </div>
   );
 };

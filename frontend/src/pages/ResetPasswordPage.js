@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API || 'http://localhost:5050';
+const API_URL = process.env.REACT_APP_API ?? '';
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
@@ -107,15 +107,15 @@ const ResetPasswordPage = () => {
   // Show loading spinner while verifying token
   if (verifying) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-vine-500 to-vine-600 rounded-full mb-4 shadow-lg">
             <svg className="animate-spin h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           </div>
-          <p className="text-gray-600">Verifying reset token...</p>
+          <p className="text-vine-sage">Verifying reset token...</p>
         </div>
       </div>
     );
@@ -124,15 +124,15 @@ const ResetPasswordPage = () => {
   // Show error if token is invalid
   if (!tokenValid) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4 shadow-lg">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-vine-500 to-vine-600 rounded-full mb-4 shadow-lg">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-vine-600 to-vine-dark bg-clip-text text-transparent">
               FamilyVine
             </h1>
           </div>
@@ -145,13 +145,13 @@ const ResetPasswordPage = () => {
                 </svg>
               </div>
               <h2 className="text-2xl font-semibold text-gray-800 mb-3">Invalid Reset Link</h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-vine-sage mb-6">
                 {error || 'This password reset link is invalid or has expired.'}
               </p>
               <div className="space-y-3">
                 <Link
                   to="/forgot-password"
-                  className="block w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all font-medium text-center shadow-md hover:shadow-lg"
+                  className="block w-full bg-gradient-to-r from-vine-500 to-vine-600 text-white py-3 px-4 rounded-lg hover:from-vine-600 hover:to-vine-dark focus:ring-2 focus:ring-vine-500 focus:ring-offset-2 transition-all font-medium text-center shadow-md hover:shadow-lg"
                 >
                   Request New Reset Link
                 </Link>
@@ -170,20 +170,20 @@ const ResetPasswordPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-transparent flex items-center justify-center px-4">
       <div className="max-w-md w-full">
 
         {/* Logo and Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-vine-500 to-vine-600 rounded-full mb-4 shadow-lg">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-vine-600 to-vine-dark bg-clip-text text-transparent">
             FamilyVine
           </h1>
-          <p className="text-gray-600 mt-2">Create a new password</p>
+          <p className="text-vine-sage mt-2">Create a new password</p>
         </div>
 
         {/* Form Card */}
@@ -197,12 +197,12 @@ const ResetPasswordPage = () => {
                 </svg>
               </div>
               <h2 className="text-2xl font-semibold text-gray-800 mb-3">Password Reset Successful!</h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-vine-sage mb-6">
                 Your password has been reset successfully. You will be redirected to the login page in a few seconds.
               </p>
               <Link
                 to="/login"
-                className="inline-block bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all font-medium shadow-md hover:shadow-lg"
+                className="inline-block bg-gradient-to-r from-vine-500 to-vine-600 text-white py-3 px-6 rounded-lg hover:from-vine-600 hover:to-vine-dark focus:ring-2 focus:ring-vine-500 focus:ring-offset-2 transition-all font-medium shadow-md hover:shadow-lg"
               >
                 Go to Login
               </Link>
@@ -211,7 +211,7 @@ const ResetPasswordPage = () => {
             /* Reset Password Form */
             <div>
               <h2 className="text-2xl font-semibold text-gray-800 mb-3 text-center">Reset Your Password</h2>
-              <p className="text-gray-600 text-center mb-6 text-sm">
+              <p className="text-vine-sage text-center mb-6 text-sm">
                 Resetting password for <strong>{userEmail}</strong>
               </p>
 
@@ -235,14 +235,14 @@ const ResetPasswordPage = () => {
                         name="password"
                         value={formData.password}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-12 hover:border-blue-300"
+                        className="w-full px-4 py-3 border border-vine-200 rounded-lg focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-colors pr-12 hover:border-vine-300"
                         placeholder="Enter new password"
                         disabled={loading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-3.5 text-gray-400 hover:text-blue-600 transition-colors"
+                        className="absolute right-3 top-3.5 text-vine-sage hover:text-vine-600 transition-colors"
                         disabled={loading}
                       >
                         {showPassword ? (
@@ -271,14 +271,14 @@ const ResetPasswordPage = () => {
                         name="confirmPassword"
                         value={formData.confirmPassword}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors pr-12 hover:border-blue-300"
+                        className="w-full px-4 py-3 border border-vine-200 rounded-lg focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-colors pr-12 hover:border-vine-300"
                         placeholder="Confirm new password"
                         disabled={loading}
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-3.5 text-gray-400 hover:text-blue-600 transition-colors"
+                        className="absolute right-3 top-3.5 text-vine-sage hover:text-vine-600 transition-colors"
                         disabled={loading}
                       >
                         {showConfirmPassword ? (
@@ -299,7 +299,7 @@ const ResetPasswordPage = () => {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105 mt-2"
+                    className="w-full bg-gradient-to-r from-vine-500 to-vine-600 text-white py-3 px-4 rounded-lg hover:from-vine-600 hover:to-vine-dark focus:ring-2 focus:ring-vine-500 focus:ring-offset-2 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg transform hover:scale-105 mt-2"
                   >
                     {loading ? (
                       <div className="flex items-center justify-center">
@@ -316,7 +316,7 @@ const ResetPasswordPage = () => {
 
                   {/* Back to Login Link */}
                   <div className="text-center mt-4">
-                    <Link to="/login" className="text-sm text-gray-600 hover:text-blue-600 font-medium">
+                    <Link to="/login" className="text-sm text-vine-sage hover:text-vine-600 font-medium">
                       Back to Login
                     </Link>
                   </div>

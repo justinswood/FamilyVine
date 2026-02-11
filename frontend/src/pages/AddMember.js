@@ -1,15 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import PhotoCropper from '../components/PhotoCropper';
 import PhotoGalleryPicker from '../components/PhotoGalleryPicker';
+
+/* Fleur-de-lis accent for Founder toggle */
+const FleurAccent = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2C12 2 9.5 5.5 9.5 8C9.5 9.8 10.5 11 12 11.5C13.5 11 14.5 9.8 14.5 8C14.5 5.5 12 2 12 2Z" opacity="0.9"/>
+    <path d="M5 10C5 10 3 12.5 4 14.5C4.8 16 6.5 16.5 8 16C8 16 7 14.5 7.5 13C8 11.5 9.5 11 9.5 11C7.5 11 5 10 5 10Z" opacity="0.7"/>
+    <path d="M19 10C19 10 21 12.5 20 14.5C19.2 16 17.5 16.5 16 16C16 16 17 14.5 16.5 13C16 11.5 14.5 11 14.5 11C16.5 11 19 10 19 10Z" opacity="0.7"/>
+    <path d="M12 12V21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+    <path d="M9 18H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+  </svg>
+);
 
 const AddMember = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     first_name: '',
     middle_name: '',
+    nickname: '',
     last_name: '',
+    suffix: '',
     birth_date: '',
     birth_place: '',
     location: '',
@@ -20,8 +34,6 @@ const AddMember = () => {
     is_alive: 'true',
     death_date: '',
     death_place: '',
-    photo_url: '',
-    // NEW: Add marriage fields
     is_married: 'false',
     marriage_date: '',
     spouse_id: ''
@@ -30,26 +42,36 @@ const AddMember = () => {
   const [selectedImageFile, setSelectedImageFile] = useState(null);
   const [showCropper, setShowCropper] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(null);
-
-  // States for gallery picker
   const [showGalleryPicker, setShowGalleryPicker] = useState(false);
   const [galleryPhotoPath, setGalleryPhotoPath] = useState(null);
-
-  // NEW: State for loading family members for spouse selection
   const [familyMembers, setFamilyMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
+  const [isFounder, setIsFounder] = useState(false);
+  const [familyBranches, setFamilyBranches] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
-  // NEW: Load family members when component mounts
   useEffect(() => {
     fetchFamilyMembers();
   }, []);
 
-  // NEW: Function to fetch all family members for spouse selection
   const fetchFamilyMembers = async () => {
     try {
       setLoadingMembers(true);
       const response = await axios.get(`${process.env.REACT_APP_API}/api/members`);
       setFamilyMembers(response.data);
+
+      // Extract unique surnames for branch dropdown
+      const surnames = new Set();
+      response.data.forEach(m => {
+        if (m.last_name && m.last_name.trim() &&
+            !m.first_name?.toLowerCase().includes('unknown')) {
+          // Normalize: remove Jr., Sr., etc. for branch grouping
+          const base = m.last_name.trim().replace(/\s+(Jr\.|Sr\.|III|II|IV)$/i, '');
+          surnames.add(base);
+        }
+      });
+      setFamilyBranches(Array.from(surnames).sort());
     } catch (error) {
       console.error('Error fetching family members:', error);
     } finally {
@@ -69,7 +91,6 @@ const AddMember = () => {
         alert('Please select an image file');
         return;
       }
-
       setGalleryPhotoPath(null);
       setSelectedImageFile(file);
       setShowCropper(true);
@@ -80,7 +101,6 @@ const AddMember = () => {
     setPhotoFile(croppedFile);
     setShowCropper(false);
     setSelectedImageFile(null);
-
     const url = URL.createObjectURL(croppedFile);
     setPreviewUrl(url);
   };
@@ -97,7 +117,6 @@ const AddMember = () => {
     setShowGalleryPicker(false);
     setPhotoFile(null);
     setPreviewUrl(`${process.env.REACT_APP_API}/${photoPath}`);
-
     const fileInput = document.getElementById('photo-upload');
     if (fileInput) fileInput.value = '';
   };
@@ -108,6 +127,7 @@ const AddMember = () => {
 
   const handleSubmit = async e => {
     e.preventDefault();
+    setSubmitting(true);
 
     try {
       const form = new FormData();
@@ -116,7 +136,7 @@ const AddMember = () => {
         ...formData,
         birth_date: formData.birth_date ? formData.birth_date.split('T')[0] : '',
         death_date: formData.death_date ? formData.death_date.split('T')[0] : '',
-        marriage_date: formData.marriage_date ? formData.marriage_date.split('T')[0] : ''  // NEW: Format marriage date
+        marriage_date: formData.marriage_date ? formData.marriage_date.split('T')[0] : ''
       };
 
       Object.entries(formattedData).forEach(([key, value]) => {
@@ -132,15 +152,18 @@ const AddMember = () => {
       }
 
       const response = await axios.post(`${process.env.REACT_APP_API}/api/members`, form, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      navigate(`/members/${response.data.id}`);
+      // Show success animation then navigate
+      setShowSuccess(true);
+      setTimeout(() => {
+        navigate(`/members/${response.data.id}`);
+      }, 900);
     } catch (err) {
       console.error('Error creating member:', err);
       alert('Error creating member. Please try again.');
+      setSubmitting(false);
     }
   };
 
@@ -152,15 +175,12 @@ const AddMember = () => {
     };
   }, [previewUrl]);
 
-  // Helper function to calculate age
-  const calculateAge = (birthDateString, deathDateString = null) => {
+  const calculateAge = useCallback((birthDateString, deathDateString = null) => {
     if (!birthDateString) return null;
-
     try {
       const birthOnly = birthDateString.split('T')[0];
       const [birthYear, birthMonth, birthDay] = birthOnly.split('-').map(Number);
       const birthDate = new Date(birthYear, birthMonth - 1, birthDay);
-
       let endDate;
       if (deathDateString) {
         const deathOnly = deathDateString.split('T')[0];
@@ -169,344 +189,548 @@ const AddMember = () => {
       } else {
         endDate = new Date();
       }
-
       let age = endDate.getFullYear() - birthDate.getFullYear();
       const monthDiff = endDate.getMonth() - birthDate.getMonth();
-
       if (monthDiff < 0 || (monthDiff === 0 && endDate.getDate() < birthDate.getDate())) {
         age--;
       }
-
       return age;
     } catch (error) {
-      console.error('Error calculating age:', error);
       return null;
     }
-  };
+  }, []);
 
-  // Helper function to determine if member is under 18
   const isMinor = () => {
     const age = calculateAge(formData.birth_date, formData.death_date);
-    if (age === null) return false; // If no age available, show marriage section
+    if (age === null) return false;
     return age < 18;
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
-      {/* Background pattern */}
-      <div className="absolute inset-0 opacity-3">
+    <div className="min-h-screen relative overflow-hidden bg-transparent">
+      {/* Parchment texture background */}
+      <div className="absolute inset-0 opacity-[0.03]">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <pattern id="add-member-pattern" x="0" y="0" width="50" height="50" patternUnits="userSpaceOnUse">
-              <path d="M25,10 L25,40 M10,25 L40,25" stroke="currentColor" strokeWidth="1" className="text-blue-200" />
-              <circle cx="25" cy="25" r="8" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-purple-200" />
-              <path d="M20,20 L30,30 M30,20 L20,30" stroke="currentColor" strokeWidth="0.5" className="text-pink-200" />
+            <pattern id="registry-lines" x="0" y="0" width="100%" height="32" patternUnits="userSpaceOnUse">
+              <line x1="0" y1="31" x2="100%" y2="31" stroke="var(--accent-gold, #D4AF37)" strokeWidth="0.5" opacity="0.4" />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#add-member-pattern)" />
+          <rect width="100%" height="100%" fill="url(#registry-lines)" />
         </svg>
       </div>
 
-      {/* Floating decorative elements */}
+      {/* Decorative corner accents */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br from-pink-200/30 to-purple-200/30 rounded-full blur-xl"></div>
-        <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-bl from-blue-200/30 to-cyan-200/30 rounded-full blur-xl"></div>
-        <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 w-80 h-40 bg-gradient-to-t from-purple-200/30 to-pink-200/30 rounded-full blur-xl"></div>
+        <div className="absolute -top-10 -left-10 w-40 h-40 bg-gradient-to-br from-vine-200/15 to-transparent rounded-full blur-xl"></div>
+        <div className="absolute -top-20 -right-20 w-60 h-60 bg-gradient-to-bl from-vine-100/15 to-transparent rounded-full blur-xl"></div>
       </div>
+
+      {/* Success overlay */}
+      <AnimatePresence>
+        {showSuccess && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center"
+            style={{ background: 'rgba(249, 248, 243, 0.9)' }}
+          >
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: 'spring', damping: 15 }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center"
+                style={{ background: 'var(--vine-green, #2E5A2E)' }}>
+                <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p style={{ fontFamily: 'var(--font-header, "Playfair Display", serif)', color: 'var(--vine-dark, #2D4F1E)', fontSize: '1.2rem' }}>
+                Member Added to Registry
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Main content */}
       <div className="relative z-10 max-w-2xl mx-auto p-6">
-        {/* Enhanced header with flair */}
-        <div className="text-center mb-6">
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-4 border border-white/50 shadow-xl relative overflow-hidden">
-            {/* Animated background sparkles */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute top-2 left-4 w-1 h-1 bg-purple-400 rounded-full animate-pulse"></div>
-              <div className="absolute top-6 right-8 w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse delay-300"></div>
-              <div className="absolute bottom-4 left-8 w-1 h-1 bg-pink-400 rounded-full animate-pulse delay-700"></div>
-              <div className="absolute bottom-6 right-4 w-1.5 h-1.5 bg-cyan-400 rounded-full animate-pulse delay-500"></div>
+
+        {/* ── Ancestral Registry Header ── */}
+        <div className="text-center mb-8">
+          <div className="relative inline-block">
+            {/* Decorative line */}
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <div className="h-px w-12" style={{ background: 'linear-gradient(to right, transparent, rgba(212,175,55,0.5))' }}></div>
+              <FleurAccent className="w-4 h-4" style={{ color: 'var(--accent-gold, #D4AF37)' }} />
+              <div className="h-px w-12" style={{ background: 'linear-gradient(to left, transparent, rgba(212,175,55,0.5))' }}></div>
             </div>
-
-            {/* Background text effect */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
-              <span className="text-3xl font-black text-gray-400 transform rotate-12">ADD MEMBER</span>
-            </div>
-
-            <div className="relative z-10 flex items-center justify-center space-x-3">
-              {/* Family icon with gradient */}
-              <div className="flex-shrink-0">
-                <svg width="28" height="28" viewBox="0 0 28 28" className="text-purple-600">
-                  <defs>
-                    <linearGradient id="familyGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#8b5cf6" />
-                      <stop offset="50%" stopColor="#3b82f6" />
-                      <stop offset="100%" stopColor="#06b6d4" />
-                    </linearGradient>
-                  </defs>
-                  {/* Family figures */}
-                  <circle cx="9" cy="8" r="3" fill="url(#familyGradient)" />
-                  <circle cx="19" cy="8" r="3" fill="url(#familyGradient)" />
-                  <path d="M6 16c0-2 1.5-3 3-3s3 1 3 3v6H6v-6z" fill="url(#familyGradient)" />
-                  <path d="M16 16c0-2 1.5-3 3-3s3 1 3 3v6h-6v-6z" fill="url(#familyGradient)" />
-                  {/* Plus sign for adding */}
-                  <circle cx="14" cy="18" r="4" fill="none" stroke="url(#familyGradient)" strokeWidth="1.5" strokeDasharray="2,2" />
-                  <path d="M12 18h4M14 16v4" stroke="url(#familyGradient)" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </div>
-
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-700 via-blue-700 to-cyan-700 bg-clip-text text-transparent">
-                  Add New Family Member
-                </h1>
-                <p className="text-sm text-gray-600 mt-1">
-                  Welcome a new member to your family tree
-                </p>
-              </div>
+            <h1 style={{
+              fontFamily: 'var(--font-header, "Playfair Display", serif)',
+              fontSize: '1.6rem',
+              fontWeight: 700,
+              color: 'var(--vine-dark, #2D4F1E)',
+              letterSpacing: '0.5px',
+            }}>
+              Ancestral Registry
+            </h1>
+            <p style={{
+              fontFamily: 'var(--font-body, "Inter", sans-serif)',
+              fontSize: '0.75rem',
+              color: 'var(--vine-sage, #86A789)',
+              marginTop: '4px',
+              letterSpacing: '2px',
+              textTransform: 'uppercase',
+            }}>
+              Add a new family member to the vine
+            </p>
+            <div className="flex items-center justify-center gap-3 mt-2">
+              <div className="h-px w-16" style={{ background: 'linear-gradient(to right, transparent, rgba(212,175,55,0.3))' }}></div>
+              <div className="h-px w-16" style={{ background: 'linear-gradient(to left, transparent, rgba(212,175,55,0.3))' }}></div>
             </div>
           </div>
         </div>
 
-        {/* Form container */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-xl p-8 border border-white/50 shadow-xl">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Basic Information Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent border-b border-purple-200 pb-2">
-                Basic Information
-              </h3>
+        {/* ── Registry Form ── */}
+        <div className="rounded-xl p-6 md:p-8" style={{
+          background: 'rgba(249, 248, 243, 0.85)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(212, 175, 55, 0.15)',
+          boxShadow: '0 4px 24px rgba(46, 90, 46, 0.06), inset 0 1px 0 rgba(255,255,255,0.5)',
+        }}>
+          <form onSubmit={handleSubmit}>
 
-              {[
-                { label: 'First Name *', name: 'first_name', required: true },
-                { label: 'Middle Name', name: 'middle_name' },
-                { label: 'Last Name *', name: 'last_name', required: true },
-                { label: 'Birth Date', name: 'birth_date', type: 'date' },
-                { label: 'Birth Place', name: 'birth_place' },
-                { label: 'Current Location', name: 'location', placeholder: 'e.g., New York, NY or 123 Main St, City, State' },
-                { label: 'Occupation', name: 'occupation' },
-                { label: 'Phone Number', name: 'phone', placeholder: 'Any format (e.g., 504-236-7578, 504.236.7578, or 5042367578)' },
-                { label: 'Email Address', name: 'email', type: 'email' },
-              ].map(({ label, name, type = 'text', placeholder, required }) => (
-                <div key={name}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-                  <input
-                    type={type}
-                    name={name}
-                    value={formData[name] || ''}
-                    onChange={handleChange}
-                    placeholder={placeholder}
-                    required={required}
-                    className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
-                  />
+            {/* ── Family Branch & Founder ── */}
+            <div style={{ marginBottom: '32px' }}>
+              <h3 className="registry-section-title">Family Branch</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="registry-label">Branch / Surname Line</label>
+                  <select
+                    name="last_name"
+                    value={familyBranches.includes(formData.last_name) ? formData.last_name : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setFormData(prev => ({ ...prev, last_name: e.target.value }));
+                      }
+                    }}
+                    className="registry-select"
+                  >
+                    <option value="">Select or type below</option>
+                    {familyBranches.map(branch => (
+                      <option key={branch} value={branch}>{branch}</option>
+                    ))}
+                  </select>
                 </div>
-              ))}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
-                <select
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
-                >
-                  <option value="">Select Gender</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                </select>
+                <div className="flex items-end gap-4">
+                  <div className="flex-1">
+                    <label className="registry-label">Or Enter New Surname</label>
+                    <input
+                      type="text"
+                      name="last_name"
+                      value={formData.last_name}
+                      onChange={handleChange}
+                      placeholder="New surname..."
+                      required
+                      className="registry-input"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Alive?</label>
-                <select
-                  name="is_alive"
-                  value={formData.is_alive}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
+              {/* Founder Toggle */}
+              <div className="flex items-center gap-3 mt-5" style={{
+                padding: '10px 14px',
+                background: isFounder ? 'rgba(212, 175, 55, 0.08)' : 'transparent',
+                borderRadius: '8px',
+                border: isFounder ? '1px solid rgba(212, 175, 55, 0.25)' : '1px solid transparent',
+                transition: 'all 0.3s ease',
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setIsFounder(!isFounder)}
+                  className={`founder-toggle ${isFounder ? 'active' : ''}`}
                 >
-                  <option value="true">Yes</option>
-                  <option value="false">No</option>
-                </select>
+                  <div className="toggle-knob"></div>
+                </button>
+                <div className="flex items-center gap-2">
+                  <FleurAccent className="w-3.5 h-3.5" style={{ color: isFounder ? 'var(--accent-gold, #D4AF37)' : 'var(--vine-sage, #86A789)' }} />
+                  <span style={{
+                    fontFamily: 'var(--font-header, "Playfair Display", serif)',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    color: isFounder ? 'var(--vine-dark, #2D4F1E)' : 'var(--vine-sage, #86A789)',
+                    transition: 'color 0.3s ease',
+                  }}>
+                    Family Founder
+                  </span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--vine-sage, #86A789)' }}>
+                    — Marks this member as a branch patriarch/matriarch
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Gold divider */}
+            <div style={{
+              height: '1px',
+              background: 'linear-gradient(to right, rgba(212,175,55,0) 0%, rgba(212,175,55,0.3) 50%, rgba(212,175,55,0) 100%)',
+              margin: '8px 0 32px',
+            }} />
+
+            {/* ── Personal Details ── */}
+            <div style={{ marginBottom: '32px' }}>
+              <h3 className="registry-section-title">Personal Details</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                <div>
+                  <label className="registry-label">First Name *</label>
+                  <input
+                    type="text"
+                    name="first_name"
+                    value={formData.first_name}
+                    onChange={handleChange}
+                    required
+                    className="registry-input"
+                  />
+                </div>
+                <div>
+                  <label className="registry-label">Middle Name</label>
+                  <input
+                    type="text"
+                    name="middle_name"
+                    value={formData.middle_name}
+                    onChange={handleChange}
+                    className="registry-input"
+                  />
+                </div>
+                <div>
+                  <label className="registry-label">Nickname</label>
+                  <input
+                    type="text"
+                    name="nickname"
+                    value={formData.nickname}
+                    onChange={handleChange}
+                    placeholder='"Big Daddy"'
+                    maxLength={100}
+                    className="registry-input"
+                  />
+                </div>
+                <div>
+                  <label className="registry-label">Suffix</label>
+                  <select
+                    name="suffix"
+                    value={formData.suffix}
+                    onChange={handleChange}
+                    className="registry-select"
+                  >
+                    <option value="">None</option>
+                    <option value="Jr.">Jr.</option>
+                    <option value="Sr.">Sr.</option>
+                    <option value="II">II</option>
+                    <option value="III">III</option>
+                    <option value="IV">IV</option>
+                    <option value="V">V</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+                <div>
+                  <label className="registry-label">Gender</label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className="registry-select"
+                  >
+                    <option value="">Select</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="registry-label">Birth Date</label>
+                  <input
+                    type="date"
+                    name="birth_date"
+                    value={formData.birth_date}
+                    onChange={handleChange}
+                    className="registry-input"
+                    style={{ fontFamily: 'var(--font-body, "Inter", sans-serif)', fontSize: '0.9rem' }}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+                <div>
+                  <label className="registry-label">Birth Place</label>
+                  <input
+                    type="text"
+                    name="birth_place"
+                    value={formData.birth_place}
+                    onChange={handleChange}
+                    className="registry-input"
+                  />
+                </div>
+                <div>
+                  <label className="registry-label">Current Location</label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="City, State"
+                    className="registry-input"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-5">
+                <div>
+                  <label className="registry-label">Occupation</label>
+                  <input
+                    type="text"
+                    name="occupation"
+                    value={formData.occupation}
+                    onChange={handleChange}
+                    className="registry-input"
+                  />
+                </div>
+                <div>
+                  <label className="registry-label">Phone</label>
+                  <input
+                    type="text"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="504-236-7578"
+                    className="registry-input"
+                  />
+                </div>
+                <div>
+                  <label className="registry-label">Email</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="registry-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Living Status ── */}
+            <div style={{ marginBottom: '32px' }}>
+              <h3 className="registry-section-title">Status</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                  <label className="registry-label">Living?</label>
+                  <select
+                    name="is_alive"
+                    value={formData.is_alive}
+                    onChange={handleChange}
+                    className="registry-select"
+                  >
+                    <option value="true">Yes — Living</option>
+                    <option value="false">No — Deceased</option>
+                  </select>
+                </div>
               </div>
 
               {formData.is_alive === 'false' && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4 space-y-4">
-                  <h4 className="text-sm font-medium text-red-800">Death Information</h4>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Death Date</label>
-                    <input
-                      type="date"
-                      name="death_date"
-                      value={formData.death_date || ''}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Death Place</label>
-                    <input
-                      type="text"
-                      name="death_place"
-                      value={formData.death_place || ''}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
-                    />
+                <div className="mt-4 p-4 rounded-lg" style={{
+                  background: 'rgba(139, 46, 46, 0.04)',
+                  border: '1px solid rgba(139, 46, 46, 0.15)',
+                }}>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <label className="registry-label">Date of Passing</label>
+                      <input
+                        type="date"
+                        name="death_date"
+                        value={formData.death_date || ''}
+                        onChange={handleChange}
+                        className="registry-input"
+                        style={{ fontFamily: 'var(--font-body, "Inter", sans-serif)', fontSize: '0.9rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label className="registry-label">Place of Passing</label>
+                      <input
+                        type="text"
+                        name="death_place"
+                        value={formData.death_place || ''}
+                        onChange={handleChange}
+                        className="registry-input"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Marriage Information Section - Hidden for minors */}
+            {/* ── Marriage Information (hidden for minors) ── */}
             {!isMinor() && (
-              <div className="border-t border-purple-200 pt-6">
-                <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent border-b border-purple-200 pb-2 mb-4">
-                  Marriage Information
-                </h3>
+              <div style={{ marginBottom: '32px' }}>
+                <h3 className="registry-section-title">Union</h3>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Married?</label>
-                    <select
-                      name="is_married"
-                      value={formData.is_married}
-                      onChange={handleChange}
-                      className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
-                    >
-                      <option value="false">No</option>
-                      <option value="true">Yes</option>
-                    </select>
-                  </div>
+                <div>
+                  <label className="registry-label">Married?</label>
+                  <select
+                    name="is_married"
+                    value={formData.is_married}
+                    onChange={handleChange}
+                    className="registry-select"
+                    style={{ maxWidth: '280px' }}
+                  >
+                    <option value="false">No</option>
+                    <option value="true">Yes</option>
+                  </select>
+                </div>
 
-                  {/* Show marriage fields only if married is Yes */}
-                  {formData.is_married === 'true' && (
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
+                {formData.is_married === 'true' && (
+                  <div className="mt-4 p-4 rounded-lg" style={{
+                    background: 'rgba(46, 90, 46, 0.04)',
+                    border: '1px solid rgba(46, 90, 46, 0.15)',
+                  }}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Marriage Date</label>
+                        <label className="registry-label">Marriage Date</label>
                         <input
                           type="date"
                           name="marriage_date"
                           value={formData.marriage_date || ''}
                           onChange={handleChange}
-                          className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
+                          className="registry-input"
+                          style={{ fontFamily: 'var(--font-body, "Inter", sans-serif)', fontSize: '0.9rem' }}
                         />
                       </div>
-
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Spouse</label>
+                        <label className="registry-label">Spouse</label>
                         {loadingMembers ? (
-                          <div className="text-sm text-gray-500 bg-white rounded-lg p-3 border">Loading family members...</div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--vine-sage)' }}>Loading...</div>
                         ) : (
                           <select
                             name="spouse_id"
                             value={formData.spouse_id || ''}
                             onChange={handleChange}
-                            className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
+                            className="registry-select"
                           >
                             <option value="">Select Spouse</option>
                             {familyMembers.map(member => (
                               <option key={member.id} value={member.id}>
-                                {member.first_name} {member.last_name}
+                                {member.first_name} {member.last_name}{member.suffix ? ` ${member.suffix}` : ''}
                                 {member.birth_date && ` (b. ${new Date(member.birth_date).getFullYear()})`}
                               </option>
                             ))}
                           </select>
                         )}
-                        <p className="text-xs text-gray-500 mt-2">
-                          Select the spouse from existing family members. If the spouse is not in the system yet, add them first.
+                        <p style={{ fontSize: '0.65rem', color: 'var(--vine-sage, #86A789)', marginTop: '4px' }}>
+                          Select from existing members, or add spouse first
                         </p>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Photo Section */}
-            <div className="border-t border-purple-200 pt-6">
-              <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-700 to-blue-700 bg-clip-text text-transparent border-b border-purple-200 pb-2 mb-4">
-                Profile Photo
-              </h3>
+            {/* ── Portrait ── */}
+            <div style={{ marginBottom: '32px' }}>
+              <h3 className="registry-section-title">Portrait</h3>
 
-              <div className="space-y-4">
-                <div className="flex flex-wrap gap-3">
-                  <div>
-                    <input
-                      id="photo-upload"
-                      type="file"
-                      accept="image/*,.heic,.heif"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById('photo-upload').click()}
-                      className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                    >
-                      Upload & Crop Photo
-                    </button>
-                  </div>
+              <div className="flex items-center gap-4">
+                {/* Photo preview circle */}
+                <div className="flex-shrink-0 w-20 h-20 rounded-full overflow-hidden" style={{
+                  border: '2px solid rgba(212, 175, 55, 0.3)',
+                  background: previewUrl ? 'transparent' : 'rgba(134, 167, 137, 0.08)',
+                }}>
+                  {previewUrl ? (
+                    <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <svg className="w-8 h-8" style={{ color: 'rgba(134, 167, 137, 0.4)' }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
 
+                {/* Compact action buttons */}
+                <div className="flex flex-col gap-2">
+                  <input
+                    id="photo-upload"
+                    type="file"
+                    accept="image/*,.heic,.heif"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('photo-upload').click()}
+                    className="compact-archival-btn"
+                  >
+                    Upload & Crop
+                  </button>
                   <button
                     type="button"
                     onClick={() => setShowGalleryPicker(true)}
-                    className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                    className="compact-archival-btn secondary"
                   >
-                    Choose from Gallery
+                    From Gallery
                   </button>
                 </div>
 
-                <p className="text-sm text-gray-500">
-                  Upload a new photo to crop it, or choose an existing photo from your gallery
-                </p>
-
-                {previewUrl && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-3">Selected Photo:</label>
-                    <div className="flex items-center space-x-4">
-                      <img
-                        src={previewUrl}
-                        alt="Preview"
-                        className="w-24 h-24 object-cover rounded-full border-4 border-white shadow-lg"
-                      />
-                      {galleryPhotoPath && (
-                        <div className="flex items-center text-green-600">
-                          <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                          Using photo from gallery
-                        </div>
-                      )}
-                    </div>
+                {galleryPhotoPath && (
+                  <div className="flex items-center gap-1.5" style={{ color: 'var(--vine-green, #2E5A2E)', fontSize: '0.7rem' }}>
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Gallery photo selected
                   </div>
                 )}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Photo URL (optional)</label>
-                  <input
-                    type="text"
-                    name="photo_url"
-                    value={formData.photo_url || ''}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded-lg p-3 transition-all duration-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 hover:border-purple-300"
-                    placeholder="Enter a direct URL to a photo"
-                  />
-                  <p className="text-sm text-gray-500 mt-2">
-                    If you provide a photo URL, it will override the uploaded photo
-                  </p>
-                </div>
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex flex-wrap gap-4 pt-6 border-t border-purple-200">
+            {/* Gold divider before actions */}
+            <div style={{
+              height: '1px',
+              background: 'linear-gradient(to right, rgba(212,175,55,0) 0%, rgba(212,175,55,0.3) 50%, rgba(212,175,55,0) 100%)',
+              margin: '8px 0 24px',
+            }} />
+
+            {/* ── Action Buttons ── */}
+            <div className="flex items-center gap-3">
               <button
                 type="submit"
-                className="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
+                disabled={submitting}
+                className="compact-archival-btn"
+                style={{ padding: '10px 28px', fontSize: '0.85rem' }}
               >
-                Add Member
+                {submitting ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31.4 31.4" strokeLinecap="round" />
+                    </svg>
+                    Registering...
+                  </span>
+                ) : (
+                  'Add to Registry'
+                )}
               </button>
               <button
                 type="button"
                 onClick={() => navigate('/members')}
-                className="px-8 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-lg hover:from-gray-600 hover:to-gray-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-medium"
+                className="compact-archival-btn secondary"
+                style={{ padding: '10px 28px', fontSize: '0.85rem' }}
               >
                 Cancel
               </button>

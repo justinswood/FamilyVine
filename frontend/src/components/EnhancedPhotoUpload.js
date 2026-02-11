@@ -156,8 +156,8 @@ const EnhancedPhotoUpload = ({
       <div
         className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors duration-200 ${
           isDragActive
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-            : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+            ? 'border-vine-500 bg-vine-50 dark:bg-vine-900/20'
+            : 'border-vine-200 dark:border-gray-600 hover:border-vine-200 dark:hover:border-gray-500'
         }`}
         onDragEnter={handleDragIn}
         onDragLeave={handleDragOut}
@@ -174,19 +174,19 @@ const EnhancedPhotoUpload = ({
         
         <div className="space-y-3">
           <Upload className={`w-12 h-12 mx-auto ${
-            isDragActive ? 'text-blue-500' : 'text-gray-400'
+            isDragActive ? 'text-vine-600' : 'text-vine-sage'
           }`} />
           
           <div>
             <p className="text-lg font-medium text-gray-900 dark:text-gray-100">
               {isDragActive ? 'Drop files here' : 'Drag and drop photos here'}
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-vine-sage dark:text-gray-400">
               or click to browse files
             </p>
           </div>
           
-          <div className="text-xs text-gray-400 dark:text-gray-500">
+          <div className="text-xs text-vine-sage dark:text-gray-500">
             <p>Supported: JPEG, PNG, GIF, WebP, HEIC</p>
             <p>Max size: {Math.round(maxFileSize / 1024 / 1024)}MB per file</p>
             <p>Max files: {maxFiles}</p>
@@ -221,7 +221,7 @@ const EnhancedPhotoUpload = ({
               {uploadQueue.some(f => f.status === 'ready') && (
                 <button
                   onClick={uploadAllFiles}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
+                  className="px-4 py-2 bg-vine-600 text-white rounded-lg hover:bg-vine-dark
                            transition-colors text-sm font-medium"
                 >
                   Upload All

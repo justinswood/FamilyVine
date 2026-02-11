@@ -18,12 +18,15 @@ router.get('/root-union', async (req, res) => {
         u.union_date,
         u.union_location,
         u.notes,
+        u.is_single_parent,
+        u.is_visible_on_tree,
         -- Partner 1 details
         json_build_object(
           'id', m1.id,
           'first_name', m1.first_name,
           'middle_name', m1.middle_name,
           'last_name', m1.last_name,
+          'suffix', m1.suffix,
           'gender', m1.gender,
           'is_alive', m1.is_alive,
           'birth_date', m1.birth_date,
@@ -39,6 +42,7 @@ router.get('/root-union', async (req, res) => {
           'first_name', m2.first_name,
           'middle_name', m2.middle_name,
           'last_name', m2.last_name,
+          'suffix', m2.suffix,
           'gender', m2.gender,
           'is_alive', m2.is_alive,
           'birth_date', m2.birth_date,
@@ -71,6 +75,40 @@ router.get('/root-union', async (req, res) => {
 });
 
 // ============================================================================
+// GET /api/tree/unions
+// Returns all unions with basic info (for stats/metrics)
+// ============================================================================
+router.get('/unions', async (req, res) => {
+  try {
+    logger.debug('Fetching all unions');
+
+    const result = await pool.query(`
+      SELECT
+        u.id,
+        u.union_type,
+        u.union_date,
+        u.divorce_date,
+        u.partner1_id,
+        u.partner2_id,
+        u.is_single_parent,
+        m1.first_name as partner1_first_name,
+        m1.last_name as partner1_last_name,
+        m2.first_name as partner2_first_name,
+        m2.last_name as partner2_last_name
+      FROM unions u
+      LEFT JOIN members m1 ON u.partner1_id = m1.id
+      LEFT JOIN members m2 ON u.partner2_id = m2.id
+      ORDER BY u.union_date NULLS LAST
+    `);
+
+    res.json(result.rows);
+  } catch (error) {
+    logger.error('Error fetching unions:', error);
+    res.status(500).json({ error: 'Failed to fetch unions' });
+  }
+});
+
+// ============================================================================
 // GET /api/tree/union/:id
 // Returns detailed information about a specific union
 // ============================================================================
@@ -91,12 +129,15 @@ router.get('/union/:id', async (req, res) => {
         u.is_primary,
         u.display_order,
         u.notes,
+        u.is_single_parent,
+        u.is_visible_on_tree,
         -- Partner 1 details
         json_build_object(
           'id', m1.id,
           'first_name', m1.first_name,
           'middle_name', m1.middle_name,
           'last_name', m1.last_name,
+          'suffix', m1.suffix,
           'gender', m1.gender,
           'is_alive', m1.is_alive,
           'birth_date', m1.birth_date,
@@ -113,6 +154,7 @@ router.get('/union/:id', async (req, res) => {
           'first_name', m2.first_name,
           'middle_name', m2.middle_name,
           'last_name', m2.last_name,
+          'suffix', m2.suffix,
           'gender', m2.gender,
           'is_alive', m2.is_alive,
           'birth_date', m2.birth_date,
@@ -140,6 +182,7 @@ router.get('/union/:id', async (req, res) => {
         m.first_name,
         m.middle_name,
         m.last_name,
+        m.suffix,
         m.gender,
         m.is_alive,
         m.birth_date,
@@ -177,6 +220,7 @@ router.get('/union/:id', async (req, res) => {
 // GET /api/tree/descendants
 // Returns descendants starting from a union, with generation filtering
 // Query params: union_id, max_generations, include_positions
+// OPTIMIZED: Uses CTE to fetch entire tree in 2 queries instead of N+1
 // ============================================================================
 router.get('/descendants', async (req, res) => {
   try {
@@ -186,7 +230,8 @@ router.get('/descendants', async (req, res) => {
       include_positions = false
     } = req.query;
 
-    logger.debug('Fetching descendants', { union_id, max_generations });
+    const maxGen = parseInt(max_generations) || 4;
+    logger.debug('Fetching descendants', { union_id, max_generations: maxGen });
 
     // If no union_id provided, get root union
     let startUnionId = union_id;
@@ -200,14 +245,10 @@ router.get('/descendants', async (req, res) => {
       startUnionId = rootResult.rows[0].id;
     }
 
-    // Build generations recursively
-    const generations = [];
-    const processedUnions = new Set();
-    const processedMembers = new Set();
-
-    // Helper function to get union with details
-    const getUnionDetails = async (unionId) => {
-      const result = await pool.query(`
+    // OPTIMIZED: Single CTE query to fetch all unions and their generations
+    const unionsResult = await pool.query(`
+      WITH RECURSIVE tree_unions AS (
+        -- Base case: starting union (generation 1)
         SELECT
           u.id,
           u.union_type,
@@ -217,138 +258,161 @@ router.get('/descendants', async (req, res) => {
           u.display_order,
           u.partner1_id,
           u.partner2_id,
-          -- Partner 1
-          json_build_object(
-            'id', m1.id,
-            'first_name', m1.first_name,
-            'middle_name', m1.middle_name,
-            'last_name', m1.last_name,
-            'gender', m1.gender,
-            'is_alive', m1.is_alive,
-            'birth_date', m1.birth_date,
-            'death_date', m1.death_date,
-            'location', m1.location,
-            'occupation', m1.occupation,
-            'profile_image_url', m1.photo_url
-          ) as partner1,
-          -- Partner 2
-          json_build_object(
-            'id', m2.id,
-            'first_name', m2.first_name,
-            'middle_name', m2.middle_name,
-            'last_name', m2.last_name,
-            'gender', m2.gender,
-            'is_alive', m2.is_alive,
-            'birth_date', m2.birth_date,
-            'death_date', m2.death_date,
-            'location', m2.location,
-            'occupation', m2.occupation,
-            'profile_image_url', m2.photo_url
-          ) as partner2
+          u.is_single_parent,
+          u.is_visible_on_tree,
+          1 as generation
         FROM unions u
-        JOIN members m1 ON u.partner1_id = m1.id
-        JOIN members m2 ON u.partner2_id = m2.id
         WHERE u.id = $1
-      `, [unionId]);
 
-      if (result.rows.length === 0) return null;
+        UNION ALL
 
-      const union = result.rows[0];
+        -- Recursive case: unions of children from previous generation
+        SELECT DISTINCT
+          u.id,
+          u.union_type,
+          u.union_date,
+          u.divorce_date,
+          u.is_primary,
+          u.display_order,
+          u.partner1_id,
+          u.partner2_id,
+          u.is_single_parent,
+          u.is_visible_on_tree,
+          tu.generation + 1 as generation
+        FROM tree_unions tu
+        JOIN union_children uc ON uc.union_id = tu.id
+        JOIN unions u ON (u.partner1_id = uc.child_id OR u.partner2_id = uc.child_id)
+        WHERE tu.generation < $2
+      )
+      SELECT
+        tu.*,
+        json_build_object(
+          'id', m1.id,
+          'first_name', m1.first_name,
+          'middle_name', m1.middle_name,
+          'last_name', m1.last_name,
+          'suffix', m1.suffix,
+          'gender', m1.gender,
+          'is_alive', m1.is_alive,
+          'birth_date', m1.birth_date,
+          'death_date', m1.death_date,
+          'location', m1.location,
+          'occupation', m1.occupation,
+          'profile_image_url', m1.photo_url
+        ) as partner1,
+        json_build_object(
+          'id', m2.id,
+          'first_name', m2.first_name,
+          'middle_name', m2.middle_name,
+          'last_name', m2.last_name,
+          'suffix', m2.suffix,
+          'gender', m2.gender,
+          'is_alive', m2.is_alive,
+          'birth_date', m2.birth_date,
+          'death_date', m2.death_date,
+          'location', m2.location,
+          'occupation', m2.occupation,
+          'profile_image_url', m2.photo_url
+        ) as partner2
+      FROM tree_unions tu
+      JOIN members m1 ON tu.partner1_id = m1.id
+      JOIN members m2 ON tu.partner2_id = m2.id
+      ORDER BY tu.generation, tu.display_order, tu.union_date
+    `, [startUnionId, maxGen]);
 
-      // Get children
-      const childrenResult = await pool.query(`
-        SELECT
-          m.id,
-          m.first_name,
-          m.middle_name,
-          m.last_name,
-          m.gender,
-          m.is_alive,
-          m.birth_date,
-          m.death_date,
-          m.location,
-          m.occupation,
-          m.photo_url as profile_image_url,
-          uc.birth_order,
-          uc.is_biological,
-          uc.is_adopted,
-          uc.is_step_child,
-          EXISTS(SELECT 1 FROM unions WHERE partner1_id = m.id OR partner2_id = m.id) as has_unions
-        FROM union_children uc
-        JOIN members m ON uc.child_id = m.id
-        WHERE uc.union_id = $1
-        ORDER BY uc.birth_order
-      `, [unionId]);
-
-      union.children = childrenResult.rows;
-      return union;
-    };
-
-    // Build generation 1 (starting union)
-    const rootUnion = await getUnionDetails(startUnionId);
-    if (!rootUnion) {
+    if (unionsResult.rows.length === 0) {
       return res.status(404).json({ error: 'Starting union not found' });
     }
 
-    processedUnions.add(rootUnion.id);
-    processedMembers.add(rootUnion.partner1_id);
-    processedMembers.add(rootUnion.partner2_id);
+    // Get all union IDs for batch children fetch
+    const unionIds = unionsResult.rows.map(u => u.id);
 
-    generations.push({
-      generation: 1,
-      unions: [rootUnion]
-    });
+    // OPTIMIZED: Single query to fetch ALL children for all unions
+    const childrenResult = await pool.query(`
+      SELECT
+        uc.union_id,
+        m.id,
+        m.first_name,
+        m.middle_name,
+        m.last_name,
+        m.suffix,
+        m.gender,
+        m.is_alive,
+        m.birth_date,
+        m.death_date,
+        m.location,
+        m.occupation,
+        m.photo_url as profile_image_url,
+        uc.birth_order,
+        uc.is_biological,
+        uc.is_adopted,
+        uc.is_step_child,
+        EXISTS(SELECT 1 FROM unions WHERE partner1_id = m.id OR partner2_id = m.id) as has_unions
+      FROM union_children uc
+      JOIN members m ON uc.child_id = m.id
+      WHERE uc.union_id = ANY($1)
+      ORDER BY uc.union_id, uc.birth_order
+    `, [unionIds]);
 
-    // Build subsequent generations
-    for (let genNum = 2; genNum <= max_generations; genNum++) {
-      const previousGen = generations[genNum - 2];
-      const currentGenUnions = [];
-
-      // For each child in the previous generation who has unions
-      for (const union of previousGen.unions) {
-        for (const child of union.children) {
-          if (child.has_unions && !processedMembers.has(child.id)) {
-            // Get all unions for this child
-            const childUnionsResult = await pool.query(`
-              SELECT id FROM unions
-              WHERE partner1_id = $1 OR partner2_id = $1
-              ORDER BY display_order, union_date
-            `, [child.id]);
-
-            for (const row of childUnionsResult.rows) {
-              if (!processedUnions.has(row.id)) {
-                const childUnion = await getUnionDetails(row.id);
-                if (childUnion) {
-                  currentGenUnions.push(childUnion);
-                  processedUnions.add(childUnion.id);
-                  processedMembers.add(childUnion.partner1_id);
-                  processedMembers.add(childUnion.partner2_id);
-                }
-              }
-            }
-          }
-        }
+    // Group children by union_id
+    const childrenByUnion = {};
+    for (const child of childrenResult.rows) {
+      if (!childrenByUnion[child.union_id]) {
+        childrenByUnion[child.union_id] = [];
       }
-
-      if (currentGenUnions.length === 0) {
-        break; // No more generations to process
-      }
-
-      generations.push({
-        generation: genNum,
-        unions: currentGenUnions
-      });
+      childrenByUnion[child.union_id].push(child);
     }
 
-    // Count unique members
+    // Build generations structure
+    const generationsMap = {};
+    const processedMembers = new Set();
+    const processedUnions = new Set();
+
+    for (const union of unionsResult.rows) {
+      const gen = union.generation;
+      if (!generationsMap[gen]) {
+        generationsMap[gen] = [];
+      }
+
+      // Attach children to union
+      union.children = childrenByUnion[union.id] || [];
+
+      generationsMap[gen].push(union);
+      processedUnions.add(union.id);
+      processedMembers.add(union.partner1_id);
+      processedMembers.add(union.partner2_id);
+
+      // Add children to member count
+      for (const child of union.children) {
+        processedMembers.add(child.id);
+      }
+    }
+
+    // Convert to array format
+    const generations = Object.keys(generationsMap)
+      .sort((a, b) => parseInt(a) - parseInt(b))
+      .map(gen => ({
+        generation: parseInt(gen),
+        unions: generationsMap[gen]
+      }));
+
+    // Exclude Unknown Parent placeholder from count
+    const unknownParentResult = await pool.query(
+      `SELECT id FROM members WHERE first_name = 'Unknown' AND last_name = 'Parent' LIMIT 1`
+    );
+    const unknownParentId = unknownParentResult.rows[0]?.id;
+    if (unknownParentId && processedMembers.has(unknownParentId)) {
+      processedMembers.delete(unknownParentId);
+    }
+
     const totalMembers = processedMembers.size;
     const totalUnions = processedUnions.size;
 
-    logger.info(`Fetched ${generations.length} generations with ${totalUnions} unions and ${totalMembers} members`);
+    logger.info(`Fetched ${generations.length} generations with ${totalUnions} unions and ${totalMembers} members (optimized)`);
 
     res.json({
       root_union_id: parseInt(startUnionId),
-      max_generations: parseInt(max_generations),
+      max_generations: maxGen,
       generations,
       total_members: totalMembers,
       total_unions: totalUnions
@@ -397,6 +461,7 @@ router.get('/member/:id/unions', async (req, res) => {
             'first_name', m2.first_name,
             'middle_name', m2.middle_name,
             'last_name', m2.last_name,
+            'suffix', m2.suffix,
             'gender', m2.gender,
             'is_alive', m2.is_alive,
             'birth_date', m2.birth_date,
@@ -410,6 +475,7 @@ router.get('/member/:id/unions', async (req, res) => {
             'first_name', m1.first_name,
             'middle_name', m1.middle_name,
             'last_name', m1.last_name,
+            'suffix', m1.suffix,
             'gender', m1.gender,
             'is_alive', m1.is_alive,
             'birth_date', m1.birth_date,
@@ -435,6 +501,7 @@ router.get('/member/:id/unions', async (req, res) => {
             m.first_name,
             m.middle_name,
             m.last_name,
+            m.suffix,
             m.gender,
             m.is_alive,
             m.birth_date,
@@ -528,7 +595,7 @@ router.get('/breadcrumbs', async (req, res) => {
       const memberResult = await pool.query(`
         SELECT
           id,
-          first_name || ' ' || last_name as label
+          first_name || ' ' || last_name || COALESCE(' ' || NULLIF(suffix, ''), '') as label
         FROM members
         WHERE id = $1
       `, [member_id]);
@@ -621,6 +688,160 @@ router.post('/union-positions', async (req, res) => {
   } catch (error) {
     logger.error('Error saving positions:', error);
     res.status(500).json({ error: 'Failed to save positions' });
+  }
+});
+
+// ============================================================================
+// GET /api/tree/unions/:id
+// Returns full details for a specific union (partners + children)
+// ============================================================================
+router.get('/unions/:id', async (req, res) => {
+  try {
+    const unionId = parseInt(req.params.id);
+    if (isNaN(unionId)) {
+      return res.status(400).json({ error: 'Invalid union ID' });
+    }
+
+    logger.debug('Fetching union detail', { unionId });
+
+    const result = await pool.query(`
+      SELECT
+        u.id,
+        u.union_type,
+        u.union_date,
+        u.union_location,
+        u.notes,
+        u.is_single_parent,
+        -- Partner 1
+        json_build_object(
+          'id', p1.id,
+          'first_name', p1.first_name,
+          'last_name', p1.last_name,
+          'gender', p1.gender,
+          'birth_date', p1.birth_date,
+          'death_date', p1.death_date,
+          'photo_url', p1.photo_url
+        ) AS partner1,
+        -- Partner 2
+        json_build_object(
+          'id', p2.id,
+          'first_name', p2.first_name,
+          'last_name', p2.last_name,
+          'gender', p2.gender,
+          'birth_date', p2.birth_date,
+          'death_date', p2.death_date,
+          'photo_url', p2.photo_url
+        ) AS partner2,
+        -- Children aggregated as JSON array
+        COALESCE(
+          (
+            SELECT json_agg(
+              json_build_object(
+                'id', c.id,
+                'first_name', c.first_name,
+                'last_name', c.last_name,
+                'gender', c.gender,
+                'birth_date', c.birth_date,
+                'death_date', c.death_date,
+                'photo_url', c.photo_url
+              ) ORDER BY c.birth_date NULLS LAST
+            )
+            FROM union_children uc
+            JOIN members c ON uc.member_id = c.id
+            WHERE uc.union_id = u.id
+          ),
+          '[]'::json
+        ) AS children
+      FROM unions u
+      LEFT JOIN members p1 ON u.partner1_id = p1.id
+      LEFT JOIN members p2 ON u.partner2_id = p2.id
+      WHERE u.id = $1
+    `, [unionId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Union not found' });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (error) {
+    logger.error('Error fetching union detail:', error);
+    res.status(500).json({ error: 'Failed to fetch union details' });
+  }
+});
+
+// ============================================================================
+// GET /api/tree/shared-heritage
+// Returns shared heritage data between two members (shared photos, stories, same city)
+// Query params: member1, member2
+// ============================================================================
+router.get('/shared-heritage', async (req, res) => {
+  try {
+    const { member1, member2 } = req.query;
+
+    if (!member1 || !member2) {
+      return res.status(400).json({ error: 'Both member1 and member2 are required' });
+    }
+
+    const memberId1 = parseInt(member1);
+    const memberId2 = parseInt(member2);
+
+    if (isNaN(memberId1) || isNaN(memberId2)) {
+      return res.status(400).json({ error: 'Invalid member IDs' });
+    }
+
+    logger.debug('Fetching shared heritage', { member1: memberId1, member2: memberId2 });
+
+    // Get shared photos (photos where both members are tagged)
+    const sharedPhotosResult = await pool.query(`
+      SELECT COUNT(DISTINCT p.id) as shared_photos
+      FROM photos p
+      JOIN photo_tags pt1 ON pt1.photo_id = p.id AND pt1.member_id = $1
+      JOIN photo_tags pt2 ON pt2.photo_id = p.id AND pt2.member_id = $2
+    `, [memberId1, memberId2]);
+
+    // Get shared stories (stories that mention both members)
+    const sharedStoriesResult = await pool.query(`
+      SELECT COUNT(DISTINCT s.id) as shared_stories
+      FROM stories s
+      JOIN story_members sm1 ON sm1.story_id = s.id AND sm1.member_id = $1
+      JOIN story_members sm2 ON sm2.story_id = s.id AND sm2.member_id = $2
+    `, [memberId1, memberId2]);
+
+    // Check if members share same city
+    const sameCityResult = await pool.query(`
+      SELECT
+        m1.location as location1,
+        m2.location as location2,
+        CASE
+          WHEN m1.location IS NOT NULL
+            AND m2.location IS NOT NULL
+            AND LOWER(TRIM(m1.location)) = LOWER(TRIM(m2.location))
+          THEN true
+          ELSE false
+        END as same_city
+      FROM members m1, members m2
+      WHERE m1.id = $1 AND m2.id = $2
+    `, [memberId1, memberId2]);
+
+    const sharedPhotos = parseInt(sharedPhotosResult.rows[0]?.shared_photos) || 0;
+    const sharedStories = parseInt(sharedStoriesResult.rows[0]?.shared_stories) || 0;
+    const sameCity = sameCityResult.rows[0]?.same_city || false;
+
+    logger.info(`Shared heritage between ${memberId1} and ${memberId2}: ${sharedPhotos} photos, ${sharedStories} stories, sameCity=${sameCity}`);
+
+    res.json({
+      member1Id: memberId1,
+      member2Id: memberId2,
+      sharedPhotos,
+      sharedStories,
+      sameCity,
+      location: sameCity ? sameCityResult.rows[0]?.location1 : null
+    });
+
+  } catch (error) {
+    logger.error('Error fetching shared heritage:', error);
+    res.status(500).json({ error: 'Failed to fetch shared heritage' });
   }
 });
 

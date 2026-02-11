@@ -1,18 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const AddRelationship = ({ member, onRelationshipAdded, onClose }) => {
   const [allMembers, setAllMembers] = useState([]);
   const [relationshipTypes, setRelationshipTypes] = useState([]);
   const [selectedMember, setSelectedMember] = useState('');
+  const [selectedMemberName, setSelectedMemberName] = useState('');
   const [selectedRelationType, setSelectedRelationType] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [filteredMembers, setFilteredMembers] = useState([]);
+  const searchRef = useRef(null);
 
   useEffect(() => {
     fetchMembers();
     fetchRelationshipTypes();
   }, []);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Filter members based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredMembers(allMembers);
+    } else {
+      const query = searchQuery.toLowerCase();
+      const filtered = allMembers.filter(m => {
+        const fullName = `${m.first_name} ${m.last_name}`.toLowerCase();
+        return fullName.includes(query);
+      });
+      setFilteredMembers(filtered);
+    }
+  }, [searchQuery, allMembers]);
 
   const fetchMembers = async () => {
     try {
@@ -34,6 +67,18 @@ const AddRelationship = ({ member, onRelationshipAdded, onClose }) => {
       console.error('Error fetching relationship types:', error);
       setError('Failed to load relationship types');
     }
+  };
+
+  const handleSearchChange = (e) => {
+    setSearchQuery(e.target.value);
+    setShowDropdown(true);
+  };
+
+  const handleMemberSelect = (memberId, memberName) => {
+    setSelectedMember(memberId);
+    setSelectedMemberName(memberName);
+    setSearchQuery(memberName);
+    setShowDropdown(false);
   };
 
   const handleSubmit = async (e) => {
@@ -75,14 +120,14 @@ const AddRelationship = ({ member, onRelationshipAdded, onClose }) => {
           <h2 className="text-xl font-bold">Add Relationship</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 text-2xl"
+            className="text-vine-sage hover:text-vine-dark text-2xl"
           >
             ×
           </button>
         </div>
 
         <div className="mb-4">
-          <p className="text-gray-600">
+          <p className="text-vine-sage">
             Add a relationship for <strong>{member.first_name} {member.last_name}</strong>
           </p>
         </div>
@@ -94,23 +139,47 @@ const AddRelationship = ({ member, onRelationshipAdded, onClose }) => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <div className="relative" ref={searchRef}>
             <label className="block text-sm font-medium mb-2">
               Select Family Member
             </label>
-            <select
-              value={selectedMember}
-              onChange={(e) => setSelectedMember(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2"
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={() => setShowDropdown(true)}
+              placeholder="Search for a family member..."
+              className="w-full border border-vine-200 rounded px-3 py-2"
+              autoComplete="off"
               required
-            >
-              <option value="">Choose a family member...</option>
-              {allMembers.map(m => (
-                <option key={m.id} value={m.id}>
-                  {m.first_name} {m.last_name}
-                </option>
-              ))}
-            </select>
+            />
+
+            {/* Dropdown with filtered results */}
+            {showDropdown && filteredMembers.length > 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-vine-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {filteredMembers.map(m => (
+                  <div
+                    key={m.id}
+                    onClick={() => handleMemberSelect(m.id, `${m.first_name} ${m.last_name}`)}
+                    className="px-3 py-2 hover:bg-vine-50 cursor-pointer border-b border-vine-100 last:border-b-0"
+                  >
+                    <div className="font-medium">{m.first_name} {m.last_name}</div>
+                    {m.birth_date && (
+                      <div className="text-xs text-vine-sage">
+                        Born: {new Date(m.birth_date).getFullYear()}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* No results message */}
+            {showDropdown && searchQuery && filteredMembers.length === 0 && (
+              <div className="absolute z-10 w-full mt-1 bg-white border border-vine-200 rounded-lg shadow-lg p-3 text-vine-sage text-sm">
+                No family members found matching "{searchQuery}"
+              </div>
+            )}
           </div>
 
           <div>
@@ -120,7 +189,7 @@ const AddRelationship = ({ member, onRelationshipAdded, onClose }) => {
             <select
               value={selectedRelationType}
               onChange={(e) => setSelectedRelationType(e.target.value)}
-              className="w-full border border-gray-300 rounded px-3 py-2"
+              className="w-full border border-vine-200 rounded px-3 py-2"
               required
             >
               <option value="">Choose relationship...</option>
@@ -137,9 +206,9 @@ const AddRelationship = ({ member, onRelationshipAdded, onClose }) => {
               type="submit"
               disabled={loading}
               className={`flex-1 py-2 px-4 rounded text-white font-medium ${
-                loading 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700'
+                loading
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-vine-500 to-vine-600 hover:from-vine-600 hover:to-vine-dark'
               }`}
             >
               {loading ? 'Adding...' : 'Add Relationship'}
@@ -147,7 +216,7 @@ const AddRelationship = ({ member, onRelationshipAdded, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2 px-4 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="flex-1 py-2 px-4 rounded border border-vine-200 text-vine-dark hover:bg-vine-50"
             >
               Cancel
             </button>

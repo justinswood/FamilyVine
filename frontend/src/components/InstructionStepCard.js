@@ -15,34 +15,55 @@ const InstructionStepCard = ({ step, index, onUpdate, onDelete }) => {
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
+    transition: transition || 'transform 0.3s ease, box-shadow 0.3s ease',
+    opacity: isDragging ? 0.85 : 1,
+    zIndex: isDragging ? 50 : 'auto',
   };
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
-      className={`bg-white dark:bg-gray-800 rounded-lg border-2 ${
+      style={{
+        ...style,
+        boxShadow: isDragging
+          ? '0 8px 25px rgba(123, 45, 142, 0.25)'
+          : 'none',
+      }}
+      className={`rounded-md border ${
         isDragging
-          ? 'border-orange-500 shadow-lg'
-          : 'border-gray-200 dark:border-gray-700'
-      } hover:border-gray-300 dark:hover:border-gray-600 transition-all duration-200`}
+          ? 'border-purple-400'
+          : 'border-transparent'
+      } transition-all duration-300`}
     >
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-orange-50 to-red-50 dark:from-gray-700 dark:to-gray-700 rounded-t-lg">
+      <div
+        className="flex items-center gap-2 px-3 py-1.5 rounded-t-md"
+        style={{
+          backgroundColor: 'var(--alabaster-parchment, #F5F0E6)',
+          borderBottom: '1px solid rgba(212, 175, 55, 0.15)',
+        }}
+      >
         {/* Drag Handle */}
         <button
           {...attributes}
           {...listeners}
-          className="cursor-grab active:cursor-grabbing p-1 hover:bg-white/50 dark:hover:bg-gray-600/50 rounded transition-colors"
+          className="cursor-grab active:cursor-grabbing rounded transition-colors"
           aria-label="Drag to reorder"
+          style={{ color: 'var(--vine-sage)' }}
         >
-          <GripVertical className="w-5 h-5 text-gray-400 dark:text-gray-500" />
+          <GripVertical className="w-3 h-3" />
         </button>
 
+        {/* Step Number Badge */}
+        <div
+          className="flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-white font-semibold"
+          style={{ background: 'linear-gradient(135deg, var(--vine-green, #2E5A2E), var(--vine-dark, #2D4F1E))', fontSize: '0.5rem' }}
+        >
+          {index + 1}
+        </div>
+
         {/* Step Label */}
-        <span className="font-semibold text-gray-900 dark:text-white text-sm">
+        <span style={{ fontFamily: "var(--font-header, 'Playfair Display', serif)", fontWeight: 600, fontSize: '0.6rem', color: 'var(--vine-dark, #2D4F1E)' }}>
           Step {index + 1}
         </span>
 
@@ -52,33 +73,30 @@ const InstructionStepCard = ({ step, index, onUpdate, onDelete }) => {
         {/* Delete Button */}
         <button
           onClick={() => onDelete(step.id)}
-          className="p-1.5 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors group"
+          className="p-0.5 rounded transition-colors group"
           aria-label="Delete step"
           title="Delete step"
+          style={{ color: 'var(--vine-sage)' }}
         >
-          <Trash2 className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-red-600 dark:group-hover:text-red-400" />
+          <Trash2 className="w-3 h-3 group-hover:text-red-600" />
         </button>
       </div>
 
       {/* Body */}
-      <div className="p-4">
+      <div className="p-2.5" style={{ backgroundColor: 'var(--parchment, #F9F8F3)' }}>
         <textarea
           value={step.text}
           onChange={(e) => onUpdate(step.id, e.target.value)}
           placeholder={`Describe step ${index + 1}...`}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg
-                     bg-white dark:bg-gray-900 text-gray-900 dark:text-white
-                     focus:ring-2 focus:ring-orange-500 focus:border-transparent
-                     placeholder-gray-400 dark:placeholder-gray-500
-                     resize-none transition-colors"
-          rows={3}
-          style={{ minHeight: '80px' }}
+          className="recipe-edit-textarea"
+          rows={2}
+          style={{ minHeight: '50px' }}
         />
       </div>
 
       {/* Footer */}
-      <div className="px-4 pb-3">
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+      <div className="px-3 pb-2" style={{ backgroundColor: 'var(--parchment, #F9F8F3)', borderRadius: '0 0 6px 6px' }}>
+        <p style={{ fontSize: '0.45rem', color: 'var(--vine-sage)', fontStyle: 'italic' }}>
           Tip: Be specific about temperatures, times, and techniques
         </p>
       </div>

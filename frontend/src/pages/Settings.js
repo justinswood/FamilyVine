@@ -1,17 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Database, Shield, Bell, Palette, User, Save, Upload, LogOut } from 'lucide-react';
+import { Download, Database, Shield, Bell, Palette, User, Users, Save, Upload, LogOut, Plus, Key, Trash2, Edit2 } from 'lucide-react';
 import ExportFamilyData from '../components/ExportFamilyData';
 import CSVImport from './CSVImport'; // Import the CSVImport component
 import axios from 'axios';
 import HeroImageSelector from '../components/HeroImageSelector';
+import { useAuth } from '../contexts/AuthContext';
 
 const Settings = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('general');
   const [showExportModal, setShowExportModal] = useState(false);
   const [members, setMembers] = useState([]);
   const [relationships, setRelationships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // User management state (admin only)
+  const [usersList, setUsersList] = useState([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(null);
+  const [newUser, setNewUser] = useState({ username: '', email: '', password: '', role: 'viewer' });
+  const [newPassword, setNewPassword] = useState('');
+  const [userError, setUserError] = useState('');
+  const [userSuccess, setUserSuccess] = useState('');
   
   // Settings state
   const [settings, setSettings] = useState({
@@ -40,14 +52,21 @@ const Settings = () => {
   useEffect(() => {
     fetchData();
     loadSettings();
-    
+
     // Check URL parameters for tab
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
-    if (tab && ['general', 'display', 'privacy', 'import', 'export', 'notifications'].includes(tab)) {
+    if (tab && ['general', 'display', 'privacy', 'users', 'import', 'export', 'notifications'].includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
+
+  // Fetch users when users tab is selected (admin only)
+  useEffect(() => {
+    if (activeTab === 'users' && user?.role === 'admin') {
+      fetchUsers();
+    }
+  }, [activeTab, user?.role]);
 
   // Apply theme when settings change
   useEffect(() => {
@@ -77,13 +96,107 @@ const Settings = () => {
         axios.get(`${process.env.REACT_APP_API}/api/members`),
         axios.get(`${process.env.REACT_APP_API}/api/relationships`).catch(() => ({ data: [] }))
       ]);
-      
+
       setMembers(membersResponse.data);
       setRelationships(relationshipsResponse.data);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch users for admin panel
+  const fetchUsers = async () => {
+    if (user?.role !== 'admin') return;
+    setUsersLoading(true);
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_API}/api/auth/users`);
+      setUsersList(response.data.users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setUserError('Failed to load users');
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  // Create new user (admin only)
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setUserError('');
+    setUserSuccess('');
+
+    if (!newUser.username || !newUser.password) {
+      setUserError('Username and password are required');
+      return;
+    }
+
+    if (newUser.password.length < 8) {
+      setUserError('Password must be at least 8 characters');
+      return;
+    }
+
+    try {
+      await axios.post(`${process.env.REACT_APP_API}/api/auth/users`, newUser);
+      setUserSuccess('User created successfully');
+      setNewUser({ username: '', email: '', password: '', role: 'viewer' });
+      setShowCreateUser(false);
+      fetchUsers();
+    } catch (error) {
+      setUserError(error.response?.data?.error || 'Failed to create user');
+    }
+  };
+
+  // Change user password (admin only)
+  const handleChangePassword = async (userId) => {
+    setUserError('');
+    setUserSuccess('');
+
+    if (!newPassword || newPassword.length < 8) {
+      setUserError('Password must be at least 8 characters');
+      return;
+    }
+
+    try {
+      await axios.put(`${process.env.REACT_APP_API}/api/auth/users/${userId}/password`, { password: newPassword });
+      setUserSuccess('Password changed successfully');
+      setNewPassword('');
+      setShowChangePassword(null);
+    } catch (error) {
+      setUserError(error.response?.data?.error || 'Failed to change password');
+    }
+  };
+
+  // Change user role (admin only)
+  const handleChangeRole = async (userId, newRole) => {
+    setUserError('');
+    setUserSuccess('');
+
+    try {
+      await axios.put(`${process.env.REACT_APP_API}/api/auth/users/${userId}/role`, { role: newRole });
+      setUserSuccess('Role updated successfully');
+      fetchUsers();
+    } catch (error) {
+      setUserError(error.response?.data?.error || 'Failed to change role');
+    }
+  };
+
+  // Delete user (admin only)
+  const handleDeleteUser = async (userId, username) => {
+    if (!window.confirm(`Are you sure you want to delete user "${username}"? This cannot be undone.`)) {
+      return;
+    }
+
+    setUserError('');
+    setUserSuccess('');
+
+    try {
+      await axios.delete(`${process.env.REACT_APP_API}/api/auth/users/${userId}`);
+      setUserSuccess('User deleted successfully');
+      fetchUsers();
+    } catch (error) {
+      setUserError(error.response?.data?.error || 'Failed to delete user');
     }
   };
 
@@ -150,11 +263,21 @@ const Settings = () => {
     }
   }, [settings.theme]);
 
-  const tabs = [
+  const baseTabs = [
     { id: 'general', label: 'General', icon: <Database className="w-4 h-4" /> },
     { id: 'display', label: 'Display', icon: <Palette className="w-4 h-4" /> },
     { id: 'privacy', label: 'Privacy', icon: <Shield className="w-4 h-4" /> },
-    { id: 'import', label: 'Import Data', icon: <Upload className="w-4 h-4" /> }, // NEW TAB
+  ];
+
+  // Admin-only tabs
+  const adminTabs = user?.role === 'admin' ? [
+    { id: 'users', label: 'Users', icon: <Users className="w-4 h-4" /> },
+  ] : [];
+
+  const tabs = [
+    ...baseTabs,
+    ...adminTabs,
+    { id: 'import', label: 'Import Data', icon: <Upload className="w-4 h-4" /> },
     { id: 'export', label: 'Export Data', icon: <Download className="w-4 h-4" /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
     { id: 'logout', label: 'Logout', icon: <LogOut className="w-4 h-4" /> },
@@ -163,29 +286,29 @@ const Settings = () => {
   const renderGeneralSettings = () => (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
           Family Name
         </label>
         <input
           type="text"
           value={settings.familyName}
           onChange={(e) => handleSettingChange('general', 'familyName', e.target.value)}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
           placeholder="Enter your family name"
         />
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-xs text-vine-sage dark:text-secondary-400 mt-1">
           This will appear in exported documents and reports
         </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
           Default Privacy Level
         </label>
         <select
           value={settings.defaultPrivacy}
           onChange={(e) => handleSettingChange('general', 'defaultPrivacy', e.target.value)}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
           <option value="public">Public - Visible to everyone</option>
           <option value="family">Family Only - Visible to family members</option>
@@ -194,13 +317,13 @@ const Settings = () => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
           Auto-save Interval (minutes)
         </label>
         <select
           value={settings.autoSaveInterval}
           onChange={(e) => handleSettingChange('general', 'autoSaveInterval', parseInt(e.target.value))}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
           <option value={1}>1 minute</option>
           <option value={5}>5 minutes</option>
@@ -215,13 +338,13 @@ const Settings = () => {
   const renderDisplaySettings = () => (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
           Date Format
         </label>
         <select
           value={settings.dateFormat}
           onChange={(e) => handleSettingChange('display', 'dateFormat', e.target.value)}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
           <option value="MM/DD/YYYY">MM/DD/YYYY (American)</option>
           <option value="DD/MM/YYYY">DD/MM/YYYY (European)</option>
@@ -231,19 +354,19 @@ const Settings = () => {
       </div>
   
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
           Theme
         </label>
         <select
           value={settings.theme}
           onChange={(e) => handleSettingChange('display', 'theme', e.target.value)}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
           <option value="light">Light Theme</option>
           <option value="dark">Dark Theme</option>
           <option value="auto">Auto (System Preference)</option>
         </select>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-xs text-vine-sage dark:text-secondary-400 mt-1">
           {settings.theme === 'auto' 
             ? 'Theme will match your system preference' 
             : `Currently using ${settings.theme} theme`}
@@ -251,13 +374,13 @@ const Settings = () => {
       </div>
   
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
           Language
         </label>
         <select
           value={settings.language}
           onChange={(e) => handleSettingChange('display', 'language', e.target.value)}
-          className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
           <option value="en">English</option>
           <option value="es">Español</option>
@@ -267,7 +390,7 @@ const Settings = () => {
       </div>
   
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+        <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-4">
           Homepage Hero Images
         </label>
         <HeroImageSelector />
@@ -279,8 +402,8 @@ const Settings = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Show Private Information</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Include email addresses and phone numbers in exports</p>
+          <h4 className="text-sm font-medium text-vine-dark dark:text-gray-300">Show Private Information</h4>
+          <p className="text-xs text-vine-sage dark:text-secondary-400">Include email addresses and phone numbers in exports</p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
@@ -289,14 +412,14 @@ const Settings = () => {
             onChange={(e) => handleSettingChange('privacy', 'showPrivateInfo', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <div className="w-11 h-6 bg-secondary-200 dark:bg-secondary-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-vine-300 dark:peer-focus:ring-vine-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-vine-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-vine-600"></div>
         </label>
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Require Login for Viewing</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Users must log in to view family tree</p>
+          <h4 className="text-sm font-medium text-vine-dark dark:text-gray-300">Require Login for Viewing</h4>
+          <p className="text-xs text-vine-sage dark:text-secondary-400">Users must log in to view family tree</p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
@@ -305,14 +428,14 @@ const Settings = () => {
             onChange={(e) => handleSettingChange('privacy', 'requireLoginForViewing', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <div className="w-11 h-6 bg-secondary-200 dark:bg-secondary-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-vine-300 dark:peer-focus:ring-vine-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-vine-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-vine-600"></div>
         </label>
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Allow Guest Access</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Allow viewing without creating an account</p>
+          <h4 className="text-sm font-medium text-vine-dark dark:text-gray-300">Allow Guest Access</h4>
+          <p className="text-xs text-vine-sage dark:text-secondary-400">Allow viewing without creating an account</p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
@@ -321,7 +444,7 @@ const Settings = () => {
             onChange={(e) => handleSettingChange('privacy', 'allowGuestAccess', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <div className="w-11 h-6 bg-secondary-200 dark:bg-secondary-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-vine-300 dark:peer-focus:ring-vine-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-vine-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-vine-600"></div>
         </label>
       </div>
     </div>
@@ -330,22 +453,22 @@ const Settings = () => {
   // NEW: Import Data tab content
   const renderImportSettings = () => (
     <div className="space-y-6">
-      <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-green-800 dark:text-green-200 mb-2">Import Family Data</h3>
-        <p className="text-green-700 dark:text-green-300 text-sm mb-4">
+      <div className="hero-selector-banner">
+        <h3>Import Family Data</h3>
+        <p>
           Import family members from CSV files or other data sources to quickly build your family tree.
         </p>
       </div>
 
       {/* CSV Import Section */}
-      <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+      <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800 border border-white/50 dark:border-gray-700 rounded-xl">
         <CSVImport />
       </div>
 
       {/* Future import options placeholder */}
-      <div className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-        <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Coming Soon</h4>
-        <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+      <div className="bg-vine-50 dark:bg-gray-800 border border-vine-200 dark:border-gray-700 rounded-lg p-4">
+        <h4 className="font-medium text-vine-dark dark:text-gray-200 mb-2">Coming Soon</h4>
+        <ul className="text-sm text-vine-sage dark:text-secondary-400 space-y-1">
           <li>• GEDCOM file import</li>
           <li>• Excel/Google Sheets import</li>
           <li>• Import from other family tree services</li>
@@ -357,14 +480,14 @@ const Settings = () => {
 
   const renderExportSettings = () => (
     <div className="space-y-6">
-      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-        <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">Export Your Family Data</h3>
-        <p className="text-blue-700 dark:text-blue-300 text-sm mb-4">
+      <div className="bg-vine-50 dark:bg-vine-900/20 border border-vine-200 dark:border-vine-800 rounded-lg p-4">
+        <h3 className="text-lg font-semibold font-heading text-vine-dark dark:text-white mb-2">Export Your Family Data</h3>
+        <p className="text-vine-600 dark:text-vine-300 text-sm mb-4">
           Export your family tree in various formats for backup, sharing, or importing into other applications.
         </p>
         <button
           onClick={() => setShowExportModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          className="bg-gradient-to-r from-vine-500 to-vine-600 text-white px-4 py-2 rounded-lg hover:from-vine-600 hover:to-vine-dark transition-colors flex items-center gap-2"
         >
           <Download className="w-4 h-4" />
           Open Export Tool
@@ -372,9 +495,9 @@ const Settings = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
-          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Available Formats</h4>
-          <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+        <div className="border border-vine-200 dark:border-gray-700 rounded-lg p-4 bg-white/80 backdrop-blur-sm dark:bg-gray-800">
+          <h4 className="font-medium text-vine-dark dark:text-gray-200 mb-2">Available Formats</h4>
+          <ul className="text-sm text-vine-sage dark:text-secondary-400 space-y-1">
             <li>• CSV - Spreadsheet format</li>
             <li>• JSON - Structured data</li>
             <li>• GEDCOM - Genealogy standard</li>
@@ -382,9 +505,9 @@ const Settings = () => {
           </ul>
         </div>
         
-        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800">
-          <h4 className="font-medium text-gray-800 dark:text-gray-200 mb-2">Export Options</h4>
-          <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+        <div className="border border-vine-200 dark:border-gray-700 rounded-lg p-4 bg-white/80 backdrop-blur-sm dark:bg-gray-800">
+          <h4 className="font-medium text-vine-dark dark:text-gray-200 mb-2">Export Options</h4>
+          <ul className="text-sm text-vine-sage dark:text-secondary-400 space-y-1">
             <li>• Include/exclude private data</li>
             <li>• Select specific members</li>
             <li>• Include photos (where supported)</li>
@@ -399,8 +522,8 @@ const Settings = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Email Notifications</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Receive email updates about family tree changes</p>
+          <h4 className="text-sm font-medium text-vine-dark dark:text-gray-300">Email Notifications</h4>
+          <p className="text-xs text-vine-sage dark:text-secondary-400">Receive email updates about family tree changes</p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
@@ -409,14 +532,14 @@ const Settings = () => {
             onChange={(e) => handleSettingChange('notifications', 'emailNotifications', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <div className="w-11 h-6 bg-secondary-200 dark:bg-secondary-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-vine-300 dark:peer-focus:ring-vine-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-vine-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-vine-600"></div>
         </label>
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Member Updates</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Get notified when member information is updated</p>
+          <h4 className="text-sm font-medium text-vine-dark dark:text-gray-300">Member Updates</h4>
+          <p className="text-xs text-vine-sage dark:text-secondary-400">Get notified when member information is updated</p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
@@ -425,14 +548,14 @@ const Settings = () => {
             onChange={(e) => handleSettingChange('notifications', 'memberUpdates', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <div className="w-11 h-6 bg-secondary-200 dark:bg-secondary-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-vine-300 dark:peer-focus:ring-vine-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-vine-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-vine-600"></div>
         </label>
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Relationship Changes</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Alerts when relationships are added or modified</p>
+          <h4 className="text-sm font-medium text-vine-dark dark:text-gray-300">Relationship Changes</h4>
+          <p className="text-xs text-vine-sage dark:text-secondary-400">Alerts when relationships are added or modified</p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
@@ -441,14 +564,14 @@ const Settings = () => {
             onChange={(e) => handleSettingChange('notifications', 'relationshipChanges', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <div className="w-11 h-6 bg-secondary-200 dark:bg-secondary-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-vine-300 dark:peer-focus:ring-vine-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-vine-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-vine-600"></div>
         </label>
       </div>
 
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300">Photo Uploads</h4>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Notifications when new photos are added</p>
+          <h4 className="text-sm font-medium text-vine-dark dark:text-gray-300">Photo Uploads</h4>
+          <p className="text-xs text-vine-sage dark:text-secondary-400">Notifications when new photos are added</p>
         </div>
         <label className="relative inline-flex items-center cursor-pointer">
           <input
@@ -457,8 +580,237 @@ const Settings = () => {
             onChange={(e) => handleSettingChange('notifications', 'photoUploads', e.target.checked)}
             className="sr-only peer"
           />
-          <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          <div className="w-11 h-6 bg-secondary-200 dark:bg-secondary-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-vine-300 dark:peer-focus:ring-vine-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-vine-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-vine-600"></div>
         </label>
+      </div>
+    </div>
+  );
+
+  // User Management Tab (Admin Only)
+  const renderUsersSettings = () => (
+    <div className="space-y-6">
+      {/* Header with Create User button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold font-heading text-vine-dark dark:text-white">User Management</h3>
+          <p className="text-sm text-vine-sage dark:text-secondary-400">Create and manage user accounts</p>
+        </div>
+        <button
+          onClick={() => { setShowCreateUser(true); setUserError(''); setUserSuccess(''); }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-white transition-colors"
+          style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))' }}
+        >
+          <Plus className="w-4 h-4" />
+          Create User
+        </button>
+      </div>
+
+      {/* Success/Error Messages */}
+      {userError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg">
+          {userError}
+        </div>
+      )}
+      {userSuccess && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg">
+          {userSuccess}
+        </div>
+      )}
+
+      {/* Create User Form */}
+      {showCreateUser && (
+        <div className="bg-vine-50 dark:bg-gray-800 border border-vine-200 dark:border-gray-700 rounded-lg p-4">
+          <h4 className="font-medium text-vine-dark dark:text-white mb-4">Create New User</h4>
+          <form onSubmit={handleCreateUser} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-1">
+                  Username *
+                </label>
+                <input
+                  type="text"
+                  value={newUser.username}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, username: e.target.value }))}
+                  className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="Enter username"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-1">
+                  Email (optional)
+                </label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="Enter email"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-1">
+                  Password *
+                </label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                  className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="Min 8 characters"
+                  required
+                  minLength={8}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-1">
+                  Role
+                </label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                  className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                >
+                  <option value="viewer">Viewer</option>
+                  <option value="editor">Editor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-lg text-white transition-colors"
+                style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))' }}
+              >
+                Create User
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowCreateUser(false); setNewUser({ username: '', email: '', password: '', role: 'viewer' }); }}
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Users List */}
+      <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800 border border-vine-200 dark:border-gray-700 rounded-lg overflow-hidden">
+        {usersLoading ? (
+          <div className="p-8 text-center text-vine-sage dark:text-secondary-400">
+            Loading users...
+          </div>
+        ) : usersList.length === 0 ? (
+          <div className="p-8 text-center text-vine-sage dark:text-secondary-400">
+            No users found
+          </div>
+        ) : (
+          <table className="w-full">
+            <thead className="bg-vine-50 dark:bg-gray-900">
+              <tr>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-vine-dark dark:text-gray-200">Username</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-vine-dark dark:text-gray-200 hidden md:table-cell">Email</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-vine-dark dark:text-gray-200">Role</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-vine-dark dark:text-gray-200 hidden lg:table-cell">Last Login</th>
+                <th className="px-4 py-3 text-right text-sm font-semibold text-vine-dark dark:text-gray-200">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-vine-100 dark:divide-gray-700">
+              {usersList.map((u) => (
+                <tr key={u.id} className="hover:bg-vine-50/50 dark:hover:bg-gray-700/50">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-vine-sage dark:text-secondary-400" />
+                      <span className="font-medium text-vine-dark dark:text-gray-200">{u.username}</span>
+                      {u.id === user?.id && (
+                        <span className="text-xs bg-vine-100 dark:bg-vine-900/30 text-vine-600 dark:text-vine-400 px-2 py-0.5 rounded">You</span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-vine-sage dark:text-secondary-400 hidden md:table-cell">
+                    {u.email || '-'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <select
+                      value={u.role}
+                      onChange={(e) => handleChangeRole(u.id, e.target.value)}
+                      disabled={u.id === user?.id}
+                      className={`text-sm border border-vine-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 ${u.id === user?.id ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      <option value="viewer">Viewer</option>
+                      <option value="editor">Editor</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-vine-sage dark:text-secondary-400 hidden lg:table-cell">
+                    {u.last_login ? new Date(u.last_login).toLocaleDateString() : 'Never'}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-2">
+                      {showChangePassword === u.id ? (
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="New password"
+                            className="w-32 text-sm border border-vine-200 dark:border-gray-600 rounded px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          />
+                          <button
+                            onClick={() => handleChangePassword(u.id)}
+                            className="text-green-600 hover:text-green-700 dark:text-green-400"
+                            title="Save"
+                          >
+                            <Save className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => { setShowChangePassword(null); setNewPassword(''); }}
+                            className="text-gray-500 hover:text-gray-700 dark:text-gray-400"
+                            title="Cancel"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => { setShowChangePassword(u.id); setNewPassword(''); setUserError(''); setUserSuccess(''); }}
+                            className="p-1.5 text-vine-sage hover:text-vine-dark dark:text-secondary-400 dark:hover:text-white transition-colors"
+                            title="Change Password"
+                          >
+                            <Key className="w-4 h-4" />
+                          </button>
+                          {u.id !== user?.id && (
+                            <button
+                              onClick={() => handleDeleteUser(u.id, u.username)}
+                              className="p-1.5 text-red-400 hover:text-red-600 transition-colors"
+                              title="Delete User"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Role Descriptions */}
+      <div className="bg-vine-50 dark:bg-gray-800 border border-vine-200 dark:border-gray-700 rounded-lg p-4">
+        <h4 className="font-medium text-vine-dark dark:text-white mb-2">Role Permissions</h4>
+        <ul className="text-sm text-vine-sage dark:text-secondary-400 space-y-1">
+          <li><strong>Viewer:</strong> Can view all family data but cannot make changes</li>
+          <li><strong>Editor:</strong> Can add and edit members, photos, stories, and recipes</li>
+          <li><strong>Admin:</strong> Full access including user management and settings</li>
+        </ul>
       </div>
     </div>
   );
@@ -466,10 +818,10 @@ const Settings = () => {
   const renderLogoutSettings = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
+        <h3 className="text-lg font-medium font-heading text-vine-dark dark:text-white mb-4">
           Sign Out
         </h3>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-vine-sage dark:text-secondary-400 mb-6">
           You will be logged out of FamilyVine and redirected to the login page.
         </p>
         <button
@@ -497,31 +849,27 @@ const Settings = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-xl">Loading settings...</div>
+        <div className="text-xl" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)' }}>Loading settings...</div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 dark:bg-gray-900 transition-colors duration-200">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Settings</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">Manage your FamilyVine preferences and data</p>
+    <div className="max-w-6xl mx-auto p-6 bg-transparent transition-colors duration-200">
+      <div className="settings-header mb-5">
+        <h1 className="settings-header-title">Settings</h1>
+        <p style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)' }}>Manage your FamilyVine preferences and data</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Settings Navigation */}
         <div className="lg:w-64">
-          <nav className="space-y-2">
+          <nav className="settings-tab-nav">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                  activeTab === tab.id
-                    ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                }`}
+                className={`settings-tab${activeTab === tab.id ? ' settings-tab-active' : ''}`}
               >
                 {tab.icon}
                 {tab.label}
@@ -532,21 +880,23 @@ const Settings = () => {
 
         {/* Settings Content */}
         <div className="flex-1">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
+          <div className="settings-content-panel">
             {activeTab === 'general' && renderGeneralSettings()}
             {activeTab === 'display' && renderDisplaySettings()}
             {activeTab === 'privacy' && renderPrivacySettings()}
+            {activeTab === 'users' && user?.role === 'admin' && renderUsersSettings()}
             {activeTab === 'import' && renderImportSettings()}
             {activeTab === 'export' && renderExportSettings()}
             {activeTab === 'notifications' && renderNotificationSettings()}
+            {activeTab === 'logout' && renderLogoutSettings()}
 
-            {/* Save Button - Don't show for import/export tabs */}
-            {activeTab !== 'export' && activeTab !== 'import' && (
-              <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+            {/* Save Button - Don't show for import/export/users/logout tabs */}
+            {activeTab !== 'export' && activeTab !== 'import' && activeTab !== 'users' && activeTab !== 'logout' && (
+              <div className="mt-8 pt-6 border-t border-vine-200 dark:border-gray-700">
                 <button
                   onClick={saveSettings}
                   disabled={saving}
-                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  className="settings-save-btn disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Save className="w-4 h-4" />
                   {saving ? 'Saving...' : 'Save Settings'}
@@ -559,14 +909,14 @@ const Settings = () => {
 
       {/* Export Modal */}
       {showExportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg max-w-6xl w-full max-h-[95vh] flex flex-col shadow-2xl">
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div className="settings-content-panel max-w-6xl w-full max-h-[95vh] flex flex-col shadow-2xl">
             {/* Modal Header - Sticky */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-t-lg">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200">Export Family Data</h2>
+            <div className="flex items-center justify-between p-4 border-b border-vine-200 dark:border-gray-700 rounded-t-xl">
+              <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-header)', color: 'var(--vine-dark)' }}>Export Family Data</h2>
               <button
                 onClick={() => setShowExportModal(false)}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                className="text-vine-sage hover:text-vine-dark dark:text-gray-400 dark:hover:text-gray-200 transition-colors p-2 hover:bg-vine-50 dark:hover:bg-gray-700 rounded-full"
                 title="Close"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -584,10 +934,11 @@ const Settings = () => {
             </div>
 
             {/* Modal Footer - Sticky */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-lg flex justify-end">
+            <div className="p-4 border-t border-vine-200 dark:border-gray-700 bg-vine-50 dark:bg-gray-900 rounded-b-xl flex justify-end">
               <button
                 onClick={() => setShowExportModal(false)}
-                className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+                className="px-6 py-2 rounded-lg transition-colors"
+                style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))', color: '#fffdf9' }}
               >
                 Close
               </button>

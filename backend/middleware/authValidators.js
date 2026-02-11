@@ -126,6 +126,18 @@ const validateStory = [
     .isInt({ min: 1 })
     .withMessage('Each photo_id must be a positive integer'),
 
+  body('transcript')
+    .optional()
+    .trim()
+    .isLength({ max: 100000 })
+    .withMessage('Transcript must be less than 100,000 characters'),
+
+  body('historical_context')
+    .optional()
+    .trim()
+    .isLength({ max: 10000 })
+    .withMessage('Historical context must be less than 10,000 characters'),
+
   handleValidationErrors
 ];
 

@@ -1,22 +1,20 @@
-// FamilyVine Service Worker
-const CACHE_NAME = 'familyvine-v4';
-const STATIC_CACHE_NAME = 'familyvine-static-v4';
+// FamilyVine Service Worker v8
+// SECURITY: Uses network-first for navigation and API to ensure auth redirects always work
+const CACHE_NAME = 'familyvine-v8';
+const STATIC_CACHE_NAME = 'familyvine-static-v8';
 
-// Files to cache for offline functionality
+// Only cache truly static assets (icons, manifest) — NOT HTML or JS bundles
 const STATIC_FILES = [
-  '/',
-  '/static/js/bundle.js',
-  '/static/css/main.css',
   '/manifest.json',
   '/icons/icon-192x192.png?v=3',
   '/icons/icon-512x512.png?v=3',
   '/favicon.ico'
 ];
 
-// Install event - cache essential files
+// Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('FamilyVine SW: Installing...');
-  
+  console.log('FamilyVine SW: Installing v8...');
+
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)
       .then((cache) => {
@@ -35,10 +33,10 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate event - clean up old caches
+// Activate event - clean up ALL old caches (including v4 that cached too aggressively)
 self.addEventListener('activate', (event) => {
-  console.log('FamilyVine SW: Activating...');
-  
+  console.log('FamilyVine SW: Activating v5...');
+
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -58,7 +56,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch event - serve from cache when offline
+// Fetch event — network-first for navigation and API, cache-first only for static assets
 self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (event.request.method !== 'GET') {
@@ -70,52 +68,71 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request)
-      .then((cachedResponse) => {
-        // Return cached version if available
-        if (cachedResponse) {
-          return cachedResponse;
-        }
+  const url = new URL(event.request.url);
 
-        // Clone the request because it can only be used once
-        const fetchRequest = event.request.clone();
+  // NEVER cache or intercept API requests — always go straight to network
+  if (url.pathname.startsWith('/api/')) {
+    return;
+  }
 
-        return fetch(fetchRequest)
-          .then((response) => {
-            // Check if response is valid
-            if (!response || response.status !== 200 || response.type !== 'basic') {
-              return response;
-            }
-
-            // Clone the response because it can only be used once
-            const responseToCache = response.clone();
-
-            // Cache successful responses
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return response;
-          })
-          .catch(() => {
-            // Return offline page for navigation requests when offline
-            if (event.request.mode === 'navigate') {
-              return caches.match('/');
-            }
+  // Navigation requests (HTML pages) — ALWAYS network-first
+  // Critical for auth: ensures ProtectedRoute redirects run on fresh HTML every time
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          // Only fall back to cache when truly offline
+          return caches.match('/') || new Response('Offline — please check your connection.', {
+            status: 503,
+            headers: { 'Content-Type': 'text/plain' }
           });
-      })
+        })
+    );
+    return;
+  }
+
+  // Static assets (JS, CSS, images, fonts) — cache-first is safe because
+  // React build uses content-hashed filenames; new builds = new URLs
+  if (url.pathname.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff2?|ttf|eot)$/)) {
+    event.respondWith(
+      caches.match(event.request)
+        .then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+
+          return fetch(event.request)
+            .then((response) => {
+              if (!response || response.status !== 200 || response.type !== 'basic') {
+                return response;
+              }
+
+              const responseToCache = response.clone();
+              caches.open(CACHE_NAME)
+                .then((cache) => {
+                  cache.put(event.request, responseToCache);
+                });
+
+              return response;
+            });
+        })
+    );
+    return;
+  }
+
+  // Everything else — network-first with cache fallback
+  event.respondWith(
+    fetch(event.request)
+      .catch(() => caches.match(event.request))
   );
 });
 
 // Background sync for when connection returns
 self.addEventListener('sync', (event) => {
   console.log('FamilyVine SW: Background sync triggered');
-  
+
   if (event.tag === 'background-sync') {
     event.waitUntil(
-      // Handle any pending data sync here
       console.log('FamilyVine SW: Syncing data...')
     );
   }
@@ -124,7 +141,7 @@ self.addEventListener('sync', (event) => {
 // Push notification handling (for future use)
 self.addEventListener('push', (event) => {
   console.log('FamilyVine SW: Push notification received');
-  
+
   const options = {
     body: event.data ? event.data.text() : 'New update available',
     icon: '/icons/icon-192x192.png',

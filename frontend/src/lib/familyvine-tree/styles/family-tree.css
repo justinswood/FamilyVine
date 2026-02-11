@@ -1,153 +1,235 @@
 /**
- * FamilyVine Tree - Base Styles
- * Core CSS for the family tree visualization
+ * FamilyVine Tree - Greenhouse Styles
+ * Light, organic aesthetic for the family tree visualization
  */
 
-/* Wrapper and container */
+/* ── Wrapper & SVG ────────────────────────────────────── */
+
 .fv-tree-wrapper {
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: #1a1a1a;
+  background:
+    url('../assets/handmade-paper.png'),
+    radial-gradient(circle at 10% 10%, rgba(128, 0, 128, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 90% 90%, rgba(255, 215, 0, 0.04) 0%, transparent 40%),
+    radial-gradient(circle at 50% 10%, rgba(0, 128, 0, 0.02) 0%, transparent 30%),
+    #F9F8F3;
+  background-blend-mode: multiply, normal, normal, normal, normal;
+  background-repeat: repeat;
+  background-attachment: local;
   overflow: hidden;
+  color-scheme: light;
 }
 
-.fv-tree-container {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  cursor: grab;
-  position: relative;
-}
-
-.fv-tree-container:active {
-  cursor: grabbing;
-}
-
-.fv-tree-container svg {
+.fv-tree-svg {
   display: block;
   width: 100%;
   height: 100%;
+  cursor: grab;
 }
 
-/* Content group - applies pan/zoom transform */
-.content-group {
+.fv-tree-svg:active {
+  cursor: grabbing;
+}
+
+/* Content group - pan/zoom transform target */
+.fv-tree-content {
   transform-origin: 0 0;
   will-change: transform;
 }
 
-/* Node styles */
-.fv-node,
-.tree-node {
-  cursor: pointer;
-  transition: filter 0.2s ease, opacity 0.2s ease;
+/* ── foreignObject ────────────────────────────────────── */
+
+/* Allow node cards to overflow their foreignObject (e.g. profile photo) */
+foreignObject.overflow-visible,
+foreignObject {
+  overflow: visible;
 }
 
-.fv-node:hover,
-.tree-node:hover {
-  filter: brightness(1.15);
+/* ── Union Unit (couple container) ────────────────────── */
+
+/* CSS Flexbox ensures partners display side-by-side, preventing laddering */
+.union-container {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
 }
 
-.fv-node:active,
-.tree-node:active {
-  filter: brightness(0.95);
+.union-container .partner-card {
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
-/* Node card styles */
-.node-card {
-  transition: transform 0.2s ease;
+.union-container .partner-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  transform: scale(1.05);
 }
 
-.node-card:hover {
-  transform: translateY(-2px);
+.union-container .union-bg {
+  transition: background-color 0.2s ease;
 }
 
-/* Photo styles */
-.node-photo {
+.union-container:hover .union-bg {
+  background-color: rgba(134, 167, 137, 0.12) !important;
+}
+
+/* ── Family Connectors (orthogonal stem + bus + drops) ── */
+
+.family-connector-group {
   pointer-events: none;
 }
 
-/* Text styles */
-.node-text {
-  pointer-events: none;
-  user-select: none;
+.connector-line {
+  transition: stroke 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              stroke-width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              opacity 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              filter 0.4s ease;
 }
 
-.node-name {
-  font-weight: 600;
-  font-size: 14px;
-  fill: #ffffff;
+/* ── Ancestral Path Glow ─────────────────────────────── */
+
+/* Card transitions for glow */
+.person-card {
+  transition: border-color 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              box-shadow 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              opacity 0.4s ease,
+              filter 0.4s ease;
 }
 
-.node-years {
-  font-size: 12px;
-  fill: #a0a0a0;
+/* Active glow on person cards (ancestor by marriage — lighter glow) */
+.person-card.active-glow {
+  border-color: #800080 !important;
+  box-shadow: 0 0 25px rgba(128, 0, 128, 0.7), 0 0 10px rgba(128, 0, 128, 0.4) !important;
+  transform: translateY(-5px) scale(1.02);
+  z-index: 50;
 }
 
-/* Edge styles */
-.tree-edge {
-  fill: none;
-  pointer-events: none;
+/* Primary blood-relative glow (stronger than spouse glow) */
+.person-card.active-glow-primary {
+  border-color: #800080 !important;
+  box-shadow: 0 0 32px rgba(128, 0, 128, 0.85), 0 0 16px rgba(128, 0, 128, 0.5) !important;
+  transform: translateY(-5px) scale(1.04);
+  z-index: 50;
 }
 
-.parent-edge {
-  stroke: rgba(255, 255, 255, 0.3);
-  stroke-width: 2;
+/* Ancestral glow - single continuous path from child to root (no joint breaks) */
+.ancestral-glow-path {
+  stroke: #800080;
+  stroke-width: 5px;
+  /* Seal the 90-degree elbows and smooth start/end points */
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  /* Vine glow effect */
+  filter: drop-shadow(0 0 10px rgba(128, 0, 128, 0.9));
+  /* Large dasharray to accommodate multi-generation paths */
+  stroke-dasharray: 5000;
+  stroke-dashoffset: 5000;
+  /* Vine growth draws the line, then Legacy Pulse gently breathes once connected */
+  animation:
+    growVine 0.7s cubic-bezier(0.4, 0, 0.2, 1) forwards,
+    pulsePath 2s infinite ease-in-out 0.7s;
+  transition: all 0.3s ease-in-out;
 }
 
-.spouse-edge {
-  stroke: rgba(255, 182, 193, 0.5);
-  stroke-width: 3;
+@keyframes growVine {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 
-/* Mini-map */
-.fv-tree-minimap {
+@keyframes pulsePath {
+  0%, 100% { stroke-opacity: 1; stroke-width: 5px; }
+  50% { stroke-opacity: 0.6; stroke-width: 6px; }
+}
+
+/* Dimmed state for non-path members */
+.person-card.dimmed {
+  opacity: 0.6;
+  filter: grayscale(0.2);
+}
+
+/* Override partner-card hover scale when glowing (avoid competing transforms) */
+.union-container .partner-card.active-glow:hover {
+  transform: translateY(-5px) scale(1.05);
+}
+
+.union-container .partner-card.active-glow-primary:hover {
+  transform: translateY(-5px) scale(1.06);
+}
+
+/* ── Founder Card — Gold accent for root-generation "Origin" members ── */
+
+.person-card.founder-card {
+  border-color: #D4A017 !important;
+  box-shadow: 0 0 12px rgba(212, 160, 23, 0.3), 0 2px 4px rgba(0,0,0,0.05) !important;
+}
+
+/* Founder badge star */
+.person-card.founder-card::after {
+  content: '\2605';
   position: absolute;
-  bottom: 20px;
-  right: 20px;
-  width: 200px;
-  height: 150px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  overflow: hidden;
-  pointer-events: auto;
-  background-color: rgba(26, 26, 26, 0.95);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  z-index: 100;
-  backdrop-filter: blur(10px);
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  background: linear-gradient(135deg, #FFD700, #D4A017);
+  border-radius: 50%;
+  border: 2px solid white;
+  font-size: 10px;
+  line-height: 20px;
+  text-align: center;
+  color: white;
+  z-index: 15;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
-.minimap-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
+/* When glowing, purple takes over the border but founder badge stays */
+.person-card.founder-card.active-glow {
+  border-color: #800080 !important;
+  box-shadow: 0 0 25px rgba(128, 0, 128, 0.7), 0 0 10px rgba(128, 0, 128, 0.4) !important;
 }
 
-.minimap-content {
-  pointer-events: none;
+.person-card.founder-card.active-glow-primary {
+  border-color: #800080 !important;
+  box-shadow: 0 0 32px rgba(128, 0, 128, 0.85), 0 0 16px rgba(128, 0, 128, 0.5) !important;
 }
 
-.minimap-viewport {
-  pointer-events: none;
+/* ── Subtree Collapse Toggle ─────────────────────────── */
+
+.subtree-toggle {
+  pointer-events: all;
 }
 
-/* Generation labels (if added later) */
-.generation-label {
-  font-size: 12px;
-  font-weight: 600;
-  fill: rgba(255, 255, 255, 0.5);
-  text-anchor: start;
-  pointer-events: none;
-  user-select: none;
+.subtree-toggle circle {
+  transition: fill 0.2s ease, stroke 0.2s ease;
 }
 
-/* Loading state */
+.subtree-toggle:hover circle {
+  fill: #E8F0E8;
+  stroke: #2D4F1E;
+}
+
+/* ── Ghost container (sibling groups) ─────────────────── */
+
+.sibling-group-container rect {
+  transition: opacity 0.2s ease;
+}
+
+.sibling-group-container:hover rect {
+  opacity: 0.7;
+}
+
+/* ── Loading state ────────────────────────────────────── */
+
 .fv-tree-loading {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #ffffff;
+  color: #2D4F1E; /* vine-dark */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 18px;
   font-weight: 500;
 }
@@ -158,170 +240,244 @@
 }
 
 @keyframes loading-dots {
-  0%, 20% {
-    content: '.';
-  }
-  40% {
-    content: '..';
-  }
-  60%, 100% {
-    content: '...';
-  }
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60%, 100% { content: '...'; }
 }
 
-/* Error state */
+/* ── Error state ──────────────────────────────────────── */
+
 .fv-tree-error {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #ef4444;
+  color: #b91c1c;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 16px;
   text-align: center;
   padding: 20px;
-  background-color: rgba(26, 26, 26, 0.9);
-  border-radius: 8px;
-  border: 1px solid rgba(239, 68, 68, 0.5);
+  background-color: rgba(248, 249, 244, 0.95);
+  border-radius: 12px;
+  border: 1px solid rgba(185, 28, 28, 0.3);
 }
 
-/* Empty state */
+/* ── Empty state ──────────────────────────────────────── */
+
 .fv-tree-empty {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(45, 79, 30, 0.4); /* vine-dark / 40% */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 16px;
   text-align: center;
 }
 
-/* Zoom controls (if added later) */
-.fv-tree-controls {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  z-index: 100;
-}
+/* ── Responsive ───────────────────────────────────────── */
 
-.fv-tree-control-button {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background-color: rgba(26, 26, 26, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
-}
-
-.fv-tree-control-button:hover {
-  background-color: rgba(50, 50, 50, 0.9);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.fv-tree-control-button:active {
-  transform: scale(0.95);
-}
-
-/* Responsive adjustments */
 @media (max-width: 768px) {
-  .fv-tree-minimap {
-    width: 150px;
-    height: 112px;
-    bottom: 10px;
-    right: 10px;
-  }
-
-  .fv-tree-controls {
-    top: 10px;
-    right: 10px;
-  }
-
-  .fv-tree-control-button {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-  }
-
-  .node-name {
-    font-size: 12px;
-  }
-
-  .node-years {
-    font-size: 10px;
+  .fv-tree-wrapper {
+    touch-action: none;
   }
 }
 
-/* Print styles */
-@media print {
-  .fv-tree-minimap,
-  .fv-tree-controls {
-    display: none;
-  }
+/* ── Print ────────────────────────────────────────────── */
 
+@media print {
   .fv-tree-wrapper {
     background-color: white;
   }
 
-  .fv-tree-container svg {
+  .fv-tree-svg {
     background-color: white;
   }
 }
 
-/* Accessibility */
-.fv-tree-container:focus {
-  outline: 2px solid rgba(59, 130, 246, 0.5);
+/* ── Relationship Finder - Vine Trace Path ───────────── */
+
+/* Gold-themed vine path for kinship connections */
+.vine-trace-path {
+  stroke: var(--accent-gold, #D4AF37);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.6));
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+  animation: vineTraceGrow 2s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes vineTraceGrow {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Pulsing gold after path is drawn */
+.vine-trace-path.complete {
+  animation:
+    vineTraceGrow 2s ease-out forwards,
+    vineTracePulse 2.5s infinite ease-in-out 2s;
+}
+
+@keyframes vineTracePulse {
+  0%, 100% {
+    stroke-opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.6));
+  }
+  50% {
+    stroke-opacity: 0.7;
+    filter: drop-shadow(0 0 14px rgba(212, 175, 55, 0.9));
+  }
+}
+
+/* ── Relationship Finder - Selection Mode ────────────── */
+
+/* Node selection ring for picking two members */
+.person-card.selectable {
+  cursor: pointer;
+  position: relative;
+}
+
+.person-card.selectable::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 16px;
+  border: 2px dashed rgba(212, 175, 55, 0.4);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.person-card.selectable:hover::before {
+  opacity: 1;
+}
+
+/* Selected member - gold ring glow */
+.person-card.kinship-selected {
+  border-color: var(--accent-gold, #D4AF37) !important;
+  box-shadow:
+    0 0 0 3px rgba(212, 175, 55, 0.3),
+    0 0 20px rgba(212, 175, 55, 0.5) !important;
+  transform: scale(1.03);
+  z-index: 40;
+}
+
+/* First selection - letter A badge */
+.person-card.kinship-selected-a::after {
+  content: 'A';
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  border-radius: 50%;
+  border: 2px solid white;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  color: white;
+  z-index: 60;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Second selection - letter B badge */
+.person-card.kinship-selected-b::after {
+  content: 'B';
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #D4AF37, #B8960C);
+  border-radius: 50%;
+  border: 2px solid white;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  color: white;
+  z-index: 60;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Path member glow - members along the kinship path */
+.person-card.kinship-path-member {
+  border-color: var(--vine-green, #2E5A2E) !important;
+  box-shadow:
+    0 0 16px rgba(46, 90, 46, 0.6),
+    0 0 8px rgba(46, 90, 46, 0.3) !important;
+}
+
+/* Common ancestor special highlight */
+.person-card.kinship-common-ancestor {
+  border-color: var(--accent-gold, #D4AF37) !important;
+  box-shadow:
+    0 0 24px rgba(212, 175, 55, 0.7),
+    0 0 12px rgba(212, 175, 55, 0.4),
+    inset 0 0 20px rgba(212, 175, 55, 0.1) !important;
+  animation: ancestorShimmer 2s infinite ease-in-out;
+}
+
+@keyframes ancestorShimmer {
+  0%, 100% {
+    box-shadow:
+      0 0 24px rgba(212, 175, 55, 0.7),
+      0 0 12px rgba(212, 175, 55, 0.4),
+      inset 0 0 20px rgba(212, 175, 55, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 32px rgba(212, 175, 55, 0.9),
+      0 0 16px rgba(212, 175, 55, 0.6),
+      inset 0 0 30px rgba(212, 175, 55, 0.15);
+  }
+}
+
+/* ── Accessibility ────────────────────────────────────── */
+
+.fv-tree-svg:focus {
+  outline: 2px solid rgba(74, 124, 63, 0.5); /* vine-leaf / 50% */
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fv-node,
-  .tree-node,
-  .node-card,
-  .fv-tree-control-button,
-  .content-group {
+  .fv-tree-content,
+  .family-connector-group,
+  .connector-line,
+  .person-card,
+  .sibling-group-container rect,
+  .union-container .partner-card,
+  .union-container .union-bg,
+  .subtree-toggle circle {
     transition: none;
   }
-}
 
-/* Dark mode specific (already default, but explicit for clarity) */
-.fv-tree-wrapper {
-  color-scheme: dark;
-}
+  .ancestral-glow-path {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
 
-/* Light mode variant (optional) */
-.fv-tree-wrapper.light-mode {
-  background-color: #f5f5f5;
-  color-scheme: light;
-}
+  .vine-trace-path {
+    animation: none;
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
 
-.fv-tree-wrapper.light-mode .fv-tree-container svg {
-  background-color: #f5f5f5;
-}
-
-.fv-tree-wrapper.light-mode .node-name {
-  fill: #1a1a1a;
-}
-
-.fv-tree-wrapper.light-mode .node-years {
-  fill: #666666;
-}
-
-.fv-tree-wrapper.light-mode .fv-tree-minimap {
-  background-color: rgba(255, 255, 255, 0.95);
-  border-color: rgba(0, 0, 0, 0.2);
-}
-
-.fv-tree-wrapper.light-mode .fv-tree-control-button {
-  background-color: rgba(255, 255, 255, 0.9);
-  border-color: rgba(0, 0, 0, 0.2);
-  color: #1a1a1a;
+  .person-card.active-glow,
+  .person-card.active-glow-primary,
+  .person-card.kinship-selected,
+  .person-card.kinship-common-ancestor {
+    transform: none;
+    animation: none;
+  }
 }

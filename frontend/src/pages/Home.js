@@ -83,13 +83,13 @@ const Home = () => {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-transparent">
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-green-600 to-green-800 text-white">
+      <div className="relative overflow-hidden bg-gradient-to-r from-vine-500 to-vine-dark text-white">
         <div className="absolute inset-0 bg-black opacity-10"></div>
         <div className="relative max-w-7xl mx-auto px-4 py-16">
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Welcome to FamilyVine</h1>
+            <h1 className="text-4xl md:text-5xl font-bold font-heading mb-4">Welcome to FamilyVine</h1>
             <p className="text-lg md:text-xl mb-6 max-w-3xl mx-auto">
               FamilyVine helps you visually map and preserve your family's legacy. Add members, photos, life stories,
               and see how you're all connected—across generations and geography.
@@ -97,13 +97,13 @@ const Home = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/members"
-                className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                className="bg-white text-vine-600 px-8 py-3 rounded-lg font-semibold hover:bg-vine-50 transition-colors"
               >
                 View All Members
               </Link>
               <Link
                 to="/add"
-                className="bg-green-700 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-800 transition-colors border border-green-500"
+                className="bg-vine-dark text-white px-8 py-3 rounded-lg font-semibold hover:bg-vine-800 transition-colors border border-vine-500"
               >
                 Add Family Member
               </Link>
@@ -116,8 +116,8 @@ const Home = () => {
       {!loading && stats.recentMembers.length > 0 && (
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">Recently Added Family Members</h2>
-            <p className="text-lg text-gray-600">
+            <h2 className="text-3xl font-bold font-heading text-vine-dark dark:text-white mb-4">Recently Added Family Members</h2>
+            <p className="text-lg text-vine-sage dark:text-secondary-400">
               Newest additions to your family tree
             </p>
           </div>
@@ -127,7 +127,7 @@ const Home = () => {
               <Link
                 key={member.id}
                 to={`/members/${member.id}`}
-                className="bg-white rounded-lg shadow p-4 text-center hover:shadow-lg transition-shadow"
+                className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-4 text-center hover:shadow-lg transition-shadow"
               >
                 {/* REPLACED: Use ProfileImage instead of img with getPhotoUrl */}
                 <ProfileImage 
@@ -135,10 +135,10 @@ const Home = () => {
                   size="small" 
                   className="mx-auto mb-3" 
                 />
-                <h3 className="font-semibold text-gray-800 text-sm">
+                <h3 className="font-semibold text-vine-dark text-sm">
                   {member.first_name} {member.last_name}
                 </h3>
-                <p className="text-gray-500 text-xs">
+                <p className="text-vine-sage text-xs">
                   {member.location || 'Location not specified'}
                 </p>
               </Link>
@@ -150,8 +150,8 @@ const Home = () => {
       {/* Features Section */}
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Powerful Family Management Features</h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-3xl font-bold font-heading text-vine-dark dark:text-white mb-4">Powerful Family Management Features</h2>
+          <p className="text-lg text-vine-sage dark:text-secondary-400 max-w-2xl mx-auto">
             FamilyVine provides all the tools you need to build, visualize, and preserve your family history
           </p>
         </div>
@@ -161,13 +161,13 @@ const Home = () => {
             <Link
               key={index}
               to={feature.link}
-              className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow group"
+              className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 hover:shadow-xl transition-shadow group"
             >
               <div className="text-4xl mb-4">{feature.icon}</div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-2 group-hover:text-green-600 transition-colors">
+              <h3 className="text-xl font-semibold font-heading text-vine-dark mb-2 group-hover:text-vine-600 transition-colors">
                 {feature.title}
               </h3>
-              <p className="text-gray-600 text-sm">
+              <p className="text-vine-sage text-sm">
                 {feature.description}
               </p>
             </Link>
@@ -179,52 +179,52 @@ const Home = () => {
       {!loading && (
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-              <div className="text-3xl font-bold text-green-600">
+            <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 text-center">
+              <div className="text-3xl font-bold text-vine-600">
                 {stats.totalMembers}
               </div>
-              <div className="text-gray-600 mt-1">Family Members</div>
+              <div className="text-vine-sage mt-1">Family Members</div>
             </div>
-            <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-              <div className="text-3xl font-bold text-blue-600">
+            <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 text-center">
+              <div className="text-3xl font-bold text-vine-500">
                 {stats.membersWithPhotos}
               </div>
-              <div className="text-gray-600 mt-1">With Photos</div>
+              <div className="text-vine-sage mt-1">With Photos</div>
             </div>
-            <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-              <div className="text-3xl font-bold text-purple-600">
+            <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 text-center">
+              <div className="text-3xl font-bold text-vine-dark">
                 {stats.totalRelationships}
               </div>
-              <div className="text-gray-600 mt-1">Relationships</div>
+              <div className="text-vine-sage mt-1">Relationships</div>
             </div>
-            <div className="bg-white rounded-lg shadow-lg p-6 text-center">
-              <div className="text-3xl font-bold text-orange-600">
+            <div className="bg-white/80 backdrop-blur-sm border border-white/50 rounded-xl p-6 text-center">
+              <div className="text-3xl font-bold text-vine-600">
                 {stats.totalAlbums}
               </div>
-              <div className="text-gray-600 mt-1">Photo Albums</div>
+              <div className="text-vine-sage mt-1">Photo Albums</div>
             </div>
           </div>
         </div>
       )}
 
       {/* Call to Action Section */}
-      <div className="bg-green-600 text-white">
+      <div className="bg-gradient-to-r from-vine-500 to-vine-600 text-white">
         <div className="max-w-7xl mx-auto px-4 py-16">
           <div className="text-center">
-            <h2 className="text-3xl font-bold mb-4">Start Building Your Family Legacy</h2>
+            <h2 className="text-3xl font-bold font-heading mb-4">Start Building Your Family Legacy</h2>
             <p className="text-xl mb-8 max-w-2xl mx-auto">
               Join families who trust FamilyVine to preserve their history and connect their generations.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
                 to="/add"
-                className="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+                className="bg-white text-vine-600 px-8 py-3 rounded-lg font-semibold hover:bg-vine-50 transition-colors"
               >
                 Add Your First Member
               </Link>
               <Link
                 to="/import-csv"
-                className="bg-green-700 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-800 transition-colors border border-green-500"
+                className="bg-vine-dark text-white px-8 py-3 rounded-lg font-semibold hover:bg-vine-800 transition-colors border border-vine-500"
               >
                 Import Existing Data
               </Link>

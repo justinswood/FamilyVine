@@ -2,7 +2,7 @@
  * API Utility - Centralized fetch wrapper with automatic JWT token inclusion
  */
 
-const API_URL = process.env.REACT_APP_API || 'http://localhost:5050';
+const API_URL = process.env.REACT_APP_API ?? '';
 
 /**
  * Get the auth token from localStorage

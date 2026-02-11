@@ -78,6 +78,7 @@ router.get('/', async (req, res) => {
         m1.gender as member_gender,
         m2.first_name as related_first_name,
         m2.last_name as related_last_name,
+        m2.suffix as related_suffix,
         m2.gender as related_gender
       FROM relationships r
       JOIN members m1 ON r.member1_id = m1.id
@@ -104,19 +105,21 @@ router.get('/member/:id', async (req, res) => {
         r.*,
         m2.first_name as related_first_name,
         m2.last_name as related_last_name,
+        m2.suffix as related_suffix,
         m2.photo_url as related_photo_url,
         m2.gender as related_gender,
         'outgoing' as direction
       FROM relationships r
       JOIN members m2 ON r.member2_id = m2.id
       WHERE r.member1_id = $1 AND r.relationship_type = ANY($2)
-      
+
       UNION ALL
-      
-      SELECT 
+
+      SELECT
         r.*,
         m1.first_name as related_first_name,
         m1.last_name as related_last_name,
+        m1.suffix as related_suffix,
         m1.photo_url as related_photo_url,
         m1.gender as related_gender,
         'incoming' as direction
@@ -135,6 +138,57 @@ router.get('/member/:id', async (req, res) => {
   }
 });
 
+// Helper function to clean up old parent when re-parenting a child
+// e.g., changing Selena's father from Tommy to Isiah removes Selena from Tommy's union
+const cleanupOldParent = async (childId, newParentId, parentType) => {
+  try {
+    // Find any existing parent of the same type (father/mother) that isn't the new parent
+    const oldParentRels = await pool.query(
+      `SELECT r.id, r.member1_id as old_parent_id
+       FROM relationships r
+       WHERE r.member2_id = $1 AND r.relationship_type = $2 AND r.member1_id != $3`,
+      [childId, parentType, newParentId]
+    );
+
+    if (oldParentRels.rows.length === 0) return;
+
+    for (const rel of oldParentRels.rows) {
+      const oldParentId = rel.old_parent_id;
+      logger.info(`Re-parenting: removing old ${parentType} ${oldParentId} for child ${childId}`);
+
+      // Remove child from old parent's unions
+      const oldUnions = await pool.query(
+        `SELECT u.id FROM unions u
+         WHERE u.partner1_id = $1 OR u.partner2_id = $1`,
+        [oldParentId]
+      );
+
+      for (const union of oldUnions.rows) {
+        await pool.query(
+          'DELETE FROM union_children WHERE union_id = $1 AND child_id = $2',
+          [union.id, childId]
+        );
+        logger.debug(`Removed child ${childId} from old union ${union.id}`);
+      }
+
+      // Remove old parent relationship and its inverse
+      await pool.query(
+        'DELETE FROM relationships WHERE member1_id = $1 AND member2_id = $2 AND relationship_type = $3',
+        [oldParentId, childId, parentType]
+      );
+      await pool.query(
+        `DELETE FROM relationships WHERE member1_id = $1 AND member2_id = $2
+         AND relationship_type IN ('son', 'daughter')`,
+        [childId, oldParentId]
+      );
+      logger.info(`Cleaned up old ${parentType} relationship: ${oldParentId} -> ${childId}`);
+    }
+  } catch (error) {
+    logger.error('Error cleaning up old parent:', error);
+    // Don't fail the main operation
+  }
+};
+
 // Helper function to sync child to union_children table
 const syncChildToUnion = async (parentId, childId) => {
   try {
@@ -144,12 +198,44 @@ const syncChildToUnion = async (parentId, childId) => {
       [parentId]
     );
 
-    if (unionResult.rows.length === 0) {
-      logger.debug(`No union found for parent ${parentId} - child will not appear in tree until union is created`);
-      return false;
-    }
+    let unionId;
 
-    const unionId = unionResult.rows[0].id;
+    if (unionResult.rows.length === 0) {
+      // No union found - create a single-parent union automatically
+      logger.info(`No union found for parent ${parentId} - creating single-parent union`);
+
+      // Get or create the "Unknown Parent" placeholder member
+      let unknownParentResult = await pool.query(
+        `SELECT id FROM members WHERE first_name = 'Unknown' AND last_name = 'Parent' LIMIT 1`
+      );
+
+      let unknownParentId;
+      if (unknownParentResult.rows.length === 0) {
+        // Create Unknown Parent placeholder if it doesn't exist
+        const createResult = await pool.query(
+          `INSERT INTO members (first_name, last_name, gender, is_alive)
+           VALUES ('Unknown', 'Parent', 'Male', false)
+           RETURNING id`
+        );
+        unknownParentId = createResult.rows[0].id;
+        logger.info(`Created Unknown Parent placeholder with ID ${unknownParentId}`);
+      } else {
+        unknownParentId = unknownParentResult.rows[0].id;
+      }
+
+      // Create single-parent union with Unknown Parent as partner2
+      const newUnionResult = await pool.query(
+        `INSERT INTO unions (partner1_id, partner2_id, union_type, is_single_parent, is_visible_on_tree, notes)
+         VALUES ($1, $2, 'single-parent', true, false, 'Auto-created single-parent union')
+         RETURNING id`,
+        [parentId, unknownParentId]
+      );
+
+      unionId = newUnionResult.rows[0].id;
+      logger.info(`Created single-parent union ${unionId} for parent ${parentId}`);
+    } else {
+      unionId = unionResult.rows[0].id;
+    }
 
     // Check if child is already in this union
     const existingChild = await pool.query(
@@ -261,10 +347,35 @@ router.post('/', async (req, res) => {
     // Child relationship types: son, daughter (member1 is child, member2 is parent)
     if (['father', 'mother'].includes(relationship_type)) {
       // member1 is parent, member2 is child
+      // Clean up old parent of the same type (re-parenting)
+      await cleanupOldParent(member2_id, member1_id, relationship_type);
       await syncChildToUnion(member1_id, member2_id);
     } else if (['son', 'daughter'].includes(relationship_type)) {
       // member1 is child, member2 is parent
+      // Determine the parent type from the parent's gender
+      const parentGender = member2Info.rows[0]?.gender;
+      const parentType = parentGender === 'Female' ? 'mother' : 'father';
+      await cleanupOldParent(member1_id, member2_id, parentType);
       await syncChildToUnion(member2_id, member1_id);
+    }
+
+    // SYNC TO UNIONS: If this is a spouse relationship, auto-create a union
+    if (['husband', 'wife'].includes(relationship_type)) {
+      const partner1 = Math.min(member1_id, member2_id);
+      const partner2 = Math.max(member1_id, member2_id);
+
+      const existingUnion = await pool.query(
+        'SELECT id FROM unions WHERE partner1_id = $1 AND partner2_id = $2',
+        [partner1, partner2]
+      );
+
+      if (existingUnion.rows.length === 0) {
+        await pool.query(
+          'INSERT INTO unions (partner1_id, partner2_id, union_type, is_primary) VALUES ($1, $2, $3, true)',
+          [partner1, partner2, 'marriage']
+        );
+        logger.info(`Auto-created union for spouse relationship: ${partner1} <-> ${partner2}`);
+      }
     }
 
     res.status(201).json(result.rows[0]);
@@ -334,13 +445,13 @@ router.get('/tree/:id', async (req, res) => {
       const member = memberResult.rows[0];
       nodes.push({
         id: member.id,
-        label: `${member.first_name} ${member.last_name}`,
+        label: `${member.first_name} ${member.last_name}${member.suffix ? ' ' + member.suffix : ''}`,
         ...member
       });
-      
+
       // Get all relationships
       const relationsResult = await pool.query(`
-        SELECT r.*, m.first_name, m.last_name
+        SELECT r.*, m.first_name, m.last_name, m.suffix
         FROM relationships r
         JOIN members m ON (r.member2_id = m.id)
         WHERE r.member1_id = $1 AND r.relationship_type = ANY($2)

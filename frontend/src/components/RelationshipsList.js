@@ -276,7 +276,7 @@ const RelationshipsList = ({ memberId }) => {
         // Handle combined parent relationship
         if (relationship.isCombined) {
           return (
-            <div key={relationship.id} className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg border border-blue-100">
+            <div key={relationship.id} className="flex items-center justify-between bg-gradient-to-r from-vine-50 to-vine-100 p-3 rounded-lg border border-vine-100">
               <div className="flex items-center space-x-3">
                 {/* Show both parent photos */}
                 <div className="flex -space-x-2">
@@ -296,23 +296,23 @@ const RelationshipsList = ({ memberId }) => {
                   )}
                   {/* If no photos, show a family icon */}
                   {!relationship.parent1.photo && !relationship.parent2.photo && (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-200 to-purple-200 flex items-center justify-center text-blue-700 text-sm font-bold border-2 border-white shadow-sm">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-vine-200 to-vine-300 flex items-center justify-center text-vine-dark text-sm font-bold border-2 border-white shadow-sm">
                       👨‍👩
                     </div>
                   )}
                 </div>
                 <div>
-                  <span className="text-gray-600 font-medium">{relationship.relationshipText} </span>
-                  <Link 
+                  <span className="text-vine-sage font-medium">{relationship.relationshipText} </span>
+                  <Link
                     to={`/members/${relationship.parent1.id}`}
-                    className="text-blue-600 hover:text-blue-800 hover:underline font-semibold"
+                    className="text-vine-600 hover:text-vine-dark hover:underline font-semibold"
                   >
                     {relationship.parent1.name}
                   </Link>
-                  <span className="text-gray-600 font-medium"> and </span>
-                  <Link 
+                  <span className="text-vine-sage font-medium"> and </span>
+                  <Link
                     to={`/members/${relationship.parent2.id}`}
-                    className="text-blue-600 hover:text-blue-800 hover:underline font-semibold"
+                    className="text-vine-600 hover:text-vine-dark hover:underline font-semibold"
                   >
                     {relationship.parent2.name}
                   </Link>
@@ -320,7 +320,7 @@ const RelationshipsList = ({ memberId }) => {
               </div>
               
               <div className="flex items-center space-x-2">
-                <span className="text-xs text-blue-600 italic font-medium bg-white px-2 py-1 rounded-full">
+                <span className="text-xs text-vine-600 italic font-medium bg-white px-2 py-1 rounded-full">
                   👨‍👩‍👧‍👦 Parents
                 </span>
               </div>
@@ -342,10 +342,10 @@ const RelationshipsList = ({ memberId }) => {
                 />
               )}
               <div>
-                <span className="text-gray-600">{display.relationshipText} </span>
-                <Link 
+                <span className="text-vine-sage">{display.relationshipText} </span>
+                <Link
                   to={`/members/${display.personId}`}
-                  className="text-blue-600 hover:underline font-medium"
+                  className="text-vine-600 hover:underline font-medium"
                 >
                   {display.relatedPerson}
                 </Link>

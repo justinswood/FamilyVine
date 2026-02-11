@@ -171,7 +171,7 @@ const FamilyInsights = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
+        <h2 className="text-2xl font-heading font-bold text-gray-900 dark:text-gray-100 mb-2 flex items-center gap-2">
           <Star className="w-6 h-6 text-yellow-500" />
           Family Insights
         </h2>
@@ -184,7 +184,7 @@ const FamilyInsights = () => {
         {/* Upcoming Birthdays */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-            <Gift className="w-5 h-5 text-purple-500" />
+            <Gift className="w-5 h-5 text-vine-600" />
             Upcoming Birthdays
           </h3>
           
@@ -202,7 +202,7 @@ const FamilyInsights = () => {
                   </div>
                   <div className="text-right">
                     <div className={`text-sm font-medium ${
-                      member.daysUntil === 0 ? 'text-purple-600 dark:text-purple-400' :
+                      member.daysUntil === 0 ? 'text-vine-600 dark:text-vine-400' :
                       member.daysUntil <= 7 ? 'text-orange-600 dark:text-orange-400' :
                       'text-gray-600 dark:text-gray-400'
                     }`}>
@@ -224,7 +224,7 @@ const FamilyInsights = () => {
         {/* Family Name Analysis */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-            <Users className="w-5 h-5 text-blue-500" />
+            <Users className="w-5 h-5 text-vine-600" />
             Name Patterns
           </h3>
           
@@ -315,7 +315,7 @@ const FamilyInsights = () => {
         {/* Geographic Distribution */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-orange-500" />
+            <MapPin className="w-5 h-5 text-vine-600" />
             Geographic Spread
           </h3>
           
@@ -344,7 +344,7 @@ const FamilyInsights = () => {
       {insights.recentMembers.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-indigo-500" />
+            <TrendingUp className="w-5 h-5 text-vine-600" />
             Recent Additions
           </h3>
           
