@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Plus, User, Edit, Trash2, Search, Filter, Volume2, Users } from 'lucide-react';
+import { BookOpen, Plus, User, Edit, Trash2, Volume2, Users } from 'lucide-react';
 import ProfileImage from '../components/ProfileImage';
 
 /* ── Decorative leaf icon matching Chronicle motif ── */
@@ -17,8 +17,6 @@ const StoriesPage = () => {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filterPerson, setFilterPerson] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedDecade, setSelectedDecade] = useState('all');
   const [showDeleteModal, setShowDeleteModal] = useState(null);
 
@@ -99,16 +97,9 @@ const StoriesPage = () => {
     return Array.from(decadeSet).sort((a, b) => a - b);
   }, [stories]);
 
-  /* ── Filtered & searched stories ── */
+  /* ── Filtered stories ── */
   const filteredStories = useMemo(() => {
     let result = stories;
-
-    // Filter by person
-    if (filterPerson !== 'all') {
-      result = result.filter(story =>
-        story.members && story.members.some(m => m.id === parseInt(filterPerson))
-      );
-    }
 
     // Filter by decade
     if (selectedDecade !== 'all') {
@@ -120,25 +111,8 @@ const StoriesPage = () => {
       });
     }
 
-    // Search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(story =>
-        story.title.toLowerCase().includes(q) ||
-        (story.content && story.content.toLowerCase().includes(q)) ||
-        (story.author_name && story.author_name.toLowerCase().includes(q))
-      );
-    }
-
     return result;
-  }, [stories, filterPerson, selectedDecade, searchQuery]);
-
-  /* ── Members who appear in stories (for filter dropdown) ── */
-  const storyMembers = useMemo(() => {
-    return members.filter(member =>
-      stories.some(s => s.members && s.members.some(m => m.id === member.id))
-    );
-  }, [members, stories]);
+  }, [stories, selectedDecade]);
 
   /* ── Find member object to deep link author ── */
   const findAuthorMember = (authorName) => {
@@ -236,81 +210,6 @@ const StoriesPage = () => {
             </div>
           )}
 
-          {/* ── Filter Bar (30% reduced) ── */}
-          <div className="story-filter-bar">
-            <div className="flex flex-wrap items-center gap-1.5">
-              {/* Search */}
-              <div className="relative flex-1 min-w-[112px]">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-2 h-2" style={{ color: 'var(--vine-sage, #86A789)' }} />
-                <input
-                  type="text"
-                  placeholder="Search stories..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full border bg-white/60 dark:bg-secondary-700 dark:border-secondary-600 focus:ring-2 focus:ring-vine-500 focus:border-transparent"
-                  style={{ borderColor: 'rgba(128, 0, 128, 0.1)' }}
-                />
-              </div>
-
-              {/* Person Filter */}
-              <div className="flex items-center gap-1">
-                <Filter className="w-2 h-2" style={{ color: 'var(--vine-sage, #86A789)' }} />
-                <select
-                  value={filterPerson}
-                  onChange={(e) => setFilterPerson(e.target.value)}
-                  className="border bg-white/60 dark:bg-secondary-700 dark:border-secondary-600 focus:ring-2 focus:ring-vine-500 focus:border-transparent"
-                  style={{ borderColor: 'rgba(128, 0, 128, 0.1)', color: 'var(--vine-dark, #2D4F1E)' }}
-                >
-                  <option value="all">All People ({stories.length})</option>
-                  {storyMembers.map((member) => {
-                    const count = stories.filter(s =>
-                      s.members && s.members.some(m => m.id === member.id)
-                    ).length;
-                    return (
-                      <option key={member.id} value={member.id}>
-                        {member.first_name} {member.last_name} ({count})
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-            </div>
-
-            {/* Active filter indicators */}
-            {(filterPerson !== 'all' || selectedDecade !== 'all' || searchQuery.trim()) && (
-              <div className="flex flex-wrap items-center gap-2 mt-3 pt-3" style={{ borderTop: '1px solid rgba(128, 0, 128, 0.06)' }}>
-                <span className="text-xs" style={{ color: 'var(--vine-sage, #86A789)' }}>Active filters:</span>
-                {searchQuery.trim() && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
-                    style={{ backgroundColor: 'rgba(46, 90, 46, 0.1)', color: 'var(--vine-green, #2E5A2E)' }}>
-                    "{searchQuery}"
-                    <button onClick={() => setSearchQuery('')} className="ml-1 hover:opacity-70">&times;</button>
-                  </span>
-                )}
-                {selectedDecade !== 'all' && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
-                    style={{ backgroundColor: 'rgba(46, 90, 46, 0.1)', color: 'var(--vine-green, #2E5A2E)' }}>
-                    {selectedDecade}s
-                    <button onClick={() => setSelectedDecade('all')} className="ml-1 hover:opacity-70">&times;</button>
-                  </span>
-                )}
-                {filterPerson !== 'all' && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs"
-                    style={{ backgroundColor: 'rgba(46, 90, 46, 0.1)', color: 'var(--vine-green, #2E5A2E)' }}>
-                    {members.find(m => m.id === parseInt(filterPerson))?.first_name || 'Person'}
-                    <button onClick={() => setFilterPerson('all')} className="ml-1 hover:opacity-70">&times;</button>
-                  </span>
-                )}
-                <button
-                  onClick={() => { setSearchQuery(''); setFilterPerson('all'); setSelectedDecade('all'); }}
-                  className="text-xs underline hover:opacity-70"
-                  style={{ color: 'var(--vine-sage, #86A789)' }}
-                >
-                  Clear all
-                </button>
-              </div>
-            )}
-          </div>
         </div>
 
         {/* ── Story Count ── */}
@@ -331,16 +230,16 @@ const StoriesPage = () => {
               color: 'var(--vine-dark, #2D4F1E)',
               marginBottom: '0.5rem',
             }}>
-              {filterPerson === 'all' && selectedDecade === 'all' && !searchQuery.trim()
+              {selectedDecade === 'all'
                 ? 'No stories yet'
-                : 'No stories match your filters'}
+                : 'No stories match this era'}
             </h2>
             <p style={{ color: 'var(--vine-sage, #86A789)', marginBottom: '1.5rem' }}>
-              {filterPerson === 'all' && selectedDecade === 'all' && !searchQuery.trim()
+              {selectedDecade === 'all'
                 ? 'Begin your family anthology by recording the first story'
-                : 'Try adjusting your filters or search term'}
+                : 'Try selecting a different decade'}
             </p>
-            {filterPerson === 'all' && selectedDecade === 'all' && !searchQuery.trim() && (
+            {selectedDecade === 'all' && (
               <button
                 onClick={() => navigate('/stories/new')}
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-lg transition-colors"

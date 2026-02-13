@@ -307,8 +307,8 @@ const MemberList = () => {
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-2">
 
             {/* Left: Title + Count */}
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <LeafIcon className="w-5 h-5" style={{ color: 'var(--vine-sage)' }} />
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <LeafIcon className="w-3.5 h-3.5" style={{ color: 'var(--vine-sage)' }} />
               <div>
                 <h1 className="registry-header-title">Ancestral Registry</h1>
                 <p className="registry-count">
@@ -319,9 +319,9 @@ const MemberList = () => {
             </div>
 
             {/* Center: Search */}
-            <div className="flex items-center gap-2 flex-1 max-w-lg">
+            <div className="flex items-center gap-1.5 flex-1 max-w-lg">
               <div className="relative flex-1">
-                <svg className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5" style={{ color: 'var(--vine-sage)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-2 top-1/2 transform -translate-y-1/2 w-2.5 h-2.5" style={{ color: 'var(--vine-sage)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <input
@@ -329,9 +329,10 @@ const MemberList = () => {
                   placeholder="Search the registry..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-8 py-1.5 text-sm rounded-lg border"
+                  className="w-full pl-6 pr-6 py-1 rounded-lg border"
                   style={{
                     fontFamily: 'var(--font-body)',
+                    fontSize: '0.5rem',
                     background: 'rgba(255,253,249,0.6)',
                     borderColor: 'rgba(134, 167, 137, 0.2)',
                     color: 'var(--vine-dark)',
@@ -341,10 +342,10 @@ const MemberList = () => {
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
-                    className="absolute right-2.5 top-1/2 transform -translate-y-1/2"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2"
                     style={{ color: 'var(--vine-sage)' }}
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -355,9 +356,10 @@ const MemberList = () => {
               <div className="flex rounded-md p-0.5" style={{ background: 'rgba(134, 167, 137, 0.08)', border: '1px solid rgba(134, 167, 137, 0.12)' }}>
                 <button
                   onClick={() => setViewMode('list')}
-                  className="px-2 py-0.5 rounded text-xs font-medium transition-all"
+                  className="px-1.5 py-0.5 rounded font-medium transition-all"
                   style={{
                     fontFamily: 'var(--font-body)',
+                    fontSize: '0.5rem',
                     background: viewMode === 'list' ? 'var(--parchment)' : 'transparent',
                     color: viewMode === 'list' ? 'var(--vine-dark)' : 'var(--vine-sage)',
                     boxShadow: viewMode === 'list' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none'
@@ -367,9 +369,10 @@ const MemberList = () => {
                 </button>
                 <button
                   onClick={() => setViewMode('grid')}
-                  className="px-2 py-0.5 rounded text-xs font-medium transition-all"
+                  className="px-1.5 py-0.5 rounded font-medium transition-all"
                   style={{
                     fontFamily: 'var(--font-body)',
+                    fontSize: '0.5rem',
                     background: viewMode === 'grid' ? 'var(--parchment)' : 'transparent',
                     color: viewMode === 'grid' ? 'var(--vine-dark)' : 'var(--vine-sage)',
                     boxShadow: viewMode === 'grid' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none'
@@ -381,13 +384,14 @@ const MemberList = () => {
             </div>
 
             {/* Right: Sort + Add */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="text-xs py-1 px-2 rounded-lg border"
+                className="py-0.5 px-1.5 rounded-lg border"
                 style={{
                   fontFamily: 'var(--font-body)',
+                  fontSize: '0.5rem',
                   background: 'rgba(255,253,249,0.6)',
                   borderColor: 'rgba(134, 167, 137, 0.2)',
                   color: 'var(--vine-dark)',
@@ -401,11 +405,11 @@ const MemberList = () => {
               <button
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                 className="btn-registry btn-registry-secondary"
-                style={{ padding: '4px 8px' }}
+                style={{ padding: '2px 6px' }}
               >
                 {sortBy === 'age' ? (sortOrder === 'asc' ? '\u2191' : '\u2193') : (sortOrder === 'asc' ? 'A-Z' : 'Z-A')}
               </button>
-              <Link to="/add" className="btn-registry btn-registry-primary" style={{ padding: '5px 12px' }}>
+              <Link to="/add" className="btn-registry btn-registry-primary" style={{ padding: '3px 8px' }}>
                 + Add
               </Link>
             </div>
@@ -421,7 +425,7 @@ const MemberList = () => {
               }} />
               <div className="vine-selector">
                 <div className="vine-selector-label">
-                  <LeafIcon className="w-3 h-3" />
+                  <LeafIcon className="w-2 h-2" />
                   <span>Branches</span>
                 </div>
                 <button

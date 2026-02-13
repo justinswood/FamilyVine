@@ -1,7 +1,7 @@
-// FamilyVine Service Worker v8
+// FamilyVine Service Worker v28
 // SECURITY: Uses network-first for navigation and API to ensure auth redirects always work
-const CACHE_NAME = 'familyvine-v8';
-const STATIC_CACHE_NAME = 'familyvine-static-v8';
+const CACHE_NAME = 'familyvine-v28';
+const STATIC_CACHE_NAME = 'familyvine-static-v28';
 
 // Only cache truly static assets (icons, manifest) — NOT HTML or JS bundles
 const STATIC_FILES = [
@@ -13,7 +13,7 @@ const STATIC_FILES = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('FamilyVine SW: Installing v8...');
+  console.log('FamilyVine SW: Installing v22...');
 
   event.waitUntil(
     caches.open(STATIC_CACHE_NAME)

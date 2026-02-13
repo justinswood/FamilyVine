@@ -1019,19 +1019,98 @@ nav {
 }
 
 /* ============================================
-   Heritage Gateway — Login Page
+   Heritage Entryway — Login Page
+   The "Archival Desk" Experience
    ============================================ */
 
-/* Full-screen parchment container */
-.login-gateway {
+/* Full-screen parchment stage with vignette */
+.login-stage {
   min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  /* Alabaster Parchment base */
+  background-color: #F9F8F3;
+  /* Handmade paper texture + subtle gold radial */
+  background-image:
+    radial-gradient(circle at center, transparent 20%, rgba(212, 175, 55, 0.06) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23paper)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+/* Vignette overlay for depth */
+.login-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 50%,
+    rgba(45, 79, 30, 0.04) 80%,
+    rgba(45, 79, 30, 0.08) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Corner Vine Flourishes */
+.vine-flourish {
+  position: absolute;
+  width: 18%;
+  max-width: 280px;
+  min-width: 120px;
+  opacity: 0;
+  animation: flourishFadeIn 2s ease-out forwards;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.vine-top-left {
+  top: -15px;
+  left: -15px;
+}
+
+.vine-bottom-right {
+  bottom: -15px;
+  right: -15px;
+  transform: rotate(180deg);
+}
+
+@keyframes flourishFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0.35;
+  }
+}
+
+.vine-bottom-right {
+  animation: flourishFadeInRotated 2s ease-out forwards;
+}
+
+@keyframes flourishFadeInRotated {
+  0% {
+    opacity: 0;
+    transform: rotate(180deg) scale(0.9);
+  }
+  100% {
+    opacity: 0.35;
+    transform: rotate(180deg) scale(1);
+  }
+}
+
+/* Main content container */
+.login-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #fffdf9;
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='lp'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.55' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23lp)' opacity='0.03'/%3E%3C/svg%3E");
+  position: relative;
+  z-index: 2;
   padding: 0 16px;
+  width: 100%;
 }
 
 /* Brand logo area */
@@ -1137,7 +1216,35 @@ nav {
   transform: none;
 }
 
-/* Legacy quote ticker */
+/* Legacy Wisdom Footer */
+.login-wisdom-footer {
+  margin-top: 16px;
+  padding: 0 12px;
+}
+
+.login-wisdom-quote {
+  font-family: var(--font-header);
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--vine-green, #2E5A2E);
+  text-align: center;
+  line-height: 1.6;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  animation: wisdomFadeIn 1s ease-out;
+}
+
+@keyframes wisdomFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Legacy quote ticker (kept for compatibility) */
 .login-quote {
   font-family: var(--font-header);
   font-style: italic;
@@ -1145,12 +1252,7 @@ nav {
   color: var(--vine-sage);
   text-align: center;
   line-height: 1.5;
-  animation: quoteIn 0.8s ease-out;
-}
-
-@keyframes quoteIn {
-  0% { opacity: 0; transform: translateY(6px); }
-  100% { opacity: 1; transform: translateY(0); }
+  animation: wisdomFadeIn 0.8s ease-out;
 }
 
 /* Leaf checkbox */
@@ -1248,8 +1350,20 @@ nav {
 }
 
 /* Mobile adjustments */
+@media (max-width: 768px) {
+  .vine-flourish {
+    width: 12%;
+    min-width: 80px;
+    max-width: 150px;
+  }
+
+  .login-wisdom-quote {
+    font-size: 0.9rem;
+  }
+}
+
 @media (max-width: 640px) {
-  .login-gateway {
+  .login-content {
     padding: 0 12px;
   }
 
@@ -1263,12 +1377,42 @@ nav {
     border-color: rgba(212, 175, 55, 0.35);
     padding: 20px 16px 18px;
   }
+
+  /* Hide flourishes on small mobile to prevent overlap */
+  .vine-flourish {
+    display: none;
+  }
+
+  .login-wisdom-quote {
+    font-size: 0.85rem;
+  }
 }
 
 /* Dark mode */
-.dark .login-gateway {
+.dark .login-stage {
   background-color: #141920;
   background-image: none;
+}
+
+.dark .login-vignette {
+  background: radial-gradient(
+    ellipse at center,
+    transparent 0%,
+    transparent 50%,
+    rgba(0, 0, 0, 0.1) 80%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+
+.dark .vine-flourish path,
+.dark .vine-flourish ellipse {
+  stroke: rgba(134, 167, 137, 0.5);
+  fill: rgba(134, 167, 137, 0.3);
+}
+
+.dark .login-wisdom-quote {
+  color: rgba(134, 167, 137, 0.8);
+  text-shadow: none;
 }
 
 .dark .login-card-vellum {
@@ -2095,8 +2239,8 @@ nav {
   background-color: #fffdf9;
   background-image:
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='gh'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.4' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23gh)' opacity='0.025'/%3E%3C/svg%3E");
-  border-radius: 12px;
-  padding: 10px 18px;
+  border-radius: 8px;
+  padding: 7px 12px;
   border: 1px solid rgba(0, 0, 0, 0.05);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
@@ -2121,7 +2265,7 @@ nav {
 .gallery-header-title {
   font-family: var(--font-header);
   color: #2c2c2c;
-  font-size: 0.7rem;
+  font-size: 0.5rem;
   font-weight: 500;
   letter-spacing: 0.5px;
   margin: 0 0 1px 0;
@@ -2276,7 +2420,7 @@ nav {
 .recipe-header-title {
   font-family: var(--font-header, 'Playfair Display', serif);
   font-weight: 700;
-  font-size: 0.73rem;
+  font-size: 0.51rem;
   color: var(--vine-dark, #2D4F1E);
   letter-spacing: 0.02em;
 }
@@ -4575,6 +4719,186 @@ nav {
 }
 
 /* ═══════════════════════════════════════════════════════
+   HOMEPAGE — Heritage Spatial Enhancement
+   ═══════════════════════════════════════════════════════ */
+
+/* 1. Homepage Heritage Container — archival parchment background */
+.homepage-heritage {
+  position: relative;
+  background-color: #F9F8F3;
+  background-image:
+    /* Subtle gold-amethyst radial vignette */
+    radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(212, 175, 55, 0.03) 70%, rgba(128, 0, 128, 0.02) 100%),
+    /* Handmade paper texture */
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23paper)' opacity='0.025'/%3E%3C/svg%3E");
+}
+
+/* 2. Heritage Watermark — large faint background logo */
+.heritage-watermark {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70vw;
+  max-width: 800px;
+  height: 70vw;
+  max-height: 800px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  animation: watermarkFadeIn 3s ease-out 0.5s forwards;
+}
+
+.heritage-watermark svg {
+  width: 100%;
+  height: 100%;
+  color: var(--vine-dark, #2D4F1E);
+  opacity: 0.025;
+}
+
+@keyframes watermarkFadeIn {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* 3. Organic Section Divider — vine pattern with fleur-de-lis */
+.vine-divider {
+  width: 100%;
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+  opacity: 0;
+  animation: dividerFadeIn 1s ease-out forwards;
+}
+
+.vine-divider svg {
+  width: 100%;
+  height: 40px;
+  color: var(--vine-sage, #86A789);
+}
+
+@keyframes dividerFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 0.6; }
+}
+
+/* 4. Marginal Artifact System — desktop only decorative icons */
+.marginal-artifacts {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  display: none;
+}
+
+/* Show only on larger screens */
+@media (min-width: 1280px) {
+  .marginal-artifacts {
+    display: block;
+  }
+}
+
+.marginal-artifact {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  color: var(--vine-sage, #86A789);
+  opacity: 0;
+  animation: artifactFadeIn 2s ease-out forwards;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.marginal-artifact svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 1;
+}
+
+.marginal-artifact:hover {
+  transform: scale(1.15) rotate(5deg);
+  opacity: 0.4;
+}
+
+/* Left margin artifacts */
+.marginal-artifact-left {
+  left: 2%;
+}
+
+.marginal-artifact-1 {
+  top: 25%;
+  animation-delay: 1s;
+}
+
+.marginal-artifact-2 {
+  top: 55%;
+  animation-delay: 1.5s;
+  transform: rotate(-15deg);
+}
+
+/* Right margin artifacts */
+.marginal-artifact-right {
+  right: 2%;
+}
+
+.marginal-artifact-3 {
+  top: 35%;
+  animation-delay: 1.2s;
+  transform: rotate(10deg);
+}
+
+.marginal-artifact-4 {
+  top: 65%;
+  animation-delay: 1.8s;
+}
+
+@keyframes artifactFadeIn {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 0.2; }
+}
+
+/* Subtle parallax effect for artifacts based on scroll (CSS-only approximation) */
+@media (min-width: 1280px) {
+  .marginal-artifact-1 { animation-name: artifactFloat1; animation-duration: 8s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+  .marginal-artifact-2 { animation-name: artifactFloat2; animation-duration: 10s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; }
+  .marginal-artifact-3 { animation-name: artifactFloat1; animation-duration: 9s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; animation-delay: 2s; }
+  .marginal-artifact-4 { animation-name: artifactFloat2; animation-duration: 7s; animation-iteration-count: infinite; animation-timing-function: ease-in-out; animation-delay: 1s; }
+}
+
+@keyframes artifactFloat1 {
+  0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.2; }
+  50% { transform: translateY(-8px) rotate(3deg); opacity: 0.25; }
+}
+
+@keyframes artifactFloat2 {
+  0%, 100% { transform: translateY(0) rotate(-15deg); opacity: 0.2; }
+  50% { transform: translateY(6px) rotate(-18deg); opacity: 0.25; }
+}
+
+/* Dark mode adjustments for heritage elements */
+.dark .homepage-heritage {
+  background-color: #111827;
+  background-image:
+    radial-gradient(ellipse at center, transparent 0%, transparent 40%, rgba(134, 167, 137, 0.03) 70%, rgba(128, 0, 128, 0.02) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23paper)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+.dark .heritage-watermark svg {
+  color: var(--vine-sage, #86A789);
+  opacity: 0.03;
+}
+
+.dark .vine-divider svg {
+  color: var(--vine-sage, #86A789);
+}
+
+.dark .marginal-artifact {
+  color: rgba(134, 167, 137, 0.6);
+}
+
+/* ═══════════════════════════════════════════════════════
    HOMEPAGE — Interactive Storybook Hero (60/40 Split)
    ═══════════════════════════════════════════════════════ */
 
@@ -6159,9 +6483,9 @@ nav {
   background: var(--parchment);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
   border: 1px solid rgba(212, 175, 55, 0.12);
-  border-radius: 14px;
-  padding: 12px 16px;
-  margin-bottom: 10px;
+  border-radius: 10px;
+  padding: 8px 11px;
+  margin-bottom: 7px;
   position: relative;
 }
 
@@ -6179,13 +6503,13 @@ nav {
   font-family: var(--font-header);
   font-weight: 700;
   color: var(--vine-dark);
-  font-size: 0.8rem;
+  font-size: 0.55rem;
   letter-spacing: -0.01em;
 }
 
 .registry-count {
   font-family: var(--font-body);
-  font-size: 0.7rem;
+  font-size: 0.5rem;
   color: var(--vine-sage);
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -6195,8 +6519,8 @@ nav {
 .vine-selector {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 0;
+  gap: 4px;
+  padding: 5px 0;
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -6209,9 +6533,9 @@ nav {
 .vine-selector-label {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-family: var(--font-body);
-  font-size: 0.65rem;
+  font-size: 0.45rem;
   font-weight: 600;
   color: var(--vine-sage);
   text-transform: uppercase;
@@ -6223,11 +6547,11 @@ nav {
 .vine-pill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
+  gap: 3px;
+  padding: 2px 7px;
   border-radius: 999px;
   font-family: var(--font-body);
-  font-size: 0.7rem;
+  font-size: 0.5rem;
   font-weight: 500;
   color: var(--vine-dark);
   background: rgba(134, 167, 137, 0.08);
@@ -6255,7 +6579,7 @@ nav {
 }
 
 .vine-pill-count {
-  font-size: 0.6rem;
+  font-size: 0.42rem;
   opacity: 0.7;
   font-weight: 400;
 }
@@ -6505,9 +6829,9 @@ nav {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 14px;
+  padding: 3px 10px;
   font-family: var(--font-body);
-  font-size: 0.7rem;
+  font-size: 0.5rem;
   font-weight: 600;
   border-radius: 999px;
   transition: all 0.2s;
@@ -7561,4 +7885,854 @@ a.btn,
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* ═══════════════════════════════════════════════════════
+   GILDED GOLD — "Find Relationship" Button
+   The "Gold Medal" Premium Button Style
+   ═══════════════════════════════════════════════════════ */
+
+.btn-relationship-gold {
+  /* Metallic Gold Gradient */
+  background: linear-gradient(145deg, #e6c65d, #d4af37);
+  color: #2C2C2C; /* Charcoal Ink for contrast */
+  font-family: var(--font-header, 'Playfair Display', serif);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-size: 0.7rem;
+
+  padding: 8px 16px;
+  border-radius: 50px; /* Pill shape */
+  border: 1px solid #8C7851; /* Bronze edge */
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  /* The "Glow" shadow */
+  box-shadow: 0 3px 12px rgba(212, 175, 55, 0.3);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-relationship-gold:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.5);
+  background: linear-gradient(145deg, #d4af37, #b2932f);
+}
+
+.btn-relationship-gold:active {
+  transform: translateY(1px);
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+
+/* Shimmer Animation */
+.btn-relationship-gold::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.13) 77%,
+    rgba(255, 255, 255, 0.5) 92%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-150%) rotate(45deg);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.btn-relationship-gold:hover::after {
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-150%) rotate(45deg); }
+  100% { transform: translateX(150%) rotate(45deg); }
+}
+
+/* Exit button (when in selection mode) */
+.btn-relationship-exit {
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+  color: #ffffff;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-weight: 600;
+  font-size: 0.75rem;
+
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1px solid #b91c1c;
+  cursor: pointer;
+
+  box-shadow: 0 3px 12px rgba(239, 68, 68, 0.3);
+  transition: all 0.3s ease;
+
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-relationship-exit:hover {
+  background: linear-gradient(145deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+}
+
+/* Mobile: Full-width button */
+@media (max-width: 640px) {
+  .btn-relationship-gold {
+    padding: 10px 20px;
+    font-size: 0.65rem;
+  }
+
+  .btn-relationship-exit {
+    padding: 10px 20px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Dark mode adjustments */
+.dark .btn-relationship-gold {
+  background: linear-gradient(145deg, #d4af37, #b2932f);
+  border-color: #a08540;
+  box-shadow: 0 3px 12px rgba(212, 175, 55, 0.4);
+}
+
+.dark .btn-relationship-gold:hover {
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+}
+
+/* ── Compact (30% reduced) Gilded Gold Button ── */
+.btn-relationship-gold-sm {
+  background: linear-gradient(145deg, #e6c65d, #d4af37);
+  color: #2C2C2C;
+  font-family: var(--font-header, 'Playfair Display', serif);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-size: 0.5rem;
+
+  padding: 4px 10px;
+  border-radius: 50px;
+  border: 1px solid #8C7851;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-relationship-gold-sm:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.5);
+  background: linear-gradient(145deg, #d4af37, #b2932f);
+}
+
+.btn-relationship-gold-sm:active {
+  transform: translateY(0px);
+  box-shadow: 0 1px 6px rgba(212, 175, 55, 0.3);
+}
+
+/* Shimmer for compact button */
+.btn-relationship-gold-sm::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.13) 77%,
+    rgba(255, 255, 255, 0.5) 92%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-150%) rotate(45deg);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.btn-relationship-gold-sm:hover::after {
+  animation: shimmer 1.5s infinite;
+}
+
+/* Compact Exit button */
+.btn-relationship-exit-sm {
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+  color: #ffffff;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-weight: 600;
+  font-size: 0.5rem;
+
+  padding: 4px 10px;
+  border-radius: 50px;
+  border: 1px solid #b91c1c;
+  cursor: pointer;
+
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  transition: all 0.3s ease;
+
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-relationship-exit-sm:hover {
+  background: linear-gradient(145deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(239, 68, 68, 0.4);
+}
+
+/* Dark mode for compact buttons */
+.dark .btn-relationship-gold-sm {
+  background: linear-gradient(145deg, #d4af37, #b2932f);
+  border-color: #a08540;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.4);
+}
+
+.dark .btn-relationship-gold-sm:hover {
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.6);
+}
+
+/* ── Extra-Small (additional 30% reduced) Gilded Gold Button ── */
+.btn-relationship-gold-xs {
+  background: linear-gradient(145deg, #e6c65d, #d4af37);
+  color: #2C2C2C;
+  font-family: var(--font-header, 'Playfair Display', serif);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.35rem;
+
+  padding: 3px 7px;
+  border-radius: 50px;
+  border: 1px solid #8C7851;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  box-shadow: 0 1px 6px rgba(212, 175, 55, 0.3);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-relationship-gold-xs:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 3px 10px rgba(212, 175, 55, 0.5);
+  background: linear-gradient(145deg, #d4af37, #b2932f);
+}
+
+.btn-relationship-gold-xs:active {
+  transform: translateY(0px);
+  box-shadow: 0 1px 4px rgba(212, 175, 55, 0.3);
+}
+
+/* Shimmer for extra-small button */
+.btn-relationship-gold-xs::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.13) 77%,
+    rgba(255, 255, 255, 0.5) 92%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-150%) rotate(45deg);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.btn-relationship-gold-xs:hover::after {
+  animation: shimmer 1.5s infinite;
+}
+
+/* Extra-small Exit button */
+.btn-relationship-exit-xs {
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+  color: #ffffff;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-weight: 600;
+  font-size: 0.35rem;
+
+  padding: 3px 7px;
+  border-radius: 50px;
+  border: 1px solid #b91c1c;
+  cursor: pointer;
+
+  box-shadow: 0 1px 6px rgba(239, 68, 68, 0.3);
+  transition: all 0.3s ease;
+
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-relationship-exit-xs:hover {
+  background: linear-gradient(145deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+}
+
+/* Dark mode for extra-small buttons */
+.dark .btn-relationship-gold-xs {
+  background: linear-gradient(145deg, #d4af37, #b2932f);
+  border-color: #a08540;
+  box-shadow: 0 1px 6px rgba(212, 175, 55, 0.4);
+}
+
+.dark .btn-relationship-gold-xs:hover {
+  box-shadow: 0 3px 10px rgba(212, 175, 55, 0.6);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE CHRONOLOGY BAR — Archival Floating Ribbon Header for Family Tree
+   Designed to feel like a library index card or map legend
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.chronology-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+
+  /* Translucent Vellum Tint with frosted glass effect */
+  background: rgba(244, 241, 232, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  /* Faded Bronze bottom border */
+  border-bottom: 1px solid #8C7851;
+
+  /* Three-column layout: logo | title | controls */
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 5px 16px;
+  gap: 14px;
+
+  /* Subtle shadow for depth */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Left Section: Logo (links to homepage) ── */
+.chronology-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.chronology-logo-link:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+
+.chronology-logo {
+  height: 56px; /* Match navbar logo size */
+  width: auto;
+  object-fit: contain;
+}
+
+/* ── Center Section: Title & Stats Badge ── */
+.chronology-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+/* Legacy support */
+.chronology-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.chronology-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2D4F1E; /* Vine Dark */
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.chronology-stats-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  /* Elegant badge styling */
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(140, 120, 81, 0.25);
+  border-radius: 16px;
+  padding: 3px 10px;
+
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #4A5568;
+  letter-spacing: 0.01em;
+}
+
+.chronology-dot {
+  color: #D4AF37; /* Gold Leaf */
+  font-weight: 700;
+}
+
+/* ── Right Section: Control Cluster ── */
+.chronology-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chronology-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chronology-label {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.5rem;
+  font-weight: 600;
+  color: #86A789; /* Vine Sage */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Timeline Slider — Custom Vine-branded styling ── */
+.chronology-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chronology-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 80px;
+  height: 3px;
+  background: #8FA98F; /* Sage track */
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.chronology-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  background: #2E5A2E; /* Vine Green */
+  border: 2px solid #D4AF37; /* Gold Leaf border */
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chronology-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.4);
+}
+
+.chronology-slider::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  background: #2E5A2E;
+  border: 2px solid #D4AF37;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.chronology-slider-value {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #2D4F1E;
+  min-width: 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Generation Selector ── */
+.chronology-select {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.55rem;
+  font-weight: 500;
+  color: #2D4F1E;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(140, 120, 81, 0.3);
+  border-radius: 4px;
+  padding: 2px 4px;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.chronology-select:hover {
+  border-color: #D4AF37;
+}
+
+.chronology-select:focus {
+  border-color: #2E5A2E;
+  box-shadow: 0 0 0 2px rgba(46, 90, 46, 0.15);
+}
+
+/* ── Gilded "Find Relationship" Button ── */
+.btn-chronology-gilded {
+  /* Metallic Gold Gradient */
+  background: linear-gradient(145deg, #e6c65d, #d4af37);
+  color: #2C2C2C; /* Charcoal Ink */
+
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.55rem;
+  letter-spacing: 0.3px;
+
+  padding: 3px 8px;
+  border-radius: 50px; /* Pill shape */
+  border: 1px solid #8C7851; /* Faded Bronze */
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-chronology-gilded:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(212, 175, 55, 0.3);
+  background: linear-gradient(145deg, #d4af37, #c4a030);
+}
+
+.btn-chronology-gilded:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(212, 175, 55, 0.2);
+}
+
+/* Shimmer Effect */
+.btn-chronology-gilded::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.4) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-150%) rotate(45deg);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.btn-chronology-gilded:hover::after {
+  animation: chronology-shimmer 1.8s infinite;
+}
+
+@keyframes chronology-shimmer {
+  0% { transform: translateX(-150%) rotate(45deg); }
+  100% { transform: translateX(150%) rotate(45deg); }
+}
+
+/* ── Vine Link "Find Relationship" Button ── */
+.btn-find-relationship {
+  /* Vine Green background */
+  background: linear-gradient(145deg, #3d753d, #2E5A2E);
+  color: #FFFFFF;
+
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.65rem;
+  letter-spacing: 0.3px;
+
+  padding: 6px 14px;
+  border-radius: 50px; /* Pill shape */
+  border: 1px solid #1E3614;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+
+  box-shadow: 0 3px 8px rgba(46, 90, 46, 0.2);
+  transition: all 0.3s ease;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-find-relationship svg {
+  width: 16px;
+  height: 16px;
+  color: var(--accent-gold, #D4AF37);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.btn-find-relationship:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(46, 90, 46, 0.3);
+  background: linear-gradient(145deg, #4A7C3F, #3d753d);
+}
+
+.btn-find-relationship:hover svg {
+  transform: rotate(15deg) scale(1.1);
+}
+
+.btn-find-relationship:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(46, 90, 46, 0.2);
+}
+
+/* Shimmer Effect */
+.btn-find-relationship::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to bottom right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.2) 70%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: translateX(-150%) rotate(45deg);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+.btn-find-relationship:hover::after {
+  animation: chronology-shimmer 1.8s infinite;
+}
+
+/* ── Exit Button (Selection Mode) ── */
+.btn-chronology-exit {
+  background: linear-gradient(145deg, #ef4444, #dc2626);
+  color: #ffffff;
+
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  font-size: 0.55rem;
+
+  padding: 3px 8px;
+  border-radius: 50px;
+  border: 1px solid #b91c1c;
+  cursor: pointer;
+
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.15);
+  transition: all 0.3s ease;
+
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.btn-chronology-exit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(239, 68, 68, 0.3);
+  background: linear-gradient(145deg, #dc2626, #b91c1c);
+}
+
+/* ── Reset Button ── */
+.chronology-reset-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: #4A7C3F; /* Vine Leaf */
+
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  padding: 4px 8px;
+  cursor: pointer;
+
+  transition: all 0.2s ease;
+}
+
+.chronology-reset-btn:hover {
+  background: rgba(74, 124, 63, 0.1);
+  border-color: rgba(74, 124, 63, 0.2);
+  color: #2D4F1E;
+}
+
+/* ── Responsive: Tablet adjustments ── */
+@media (max-width: 768px) {
+  .chronology-bar {
+    padding: 4px 10px;
+    gap: 10px;
+  }
+
+  .chronology-logo {
+    height: 32px;
+  }
+
+  .chronology-stats-badge {
+    font-size: 0.5rem;
+    padding: 2px 6px;
+  }
+
+  .chronology-controls {
+    gap: 8px;
+  }
+
+  .chronology-slider {
+    width: 60px;
+  }
+
+  .btn-chronology-gilded,
+  .btn-chronology-exit {
+    padding: 4px 10px;
+    font-size: 0.6rem;
+  }
+}
+
+/* ── Responsive: Mobile adjustments ── */
+@media (max-width: 640px) {
+  .chronology-bar {
+    grid-template-columns: auto 1fr auto;
+    padding: 6px 10px;
+    gap: 8px;
+  }
+
+  .chronology-logo {
+    height: 36px;
+  }
+
+  .chronology-center {
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .chronology-stats-badge {
+    font-size: 0.5rem;
+    padding: 2px 6px;
+    gap: 3px;
+  }
+
+  .chronology-label {
+    display: none;
+  }
+
+  .chronology-slider {
+    width: 50px;
+  }
+
+  .chronology-slider-value {
+    font-size: 0.65rem;
+    min-width: 22px;
+  }
+
+  .btn-chronology-gilded span,
+  .btn-chronology-exit span {
+    display: none;
+  }
+
+  .btn-chronology-gilded,
+  .btn-chronology-exit {
+    padding: 6px;
+  }
+
+  .chronology-reset-btn span {
+    display: none;
+  }
+
+  .chronology-reset-btn {
+    padding: 4px 6px;
+  }
+}
+
+/* ── Responsive: Extra small phones ── */
+@media (max-width: 380px) {
+  .chronology-stats-badge {
+    display: none;
+  }
+
+  .chronology-control-group:first-child {
+    display: none; /* Hide timeline on very small screens */
+  }
+}
+
+/* ── Dark mode support ── */
+.dark .chronology-bar {
+  background: rgba(31, 41, 55, 0.9);
+  border-bottom-color: #4A5568;
+}
+
+.dark .chronology-title {
+  color: #F8F9F4;
+}
+
+.dark .chronology-stats-badge {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #D1D5DB;
+}
+
+.dark .chronology-label {
+  color: #9CA3AF;
+}
+
+.dark .chronology-slider {
+  background: #4A5568;
+}
+
+.dark .chronology-slider-value {
+  color: #F8F9F4;
+}
+
+.dark .chronology-select {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #F8F9F4;
+}
+
+.dark .chronology-reset-btn {
+  color: #86A789;
+}
+
+.dark .chronology-reset-btn:hover {
+  background: rgba(134, 167, 137, 0.15);
+  color: #A8C5A0;
 }

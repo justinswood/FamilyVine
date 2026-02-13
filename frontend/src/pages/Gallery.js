@@ -135,20 +135,21 @@ const Gallery = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-4 py-6">
 
         {/* Gallery Header — Gilded Vellum Ribbon */}
-        <div className="gallery-header mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <div className="gallery-header mb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5">
             <div>
               <h1 className="recipe-header-title">Family Archive</h1>
-              <p className="mt-0.5 tracking-widest uppercase" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)', fontSize: '0.65rem' }}>
+              <p className="mt-0.5 tracking-widest uppercase" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)', fontSize: '0.45rem' }}>
                 Preserving memories across generations
               </p>
             </div>
 
             <button
               onClick={() => setShowCreateForm(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-medium transition-all"
               style={{
                 fontFamily: 'var(--font-body)',
+                fontSize: '0.5rem',
                 color: '#fffdf9',
                 background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))',
                 boxShadow: '0 2px 8px rgba(45, 79, 30, 0.25)',
@@ -156,7 +157,7 @@ const Gallery = () => {
               onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(45, 79, 30, 0.35)'; e.currentTarget.style.transform = 'scale(1.03)'; }}
               onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(45, 79, 30, 0.25)'; e.currentTarget.style.transform = 'scale(1)'; }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
