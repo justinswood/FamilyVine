@@ -7,12 +7,23 @@ const pool = require('../config/database');
 const { validateRegister, validateLogin } = require('../middleware/authValidators');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { getEnvVar } = require('../config/env');
+const rateLimit = require('express-rate-limit');
 const logger = require('../config/logger');
 const { sendPasswordResetEmail, sendWelcomeEmail } = require('../services/emailService');
 
 // Load JWT secret - will fail if not set
 const JWT_SECRET = getEnvVar('JWT_SECRET');
 const JWT_EXPIRES_IN = getEnvVar('JWT_EXPIRES_IN', '7d');
+
+// Strict rate limiter for login and password reset (brute-force protection)
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 attempts per 15 min window
+  message: { error: 'Too many login attempts, please try again in 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true, // Only count failed attempts
+});
 
 // Password reset token expiration (1 hour)
 const RESET_TOKEN_EXPIRES_IN = 60 * 60 * 1000; // 1 hour in milliseconds
@@ -96,6 +107,10 @@ router.post('/register', validateRegister, async (req, res) => {
 
     if (password.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      return res.status(400).json({ error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' });
     }
 
     // Check if user already exists
@@ -223,7 +238,7 @@ router.post('/register', validateRegister, async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/login', validateLogin, async (req, res) => {
+router.post('/login', loginLimiter, validateLogin, async (req, res) => {
   try {
     const { username, password } = req.body;
 
@@ -337,12 +352,18 @@ router.post('/refresh', async (req, res) => {
       return res.status(401).json({ error: 'Access token required' });
     }
 
-    // Verify token (ignoring expiration)
+    // Verify token (ignoring expiration for refresh window check)
     const decoded = jwt.verify(
       token,
       JWT_SECRET,
       { ignoreExpiration: true }
     );
+
+    // Reject tokens expired more than 24 hours ago
+    const MAX_REFRESH_WINDOW_MS = 24 * 60 * 60 * 1000;
+    if (decoded.exp && (Date.now() - decoded.exp * 1000) > MAX_REFRESH_WINDOW_MS) {
+      return res.status(401).json({ error: 'Token too old to refresh, please log in again' });
+    }
 
     // Check if user still exists and is active
     const result = await pool.query(
@@ -421,7 +442,7 @@ router.post('/refresh', async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', loginLimiter, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -650,6 +671,10 @@ router.post('/reset-password', async (req, res) => {
 
     if (password.length < 8) {
       return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
+      return res.status(400).json({ error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' });
     }
 
     // Hash the token to match database
@@ -947,6 +972,123 @@ router.delete('/users/:id', authenticateToken, requireRole('admin'), async (req,
   } catch (error) {
     logger.error('Error deleting user:', error);
     res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
+
+/**
+ * PUT /api/auth/me/password
+ * Change own password (any authenticated user)
+ */
+router.put('/me/password', authenticateToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new password are required' });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters' });
+    }
+
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({ error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number' });
+    }
+
+    const userResult = await pool.query(
+      'SELECT id, username, password_hash FROM users WHERE id = $1',
+      [req.user.id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+
+    const validPassword = await bcrypt.compare(currentPassword, user.password_hash);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    const saltRounds = 10;
+    const password_hash = await bcrypt.hash(newPassword, saltRounds);
+
+    await pool.query(
+      'UPDATE users SET password_hash = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [password_hash, req.user.id]
+    );
+
+    logger.info('User changed own password', {
+      userId: req.user.id,
+      username: user.username
+    });
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    logger.error('Error changing own password:', error);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
+});
+
+/**
+ * PUT /api/auth/me/email
+ * Change own email (any authenticated user)
+ */
+router.put('/me/email', authenticateToken, async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+
+    const userResult = await pool.query(
+      'SELECT id, username, email, password_hash FROM users WHERE id = $1',
+      [req.user.id]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+
+    const validPassword = await bcrypt.compare(password, user.password_hash);
+    if (!validPassword) {
+      return res.status(401).json({ error: 'Password is incorrect' });
+    }
+
+    const emailCheck = await pool.query(
+      'SELECT id FROM users WHERE email = $1 AND id != $2',
+      [email, req.user.id]
+    );
+
+    if (emailCheck.rows.length > 0) {
+      return res.status(409).json({ error: 'Email already in use' });
+    }
+
+    await pool.query(
+      'UPDATE users SET email = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+      [email, req.user.id]
+    );
+
+    logger.info('User changed own email', {
+      userId: req.user.id,
+      username: user.username,
+      oldEmail: user.email,
+      newEmail: email
+    });
+
+    res.json({ message: 'Email updated successfully', email });
+  } catch (error) {
+    logger.error('Error changing own email:', error);
+    res.status(500).json({ error: 'Failed to change email' });
   }
 });
 

@@ -7,7 +7,9 @@ const pool = require('../config/database');
 const { processImage } = require('../utils/imageProcessor');
 const { uploadConfigs } = require('../config/multer');
 const logger = require('../config/logger');
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken, requireRole } = require('../middleware/auth');
+const { validateId } = require('../middleware/validators');
+const { safeUnlinkSync } = require('../utils/pathSecurity');
 
 // Use centralized multer config for gallery uploads
 const upload = uploadConfigs.gallery;
@@ -15,42 +17,66 @@ const upload = uploadConfigs.gallery;
 // Get all albums
 router.get('/', async (req, res) => {
   try {
-    const query = `
+    // Split into efficient queries to avoid cartesian JOIN explosion
+    const albumsResult = await pool.query(`
       SELECT a.*,
              p.file_path as cover_photo_path,
              p.rotation_degrees as cover_photo_rotation,
-             COUNT(DISTINCT photos.id) as photo_count,
-             COALESCE(
-               json_agg(
-                 DISTINCT jsonb_build_object(
-                   'id', m.id,
-                   'first_name', m.first_name,
-                   'last_name', m.last_name,
-                   'photo_url', m.photo_url
-                 )
-               ) FILTER (WHERE m.id IS NOT NULL),
-               '[]'
-             ) as tagged_members,
-             COALESCE(
-               (SELECT json_agg(rp) FROM (
-                 SELECT rp.id, rp.file_path
-                 FROM photos rp
-                 WHERE rp.album_id = a.id
-                 ORDER BY rp.uploaded_at DESC
-                 LIMIT 3
-               ) rp),
-               '[]'
-             ) as recent_photos
+             (SELECT COUNT(*) FROM photos WHERE album_id = a.id) as photo_count
       FROM albums a
       LEFT JOIN photos p ON a.cover_photo_id = p.id
-      LEFT JOIN photos ON photos.album_id = a.id
-      LEFT JOIN photo_tags pt ON photos.id = pt.photo_id
-      LEFT JOIN members m ON pt.member_id = m.id
-      GROUP BY a.id, p.file_path, p.rotation_degrees
       ORDER BY a.created_at DESC
-    `;
-    const result = await pool.query(query);
-    res.json(result.rows);
+    `);
+
+    if (albumsResult.rows.length === 0) {
+      return res.json([]);
+    }
+
+    const albumIds = albumsResult.rows.map(a => a.id);
+
+    // Batch-fetch tagged members and recent photos for all albums
+    const [taggedResult, recentResult] = await Promise.all([
+      pool.query(`
+        SELECT ph.album_id, m.id, m.first_name, m.last_name, m.photo_url
+        FROM photo_tags pt
+        JOIN photos ph ON pt.photo_id = ph.id
+        JOIN members m ON pt.member_id = m.id
+        WHERE ph.album_id = ANY($1)
+      `, [albumIds]),
+      pool.query(`
+        SELECT sub.album_id, sub.id, sub.file_path
+        FROM (
+          SELECT p.album_id, p.id, p.file_path,
+                 ROW_NUMBER() OVER (PARTITION BY p.album_id ORDER BY p.uploaded_at DESC) as rn
+          FROM photos p
+          WHERE p.album_id = ANY($1)
+        ) sub
+        WHERE sub.rn <= 3
+      `, [albumIds])
+    ]);
+
+    // Group by album_id
+    const taggedByAlbum = {};
+    const recentByAlbum = {};
+    for (const row of taggedResult.rows) {
+      if (!taggedByAlbum[row.album_id]) taggedByAlbum[row.album_id] = [];
+      taggedByAlbum[row.album_id].push({ id: row.id, first_name: row.first_name, last_name: row.last_name, photo_url: row.photo_url });
+    }
+    for (const row of recentResult.rows) {
+      if (!recentByAlbum[row.album_id]) recentByAlbum[row.album_id] = [];
+      recentByAlbum[row.album_id].push({ id: row.id, file_path: row.file_path });
+    }
+
+    // Deduplicate tagged members per album
+    const albums = albumsResult.rows.map(album => ({
+      ...album,
+      tagged_members: taggedByAlbum[album.id]
+        ? [...new Map(taggedByAlbum[album.id].map(m => [m.id, m])).values()]
+        : [],
+      recent_photos: recentByAlbum[album.id] || []
+    }));
+
+    res.json(albums);
   } catch (error) {
     logger.error('Error fetching albums:', error);
     res.status(500).json({ error: 'Failed to fetch albums' });
@@ -58,7 +84,7 @@ router.get('/', async (req, res) => {
 });
 
 // Get specific album with photos
-router.get('/:id', async (req, res) => {
+router.get('/:id', validateId(), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -94,7 +120,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create new album
-router.post('/', async (req, res) => {
+router.post('/', requireRole('editor'), async (req, res) => {
   try {
     const { title, description, event_date, is_public = true } = req.body;
     
@@ -117,7 +143,7 @@ router.post('/', async (req, res) => {
 });
 
 // Update album
-router.put('/:id', async (req, res) => {
+router.put('/:id', validateId(), requireRole('editor'), async (req, res) => {
   try {
     const { id } = req.params;
     const { title, description, event_date, is_public } = req.body;
@@ -143,7 +169,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete album
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', validateId(), requireRole('editor'), async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -161,7 +187,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // Upload photos to album
-router.post('/:id/photos', upload.array('photos', 100), async (req, res) => {
+router.post('/:id/photos', validateId(), requireRole('editor'), upload.array('photos', 100), async (req, res) => {
   try {
     const { id } = req.params;
     const { captions = [] } = req.body;
@@ -278,7 +304,7 @@ router.get('/:albumId/photos/:photoId', async (req, res) => {
 });
 
 // Delete photo
-router.delete('/:albumId/photos/:photoId', async (req, res) => {
+router.delete('/:albumId/photos/:photoId', validateId(['albumId', 'photoId']), requireRole('editor'), async (req, res) => {
   try {
     const { photoId } = req.params;
     
@@ -296,7 +322,7 @@ router.delete('/:albumId/photos/:photoId', async (req, res) => {
 });
 
 // Set album cover photo
-router.put('/:id/cover/:photoId', async (req, res) => {
+router.put('/:id/cover/:photoId', validateId(['id', 'photoId']), requireRole('editor'), async (req, res) => {
   try {
     const { id, photoId } = req.params;
     
@@ -321,7 +347,7 @@ router.put('/:id/cover/:photoId', async (req, res) => {
 });
 
 // Add tag to photo
-router.post('/:albumId/photos/:photoId/tags', authenticateToken, async (req, res) => {
+router.post('/:albumId/photos/:photoId/tags', validateId(['albumId', 'photoId']), authenticateToken, async (req, res) => {
   try {
     const { photoId } = req.params;
     const {
@@ -438,7 +464,7 @@ router.get('/:albumId/photos/:photoId/tags', async (req, res) => {
 });
 
 // Update/edit a tag
-router.put('/:albumId/photos/:photoId/tags/:tagId', async (req, res) => {
+router.put('/:albumId/photos/:photoId/tags/:tagId', validateId(['albumId', 'photoId', 'tagId']), requireRole('editor'), async (req, res) => {
   try {
     const { tagId } = req.params;
     const { 
@@ -520,7 +546,7 @@ router.put('/:albumId/photos/:photoId/tags/:tagId', async (req, res) => {
 });
 
 // Remove tag from photo
-router.delete('/:albumId/photos/:photoId/tags/:tagId', async (req, res) => {
+router.delete('/:albumId/photos/:photoId/tags/:tagId', validateId(['albumId', 'photoId', 'tagId']), requireRole('editor'), async (req, res) => {
   try {
     const { tagId } = req.params;
     
@@ -560,7 +586,7 @@ router.get('/tagged/:memberId', async (req, res) => {
 });
 
 // PUT /:albumId/photos/:photoId/rotate - Rotate a photo (destructive by default for reliable display)
-router.put('/:albumId/photos/:photoId/rotate', authenticateToken, async (req, res) => {
+router.put('/:albumId/photos/:photoId/rotate', validateId(['albumId', 'photoId']), authenticateToken, async (req, res) => {
   const { albumId, photoId } = req.params;
   const { degrees = 90, destructive = true } = req.body;
 
@@ -628,14 +654,6 @@ router.put('/:albumId/photos/:photoId/rotate', authenticateToken, async (req, re
       return res.status(404).json({ error: 'Photo file not found on disk' });
     }
 
-    // Backup original file path if not already backed up
-    if (!photo.original_file_path) {
-      await pool.query(
-        'UPDATE photos SET original_file_path = $1 WHERE id = $2',
-        [photo.file_path, photoId]
-      );
-    }
-
     // Rotate image using Sharp
     const buffer = await sharp(filePath)
       .rotate(degrees)
@@ -647,15 +665,36 @@ router.put('/:albumId/photos/:photoId/rotate', authenticateToken, async (req, re
     // Get new metadata (width/height may have swapped for 90/270 rotations)
     const metadata = await sharp(filePath).metadata();
 
-    // Update photo dimensions, reset rotation, and edit tracking in database
-    await pool.query(
-      `UPDATE photos
-       SET width = $1, height = $2, file_size = $3,
-           rotation_degrees = 0,
-           is_edited = true, edited_at = NOW()
-       WHERE id = $4`,
-      [metadata.width, metadata.height, metadata.size, photoId]
-    );
+    // Use a transaction for all database updates
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Backup original file path if not already backed up
+      if (!photo.original_file_path) {
+        await client.query(
+          'UPDATE photos SET original_file_path = $1 WHERE id = $2',
+          [photo.file_path, photoId]
+        );
+      }
+
+      // Update photo dimensions, reset rotation, and edit tracking in database
+      await client.query(
+        `UPDATE photos
+         SET width = $1, height = $2, file_size = $3,
+             rotation_degrees = 0,
+             is_edited = true, edited_at = NOW()
+         WHERE id = $4`,
+        [metadata.width, metadata.height, metadata.size, photoId]
+      );
+
+      await client.query('COMMIT');
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      throw txErr;
+    } finally {
+      client.release();
+    }
 
     logger.info('Photo rotated destructively', {
       photoId,
@@ -676,7 +715,7 @@ router.put('/:albumId/photos/:photoId/rotate', authenticateToken, async (req, re
 });
 
 // POST /:albumId/photos/:photoId/crop - Crop a photo (destructive operation)
-router.post('/:albumId/photos/:photoId/crop', authenticateToken, async (req, res) => {
+router.post('/:albumId/photos/:photoId/crop', validateId(['albumId', 'photoId']), authenticateToken, async (req, res) => {
   const { albumId, photoId } = req.params;
   const { crop, quality = 0.85 } = req.body;
 
@@ -722,15 +761,6 @@ router.post('/:albumId/photos/:photoId/crop', authenticateToken, async (req, res
       return res.status(404).json({ error: 'Photo file not found on disk' });
     }
 
-    // Backup original file path if not already backed up
-    if (!photo.original_file_path) {
-      await pool.query(
-        'UPDATE photos SET original_file_path = $1 WHERE id = $2',
-        [photo.file_path, photoId]
-      );
-      logger.info('Backed up original file path before crop', { photoId, originalPath: photo.file_path });
-    }
-
     // Get current image metadata
     const metadata = await sharp(filePath).metadata();
 
@@ -753,7 +783,7 @@ router.post('/:albumId/photos/:photoId/crop', authenticateToken, async (req, res
     const dirName = path.dirname(filePath);
     const croppedPath = path.join(dirName, `${baseName}_cropped_${Date.now()}${ext}`);
 
-    // Perform the crop operation
+    // Perform the crop operation (file I/O outside transaction)
     await sharp(filePath)
       .extract(cropPixels)
       .jpeg({ quality: Math.round(quality * 100) })
@@ -762,53 +792,71 @@ router.post('/:albumId/photos/:photoId/crop', authenticateToken, async (req, res
     // Get metadata of cropped image
     const croppedMetadata = await sharp(croppedPath).metadata();
 
-    // Delete old file (since we're replacing it)
+    // Delete old file (since we're replacing it, with path traversal protection)
     if (photo.file_path !== photo.original_file_path) {
-      try {
-        fs.unlinkSync(filePath);
-        logger.info('Deleted previous edited file', { path: filePath });
-      } catch (err) {
-        logger.warn('Could not delete previous file', { path: filePath, error: err.message });
-      }
+      safeUnlinkSync(filePath, logger);
     }
 
     // Convert file path to relative path for database
     const relativePath = croppedPath.replace(path.join(__dirname, '..'), '').replace(/^\//, '');
 
-    // Update photo record with new file path and dimensions
-    const updateResult = await pool.query(
-      `UPDATE photos
-       SET file_path = $1,
-           width = $2,
-           height = $3,
-           file_size = $4,
-           is_edited = true,
-           edited_at = NOW()
-       WHERE id = $5
-       RETURNING *`,
-      [relativePath, croppedMetadata.width, croppedMetadata.height, croppedMetadata.size, photoId]
-    );
+    // Use a transaction for all database updates
+    const client = await pool.connect();
+    let updateResult;
+    let tagUpdateResult;
+    try {
+      await client.query('BEGIN');
 
-    // Update tag coordinates proportionally
-    // Tags are stored as percentages, so we need to adjust them based on the crop area
-    const tagUpdateResult = await pool.query(
-      `UPDATE photo_tags
-       SET x_coordinate = ((x_coordinate - $1) * 100.0 / $2),
-           y_coordinate = ((y_coordinate - $3) * 100.0 / $4),
-           width = (width * 100.0 / $2),
-           height = (height * 100.0 / $4)
-       WHERE photo_id = $5
-       RETURNING *`,
-      [x, width, y, height, photoId]
-    );
+      // Backup original file path if not already backed up
+      if (!photo.original_file_path) {
+        await client.query(
+          'UPDATE photos SET original_file_path = $1 WHERE id = $2',
+          [photo.file_path, photoId]
+        );
+        logger.info('Backed up original file path before crop', { photoId, originalPath: photo.file_path });
+      }
 
-    // Remove tags that are now outside the cropped area
-    await pool.query(
-      `DELETE FROM photo_tags
-       WHERE photo_id = $1
-       AND (x_coordinate < 0 OR y_coordinate < 0 OR x_coordinate > 100 OR y_coordinate > 100)`,
-      [photoId]
-    );
+      // Update photo record with new file path and dimensions
+      updateResult = await client.query(
+        `UPDATE photos
+         SET file_path = $1,
+             width = $2,
+             height = $3,
+             file_size = $4,
+             is_edited = true,
+             edited_at = NOW()
+         WHERE id = $5
+         RETURNING *`,
+        [relativePath, croppedMetadata.width, croppedMetadata.height, croppedMetadata.size, photoId]
+      );
+
+      // Update tag coordinates proportionally
+      tagUpdateResult = await client.query(
+        `UPDATE photo_tags
+         SET x_coordinate = ((x_coordinate - $1) * 100.0 / $2),
+             y_coordinate = ((y_coordinate - $3) * 100.0 / $4),
+             width = (width * 100.0 / $2),
+             height = (height * 100.0 / $4)
+         WHERE photo_id = $5
+         RETURNING *`,
+        [x, width, y, height, photoId]
+      );
+
+      // Remove tags that are now outside the cropped area
+      await client.query(
+        `DELETE FROM photo_tags
+         WHERE photo_id = $1
+         AND (x_coordinate < 0 OR y_coordinate < 0 OR x_coordinate > 100 OR y_coordinate > 100)`,
+        [photoId]
+      );
+
+      await client.query('COMMIT');
+    } catch (txErr) {
+      await client.query('ROLLBACK');
+      throw txErr;
+    } finally {
+      client.release();
+    }
 
     logger.info('Photo cropped successfully', {
       photoId,

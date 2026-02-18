@@ -84,19 +84,21 @@ const validateMember = (req, res, next) => {
 };
 
 /**
- * Validate ID parameter
+ * Validate ID parameter(s) — supports single param name or array of param names
  */
-const validateId = (paramName = 'id') => {
+const validateId = (paramNames = 'id') => {
+  const names = Array.isArray(paramNames) ? paramNames : [paramNames];
   return (req, res, next) => {
-    const id = req.params[paramName];
-
-    if (!id || isNaN(parseInt(id, 10)) || parseInt(id, 10) <= 0) {
-      return res.status(400).json({
-        error: `Invalid ${paramName}`,
-        details: [`${paramName} must be a positive integer`]
-      });
+    for (const paramName of names) {
+      const id = req.params[paramName];
+      if (id === undefined) continue; // optional param not present
+      if (!id || isNaN(parseInt(id, 10)) || parseInt(id, 10) <= 0) {
+        return res.status(400).json({
+          error: `Invalid ${paramName}`,
+          details: [`${paramName} must be a positive integer`]
+        });
+      }
     }
-
     next();
   };
 };

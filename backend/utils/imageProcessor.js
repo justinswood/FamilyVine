@@ -129,13 +129,11 @@ async function processImage(file, outputPath) {
             });
           }
 
-          await sharpInstance.toFile(outputPath);
-
-          // Update metadata after optimization
-          const optimizedBuffer = await fsPromises.readFile(outputPath);
-          const optimizedMetadata = await sharp(optimizedBuffer).metadata();
-          metadata.width = optimizedMetadata.width;
-          metadata.height = optimizedMetadata.height;
+          // Use toBuffer to avoid double disk I/O (write + re-read)
+          const { data: optimizedBuffer, info: optimizedInfo } = await sharpInstance.toBuffer({ resolveWithObject: true });
+          await fsPromises.writeFile(outputPath, optimizedBuffer);
+          metadata.width = optimizedInfo.width;
+          metadata.height = optimizedInfo.height;
 
           logger.info('Image optimized', {
             originalSize: inputBuffer.length,

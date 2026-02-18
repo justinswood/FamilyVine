@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18 as build
+FROM node:18.20-alpine as build
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM nginx:alpine
+FROM nginx:1.27-alpine
 
 # Install curl for healthcheck
 RUN apk add --no-cache curl

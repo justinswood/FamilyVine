@@ -385,7 +385,7 @@ const FunFamilyFactsMetrics = () => {
       >
         <Sparkles className="w-5 h-5" style={{ color: GOLD_LEAF }} />
         <DecryptedText
-          text="Gallery of Curiosities"
+          text="Family by the Numbers"
           animateOn="view"
           speed={60}
           maxIterations={25}

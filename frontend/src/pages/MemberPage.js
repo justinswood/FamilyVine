@@ -721,6 +721,7 @@ const MemberPage = () => {
                             <img
                               src={`${apiUrl}/${photo.file_path}`}
                               alt="Memory"
+                              loading="lazy"
                               className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                               style={photo.rotation_degrees ? { transform: `rotate(${photo.rotation_degrees}deg)` } : undefined}
                               onError={(e) => { e.target.style.display = 'none'; }}
@@ -904,6 +905,7 @@ const MemberPage = () => {
                       <img
                         src={`${apiUrl}/${photo.file_path}`}
                         alt="Tagged photo"
+                        loading="lazy"
                         className="w-full object-cover"
                         style={photo.rotation_degrees ? { transform: `rotate(${photo.rotation_degrees}deg)` } : undefined}
                         onError={(e) => { e.target.style.display = 'none'; }}

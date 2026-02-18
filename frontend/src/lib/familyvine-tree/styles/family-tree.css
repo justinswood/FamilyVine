@@ -177,9 +177,10 @@ foreignObject {
   background: linear-gradient(135deg, #FFD700, #D4A017);
   border-radius: 50%;
   border: 2px solid white;
-  font-size: 10px;
-  line-height: 20px;
-  text-align: center;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: white;
   z-index: 15;
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);

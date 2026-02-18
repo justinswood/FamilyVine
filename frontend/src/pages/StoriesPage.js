@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BookOpen, Plus, User, Edit, Trash2, Volume2, Users } from 'lucide-react';
+import { useStories, useMembers, useDeleteStory } from '../hooks/useQueries';
 import ProfileImage from '../components/ProfileImage';
 
 /* ── Decorative leaf icon matching Chronicle motif ── */
@@ -13,49 +14,15 @@ const LeafIcon = ({ className = "w-4 h-4" }) => (
 
 const StoriesPage = () => {
   const navigate = useNavigate();
-  const [stories, setStories] = useState([]);
-  const [members, setMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: stories = [], isLoading: loading, error } = useStories();
+  const { data: members = [] } = useMembers();
+  const deleteStoryMutation = useDeleteStory();
   const [selectedDecade, setSelectedDecade] = useState('all');
   const [showDeleteModal, setShowDeleteModal] = useState(null);
 
-  useEffect(() => {
-    fetchStories();
-    fetchMembers();
-  }, []);
-
-  const fetchStories = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API ?? ''}/api/stories`);
-      if (!response.ok) throw new Error('Failed to fetch stories');
-      const data = await response.json();
-      setStories(data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching stories:', error);
-      setError(error.message);
-      setLoading(false);
-    }
-  };
-
-  const fetchMembers = async () => {
-    try {
-      const response = await fetch(`${process.env.REACT_APP_API ?? ''}/api/members`);
-      const data = await response.json();
-      setMembers(data);
-    } catch (error) {
-      console.error('Error fetching members:', error);
-    }
-  };
-
   const handleDelete = async (id) => {
     try {
-      const response = await fetch(`${process.env.REACT_APP_API ?? ''}/api/stories/${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) throw new Error('Failed to delete story');
-      setStories(stories.filter(s => s.id !== id));
+      await deleteStoryMutation.mutateAsync(id);
       setShowDeleteModal(null);
     } catch (error) {
       console.error('Error deleting story:', error);
@@ -139,7 +106,7 @@ const StoriesPage = () => {
     return (
       <div className="min-h-screen bg-white/80 dark:bg-secondary-900 flex items-center justify-center p-4">
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 max-w-md">
-          <p className="text-red-600 dark:text-red-400">Error: {error}</p>
+          <p className="text-red-600 dark:text-red-400">Error: {error?.message || 'Failed to load stories'}</p>
         </div>
       </div>
     );

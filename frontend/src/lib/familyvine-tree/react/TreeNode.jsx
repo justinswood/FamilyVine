@@ -42,7 +42,7 @@ const TreeNode = memo(({
       className="overflow-visible"
       style={{
         opacity: timelineHidden ? 0 : 1,
-        transition: 'opacity 0.5s ease',
+        transition: 'opacity 0.2s ease',
         pointerEvents: timelineHidden ? 'none' : 'auto',
       }}
     >

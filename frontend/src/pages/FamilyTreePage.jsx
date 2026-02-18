@@ -1,14 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../utils/axios';
-import { useNavigate } from 'react-router-dom';
-import { Home, Link2, X } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Home, X } from 'lucide-react';
+import { usePreferences } from '../hooks/useQueries';
 
 // Import the Greenhouse family tree
 import { FamilyTreeView } from '../lib/familyvine-tree/react';
 import '../lib/familyvine-tree/styles/family-tree.css';
 
+/* ── Custom Vine Link SVG Icon ── */
+const VineLinkIcon = ({ className = '' }) => (
+  <svg
+    className={className}
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M10 14.5C10 16.9853 7.98528 19 5.5 19C3.01472 19 1 16.9853 1 14.5C1 12.0147 3.01472 10 5.5 10C6.5 10 7.4 10.3 8.1 10.9"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M14 9.5C14 7.01472 16.0147 5 18.5 5C20.9853 5 23 7.01472 23 9.5C23 11.9853 20.9853 14 18.5 14C17.5 14 16.6 13.7 15.9 13.1"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    />
+    <path
+      d="M8 12L16 12"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeDasharray="2 2"
+    />
+    <path
+      d="M12 10C12 10 13 8 15 8"
+      stroke="currentColor"
+      strokeWidth="1"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 const FamilyTreePage = () => {
   const navigate = useNavigate();
+  const { data: userPrefs } = usePreferences();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [treeInfo, setTreeInfo] = useState(null);
@@ -17,23 +57,50 @@ const FamilyTreePage = () => {
   const [generationsData, setGenerationsData] = useState(null);
   const [timelineYear, setTimelineYear] = useState(null); // null = show all
   const [selectionMode, setSelectionMode] = useState(false); // Relationship Finder mode
+  const [prefsApplied, setPrefsApplied] = useState(false);
 
-  // Initialize tree with root union
+  // Apply user preferences for generation depth
+  useEffect(() => {
+    if (userPrefs?.preferred_generation_depth && !prefsApplied) {
+      setMaxGenerations(userPrefs.preferred_generation_depth);
+    }
+  }, [userPrefs, prefsApplied]);
+
+  // Initialize tree with root union (or user's preferred root member)
   useEffect(() => {
     loadRootUnion();
   }, []);
 
-  // Load root union (Philip & Elizabeth)
   const loadRootUnion = async () => {
     try {
       setLoading(true);
       setError(null);
 
+      const genDepth = userPrefs?.preferred_generation_depth || maxGenerations;
+
+      // If user has a preferred root member, try to find their union
+      if (userPrefs?.default_root_member_id) {
+        try {
+          const unionResp = await axios.get(`/api/tree/member/${userPrefs.default_root_member_id}/unions`);
+          const unions = unionResp.data;
+          if (unions && unions.length > 0) {
+            setFocusUnion(unions[0].id);
+            setPrefsApplied(true);
+            await loadTreeFromUnion(unions[0].id, genDepth);
+            return;
+          }
+        } catch (prefErr) {
+          console.warn('Could not load preferred root member, falling back to default:', prefErr.message);
+        }
+      }
+
+      // Default: load the root union
       const response = await axios.get('/api/tree/root-union');
       const rootUnion = response.data;
 
       setFocusUnion(rootUnion.union_id);
-      await loadTreeFromUnion(rootUnion.union_id, maxGenerations);
+      setPrefsApplied(true);
+      await loadTreeFromUnion(rootUnion.union_id, genDepth);
 
     } catch (error) {
       console.error('Error loading root union:', error);
@@ -121,112 +188,96 @@ const FamilyTreePage = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col" style={{ backgroundColor: '#F9F8F3' }}>
-      {/* Header */}
-      <div
-        className="bg-vine-paper border-b border-vine-200 px-2 py-1 flex items-center justify-between shadow-sm"
-        style={{ position: 'relative', zIndex: 10 }}
-      >
-        <div className="flex items-center gap-1.5">
-          <h1 className="text-xs font-bold text-vine-dark font-serif">Family Tree</h1>
+    <div className="h-screen relative" role="application" aria-label="Family tree visualization" style={{ backgroundColor: '#F9F8F3' }}>
+      {/* ═══════════════════════════════════════════════════════════════════════
+          THE CHRONOLOGY BAR — Archival Floating Ribbon Header
+          ═══════════════════════════════════════════════════════════════════════ */}
+      <div className="chronology-bar" role="toolbar" aria-label="Tree controls">
+        {/* Left: Logo (links to homepage) */}
+        <Link to="/" className="chronology-logo-link" title="Back to Home">
+          <img src="/logo.png" alt="FamilyVine" className="chronology-logo" />
+        </Link>
+
+        {/* Center: Stats Badge only */}
+        <div className="chronology-center">
           {treeInfo && (
-            <div className="flex gap-1 font-inter" style={{ fontSize: '10px' }}>
-              <span className="bg-vine-100 text-vine-600 px-1 py-0.5 rounded">
-                {treeInfo.generation_count} gen
-              </span>
-              <span className="bg-vine-100 text-vine-600 px-1 py-0.5 rounded">
-                {treeInfo.total_unions} unions
-              </span>
-              <span className="bg-vine-100 text-vine-600 px-1 py-0.5 rounded">
-                {treeInfo.total_members} members
-              </span>
+            <div className="chronology-stats-badge">
+              <span>{treeInfo.generation_count} generations</span>
+              <span className="chronology-dot">•</span>
+              <span>{treeInfo.total_unions} unions</span>
+              <span className="chronology-dot">•</span>
+              <span>{treeInfo.total_members} members</span>
             </div>
           )}
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center gap-2">
-          {/* Timeline slider */}
-          <div className="flex items-center gap-1">
-            <label className="text-vine-600 font-inter" style={{ fontSize: '10px' }}>Timeline:</label>
-            <input
-              type="range"
-              min={1900}
-              max={2026}
-              value={timelineYear || 2026}
-              onChange={(e) => {
-                const val = parseInt(e.target.value);
-                setTimelineYear(val >= 2026 ? null : val);
-              }}
-              className="w-16 accent-vine-leaf h-3"
-            />
-            <span className="font-inter text-vine-dark w-6 text-right tabular-nums" style={{ fontSize: '10px' }}>
-              {timelineYear || 'All'}
-            </span>
+        {/* Center-Right: Control Cluster */}
+        <div className="chronology-controls">
+          {/* Timeline Slider */}
+          <div className="chronology-control-group">
+            <label className="chronology-label">Timeline</label>
+            <div className="chronology-slider-container">
+              <input
+                type="range"
+                min={1900}
+                max={2026}
+                value={timelineYear || 2026}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  setTimelineYear(val >= 2026 ? null : val);
+                }}
+                aria-label={`Timeline filter: ${timelineYear || 'All years'}`}
+                className="chronology-slider"
+              />
+              <span className="chronology-slider-value">
+                {timelineYear || 'All'}
+              </span>
+            </div>
           </div>
 
-          <div className="w-px h-3 bg-vine-200" />
-
-          {/* Generation selector */}
-          <label className="text-vine-600 font-inter" style={{ fontSize: '10px' }}>Gen:</label>
-          <select
-            value={maxGenerations}
-            onChange={(e) => handleGenerationChange(parseInt(e.target.value))}
-            className="border border-vine-300 rounded px-1.5 py-0.5 font-inter
-                       bg-white text-vine-dark
-                       focus:outline-none focus:ring-2 focus:ring-vine-leaf/40"
-            style={{ fontSize: '10px' }}
-          >
-            <option value={1}>1</option>
-            <option value={2}>2</option>
-            <option value={3}>3</option>
-            <option value={4}>4</option>
-          </select>
-
+          {/* Vine Link Find Relationship Button */}
           <button
             onClick={() => setSelectionMode(!selectionMode)}
-            className={`flex items-center gap-0.5 px-2 py-0.5 rounded transition font-inter ${
-              selectionMode
-                ? 'bg-red-500 text-white hover:bg-red-600'
-                : 'text-white hover:opacity-90'
-            }`}
-            style={{
-              fontSize: '10px',
-              ...(!selectionMode && {
-                background: 'linear-gradient(135deg, #D4AF37, #B8960C)',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.15)'
-              })
-            }}
+            className={selectionMode ? 'btn-chronology-exit' : 'btn-find-relationship'}
             title={selectionMode ? 'Exit Relationship Finder' : 'Find Relationship Between Two Members'}
           >
             {selectionMode ? (
               <>
                 <X className="w-2.5 h-2.5" />
-                <span>Exit Finder</span>
+                <span>Exit</span>
               </>
             ) : (
               <>
-                <Link2 className="w-2.5 h-2.5" />
-                <span>Find Relation</span>
+                <VineLinkIcon />
+                <span>Find Relationship</span>
               </>
             )}
           </button>
 
+          {/* Reset Button */}
           <button
             onClick={handleResetToRoot}
-            className="flex items-center gap-0.5 bg-vine-leaf text-white px-2 py-0.5 rounded
-                       hover:bg-vine-dark transition font-inter"
-            style={{ fontSize: '10px' }}
+            className="chronology-reset-btn"
             title="Reset to root union"
           >
-            <Home className="w-2.5 h-2.5" />
+            <Home className="w-3 h-3" />
             <span>Reset</span>
           </button>
         </div>
       </div>
 
-      {/* Family Tree Container */}
-      <div className="flex-1 relative overflow-hidden">
+      {/* Family Tree Container — positioned below the fixed Chronology Bar */}
+      <div
+        className="overflow-hidden"
+        style={{
+          position: 'absolute',
+          top: '68px',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: '#F9F8F3'
+        }}
+      >
         {generationsData && (
           <FamilyTreeView
             data={generationsData}

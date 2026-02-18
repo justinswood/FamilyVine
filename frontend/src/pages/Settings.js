@@ -1,19 +1,47 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Database, Shield, Bell, Palette, User, Users, Save, Upload, LogOut, Plus, Key, Trash2, Edit2 } from 'lucide-react';
+import { Download, Database, Shield, Bell, Palette, User, Users, Save, Upload, LogOut, Plus, Key, Trash2, Edit2, TreePine } from 'lucide-react';
+import { useMembers } from '../hooks/useQueries';
 import ExportFamilyData from '../components/ExportFamilyData';
 import CSVImport from './CSVImport'; // Import the CSVImport component
 import axios from 'axios';
 import HeroImageSelector from '../components/HeroImageSelector';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { usePreferences, useUpdatePreferences } from '../hooks/useQueries';
+
+const ComingSoonBadge = () => (
+  <span className="ml-2 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-400 px-2 py-0.5 rounded-full font-normal">
+    Coming Soon
+  </span>
+);
 
 const Settings = () => {
   const { user } = useAuth();
+  const { theme: currentTheme, setTheme: setGlobalTheme } = useTheme();
+  const { data: serverPrefs, isLoading: prefsLoading } = usePreferences();
+  const updatePrefsMutation = useUpdatePreferences();
   const [activeTab, setActiveTab] = useState('general');
   const [showExportModal, setShowExportModal] = useState(false);
   const [members, setMembers] = useState([]);
   const [relationships, setRelationships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Account tab state
+  const [passwordData, setPasswordData] = useState({ current: '', new: '', confirm: '' });
+  const [emailData, setEmailData] = useState({ email: '', password: '' });
+  const [accountError, setAccountError] = useState('');
+  const [accountSuccess, setAccountSuccess] = useState('');
+
+  // Tree preferences state
+  const [treePrefs, setTreePrefs] = useState({
+    defaultRootMember: null,
+    generationDepth: 4,
+    showUnknownParents: false,
+  });
+
+  // Members list for tree root picker
+  const { data: allMembers = [] } = useMembers();
 
   // User management state (admin only)
   const [usersList, setUsersList] = useState([]);
@@ -34,7 +62,6 @@ const Settings = () => {
     
     // Display Settings
     dateFormat: 'MM/DD/YYYY',
-    theme: 'light',
     language: 'en',
     
     // Privacy Settings
@@ -56,7 +83,7 @@ const Settings = () => {
     // Check URL parameters for tab
     const urlParams = new URLSearchParams(window.location.search);
     const tab = urlParams.get('tab');
-    if (tab && ['general', 'display', 'privacy', 'users', 'import', 'export', 'notifications'].includes(tab)) {
+    if (tab && ['account', 'general', 'display', 'privacy', 'users', 'import', 'export', 'notifications'].includes(tab)) {
       setActiveTab(tab);
     }
   }, []);
@@ -68,27 +95,29 @@ const Settings = () => {
     }
   }, [activeTab, user?.role]);
 
-  // Apply theme when settings change
+  // Sync server preferences into local state
   useEffect(() => {
-    applyTheme(settings.theme);
-  }, [settings.theme]);
-
-  const applyTheme = (theme) => {
-    const root = document.documentElement;
-    
-    if (theme === 'dark') {
-      root.classList.add('dark');
-    } else if (theme === 'light') {
-      root.classList.remove('dark');
-    } else { // auto
-      // Check system preference
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        root.classList.add('dark');
-      } else {
-        root.classList.remove('dark');
-      }
+    if (serverPrefs) {
+      setSettings(prev => ({
+        ...prev,
+        familyName: serverPrefs.family_name ?? prev.familyName,
+        defaultPrivacy: serverPrefs.default_privacy ?? prev.defaultPrivacy,
+        dateFormat: serverPrefs.date_format ?? prev.dateFormat,
+        showPrivateInfo: serverPrefs.show_private_info ?? prev.showPrivateInfo,
+        requireLoginForViewing: serverPrefs.require_login_for_viewing ?? prev.requireLoginForViewing,
+        allowGuestAccess: serverPrefs.allow_guest_access ?? prev.allowGuestAccess,
+        emailNotifications: serverPrefs.email_notifications ?? prev.emailNotifications,
+        memberUpdates: serverPrefs.member_updates ?? prev.memberUpdates,
+        relationshipChanges: serverPrefs.relationship_changes ?? prev.relationshipChanges,
+        photoUploads: serverPrefs.photo_uploads ?? prev.photoUploads,
+      }));
+      setTreePrefs({
+        defaultRootMember: serverPrefs.default_root_member_id ?? null,
+        generationDepth: serverPrefs.preferred_generation_depth ?? 4,
+        showUnknownParents: serverPrefs.show_unknown_parents ?? false,
+      });
     }
-  };
+  }, [serverPrefs]);
 
   const fetchData = async () => {
     try {
@@ -201,28 +230,35 @@ const Settings = () => {
   };
 
   const loadSettings = () => {
-    // Load settings from localStorage
     const savedSettings = localStorage.getItem('familyVineSettings');
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings);
       setSettings(prev => ({ ...prev, ...parsed }));
-      // Apply theme immediately when loading
-      applyTheme(parsed.theme || 'light');
     }
   };
 
   const saveSettings = async () => {
     setSaving(true);
     try {
-      // Save to localStorage
+      await updatePrefsMutation.mutateAsync({
+        family_name: settings.familyName,
+        default_privacy: settings.defaultPrivacy,
+        date_format: settings.dateFormat,
+        show_private_info: settings.showPrivateInfo,
+        require_login_for_viewing: settings.requireLoginForViewing,
+        allow_guest_access: settings.allowGuestAccess,
+        email_notifications: settings.emailNotifications,
+        member_updates: settings.memberUpdates,
+        relationship_changes: settings.relationshipChanges,
+        photo_uploads: settings.photoUploads,
+        default_root_member_id: treePrefs.defaultRootMember,
+        preferred_generation_depth: treePrefs.generationDepth,
+        show_unknown_parents: treePrefs.showUnknownParents,
+      });
+
+      // Also cache in localStorage as fallback
       localStorage.setItem('familyVineSettings', JSON.stringify(settings));
-      
-      // Apply theme immediately
-      applyTheme(settings.theme);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       alert('Settings saved successfully!');
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -241,27 +277,71 @@ const Settings = () => {
   };
 
   const handleSettingChange = (section, setting, value) => {
+    if (setting === 'theme') {
+      setGlobalTheme(value);
+      return;
+    }
     setSettings(prev => ({
       ...prev,
       [setting]: value
     }));
-    
-    // Apply theme immediately for instant feedback
-    if (setting === 'theme') {
-      applyTheme(value);
+  };
+
+  // Account handlers
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setAccountError('');
+    setAccountSuccess('');
+
+    if (!passwordData.current || !passwordData.new || !passwordData.confirm) {
+      setAccountError('All fields are required');
+      return;
+    }
+    if (passwordData.new.length < 8) {
+      setAccountError('Password must be at least 8 characters');
+      return;
+    }
+    if (passwordData.new !== passwordData.confirm) {
+      setAccountError('New passwords do not match');
+      return;
+    }
+
+    try {
+      await axios.put(`${process.env.REACT_APP_API}/api/auth/me/password`, {
+        currentPassword: passwordData.current,
+        newPassword: passwordData.new,
+      });
+      setAccountSuccess('Password changed successfully');
+      setPasswordData({ current: '', new: '', confirm: '' });
+    } catch (error) {
+      setAccountError(error.response?.data?.error || 'Failed to change password');
     }
   };
 
-  // Listen for system theme changes if auto mode is selected
-  useEffect(() => {
-    if (settings.theme === 'auto') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = () => applyTheme('auto');
-      
-      mediaQuery.addListener(handleChange);
-      return () => mediaQuery.removeListener(handleChange);
+  const handleEmailChange = async (e) => {
+    e.preventDefault();
+    setAccountError('');
+    setAccountSuccess('');
+
+    if (!emailData.email || !emailData.password) {
+      setAccountError('Email and password are required');
+      return;
     }
-  }, [settings.theme]);
+
+    try {
+      const response = await axios.put(`${process.env.REACT_APP_API}/api/auth/me/email`, {
+        email: emailData.email,
+        password: emailData.password,
+      });
+      setAccountSuccess('Email changed successfully');
+      setEmailData({ email: '', password: '' });
+      // Update stored user
+      const updatedUser = { ...user, email: response.data.email };
+      localStorage.setItem('familyVine_user', JSON.stringify(updatedUser));
+    } catch (error) {
+      setAccountError(error.response?.data?.error || 'Failed to change email');
+    }
+  };
 
   const baseTabs = [
     { id: 'general', label: 'General', icon: <Database className="w-4 h-4" /> },
@@ -275,13 +355,196 @@ const Settings = () => {
   ] : [];
 
   const tabs = [
+    { id: 'account', label: 'Account', icon: <User className="w-4 h-4" /> },
     ...baseTabs,
+    { id: 'tree', label: 'Family Tree', icon: <TreePine className="w-4 h-4" /> },
     ...adminTabs,
     { id: 'import', label: 'Import Data', icon: <Upload className="w-4 h-4" /> },
     { id: 'export', label: 'Export Data', icon: <Download className="w-4 h-4" /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
     { id: 'logout', label: 'Logout', icon: <LogOut className="w-4 h-4" /> },
   ];
+
+  const renderAccountSettings = () => (
+    <div className="space-y-6">
+      {accountError && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-sm">
+          {accountError}
+        </div>
+      )}
+      {accountSuccess && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg text-sm">
+          {accountSuccess}
+        </div>
+      )}
+
+      {/* Account Info */}
+      <div className="bg-vine-50 dark:bg-gray-800 border border-vine-200 dark:border-gray-700 rounded-lg p-4">
+        <h4 className="font-medium text-vine-dark dark:text-white mb-2">Account Information</h4>
+        <div className="text-sm text-vine-sage dark:text-secondary-400 space-y-1">
+          <p><strong>Username:</strong> {user?.username}</p>
+          <p><strong>Email:</strong> {user?.email || 'Not set'}</p>
+          <p><strong>Role:</strong> <span className="capitalize">{user?.role}</span></p>
+        </div>
+      </div>
+
+      {/* Change Password */}
+      <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800 border border-vine-200 dark:border-gray-700 rounded-lg p-4">
+        <h4 className="font-medium text-vine-dark dark:text-white mb-4">Change Password</h4>
+        <form onSubmit={handlePasswordChange} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-1">Current Password</label>
+            <input
+              type="password"
+              value={passwordData.current}
+              onChange={(e) => setPasswordData(prev => ({ ...prev, current: e.target.value }))}
+              className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              placeholder="Enter current password"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-1">New Password</label>
+            <input
+              type="password"
+              value={passwordData.new}
+              onChange={(e) => setPasswordData(prev => ({ ...prev, new: e.target.value }))}
+              className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              placeholder="Min 8 characters"
+              minLength={8}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-1">Confirm New Password</label>
+            <input
+              type="password"
+              value={passwordData.confirm}
+              onChange={(e) => setPasswordData(prev => ({ ...prev, confirm: e.target.value }))}
+              className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              placeholder="Confirm new password"
+            />
+          </div>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-lg text-white text-sm font-medium transition-all"
+            style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))' }}
+          >
+            Update Password
+          </button>
+        </form>
+      </div>
+
+      {/* Change Email */}
+      <div className="bg-white/80 backdrop-blur-sm dark:bg-gray-800 border border-vine-200 dark:border-gray-700 rounded-lg p-4">
+        <h4 className="font-medium text-vine-dark dark:text-white mb-4">Change Email</h4>
+        <form onSubmit={handleEmailChange} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-1">New Email Address</label>
+            <input
+              type="email"
+              value={emailData.email}
+              onChange={(e) => setEmailData(prev => ({ ...prev, email: e.target.value }))}
+              className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              placeholder="Enter new email"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-1">Confirm with Password</label>
+            <input
+              type="password"
+              value={emailData.password}
+              onChange={(e) => setEmailData(prev => ({ ...prev, password: e.target.value }))}
+              className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+              placeholder="Enter password to confirm"
+            />
+          </div>
+          <button
+            type="submit"
+            className="px-4 py-2 rounded-lg text-white text-sm font-medium transition-all"
+            style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))' }}
+          >
+            Update Email
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+
+  const renderTreeSettings = () => (
+    <div className="space-y-6">
+      <div className="bg-vine-50 dark:bg-gray-800 border border-vine-200 dark:border-gray-700 rounded-lg p-4">
+        <h4 className="font-medium text-vine-dark dark:text-white mb-1">Family Tree Display</h4>
+        <p className="text-sm text-vine-sage dark:text-secondary-400">
+          Customize how your family tree loads and displays by default
+        </p>
+      </div>
+
+      {/* Default Root Member */}
+      <div>
+        <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
+          Default Starting Member
+        </label>
+        <select
+          value={treePrefs.defaultRootMember || ''}
+          onChange={(e) => setTreePrefs(prev => ({ ...prev, defaultRootMember: e.target.value ? parseInt(e.target.value) : null }))}
+          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+        >
+          <option value="">Automatic (oldest generation)</option>
+          {allMembers
+            .filter(m => m.first_name !== 'Unknown')
+            .sort((a, b) => `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`))
+            .map(m => (
+              <option key={m.id} value={m.id}>
+                {m.first_name} {m.last_name}{m.birth_date ? ` (b. ${new Date(m.birth_date).getFullYear()})` : ''}
+              </option>
+            ))
+          }
+        </select>
+        <p className="text-xs text-vine-sage dark:text-secondary-400 mt-1">
+          The family tree will center on this person when first loaded
+        </p>
+      </div>
+
+      {/* Generation Depth */}
+      <div>
+        <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
+          Default Generation Depth
+        </label>
+        <input
+          type="range"
+          min="1"
+          max="10"
+          value={treePrefs.generationDepth}
+          onChange={(e) => setTreePrefs(prev => ({ ...prev, generationDepth: parseInt(e.target.value) }))}
+          className="w-full accent-vine-600"
+        />
+        <div className="flex justify-between text-xs text-vine-sage dark:text-secondary-400">
+          <span>1</span>
+          <span className="font-medium text-vine-dark dark:text-white">{treePrefs.generationDepth} generation{treePrefs.generationDepth !== 1 ? 's' : ''}</span>
+          <span>10</span>
+        </div>
+        <p className="text-xs text-vine-sage dark:text-secondary-400 mt-1">
+          How many generations to show by default (adjustable on the tree page)
+        </p>
+      </div>
+
+      {/* Show Unknown Parents */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h4 className="text-sm font-medium text-vine-dark dark:text-gray-300">Show Unknown Parents</h4>
+          <p className="text-xs text-vine-sage dark:text-secondary-400">Display placeholder nodes for unknown parents in the tree</p>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={treePrefs.showUnknownParents}
+            onChange={(e) => setTreePrefs(prev => ({ ...prev, showUnknownParents: e.target.checked }))}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-secondary-200 dark:bg-secondary-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-vine-300 dark:peer-focus:ring-vine-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-vine-200 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-vine-600"></div>
+        </label>
+      </div>
+    </div>
+  );
 
   const renderGeneralSettings = () => (
     <div className="space-y-6">
@@ -319,18 +582,18 @@ const Settings = () => {
       <div>
         <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
           Auto-save Interval (minutes)
+          <ComingSoonBadge />
         </label>
         <select
           value={settings.autoSaveInterval}
-          onChange={(e) => handleSettingChange('general', 'autoSaveInterval', parseInt(e.target.value))}
-          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          disabled
+          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 opacity-60 cursor-not-allowed"
         >
-          <option value={1}>1 minute</option>
           <option value={5}>5 minutes</option>
-          <option value={10}>10 minutes</option>
-          <option value={30}>30 minutes</option>
-          <option value={0}>Disabled</option>
         </select>
+        <p className="text-xs text-vine-sage dark:text-secondary-400 mt-1">
+          Automatic saving will be available in a future update
+        </p>
       </div>
     </div>
   );
@@ -358,7 +621,7 @@ const Settings = () => {
           Theme
         </label>
         <select
-          value={settings.theme}
+          value={currentTheme}
           onChange={(e) => handleSettingChange('display', 'theme', e.target.value)}
           className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
         >
@@ -367,26 +630,27 @@ const Settings = () => {
           <option value="auto">Auto (System Preference)</option>
         </select>
         <p className="text-xs text-vine-sage dark:text-secondary-400 mt-1">
-          {settings.theme === 'auto' 
-            ? 'Theme will match your system preference' 
-            : `Currently using ${settings.theme} theme`}
+          {currentTheme === 'auto'
+            ? 'Theme will match your system preference'
+            : `Currently using ${currentTheme} theme`}
         </p>
       </div>
-  
+
       <div>
         <label className="block text-sm font-medium text-vine-dark dark:text-gray-300 mb-2">
           Language
+          <ComingSoonBadge />
         </label>
         <select
           value={settings.language}
-          onChange={(e) => handleSettingChange('display', 'language', e.target.value)}
-          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+          disabled
+          className="w-full border border-vine-200 rounded-lg px-3 py-2 bg-white/90 focus:ring-2 focus:ring-vine-500 focus:border-vine-500 dark:border-gray-600 dark:bg-gray-700 text-gray-900 dark:text-gray-100 opacity-60 cursor-not-allowed"
         >
           <option value="en">English</option>
-          <option value="es">Español</option>
-          <option value="fr">Français</option>
-          <option value="de">Deutsch</option>
         </select>
+        <p className="text-xs text-vine-sage dark:text-secondary-400 mt-1">
+          Multi-language support will be added in a future release
+        </p>
       </div>
   
       <div>
@@ -846,7 +1110,7 @@ const Settings = () => {
     </div>
   );
 
-  if (loading) {
+  if (loading || prefsLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-xl" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)' }}>Loading settings...</div>
@@ -881,17 +1145,19 @@ const Settings = () => {
         {/* Settings Content */}
         <div className="flex-1">
           <div className="settings-content-panel">
+            {activeTab === 'account' && renderAccountSettings()}
             {activeTab === 'general' && renderGeneralSettings()}
             {activeTab === 'display' && renderDisplaySettings()}
             {activeTab === 'privacy' && renderPrivacySettings()}
+            {activeTab === 'tree' && renderTreeSettings()}
             {activeTab === 'users' && user?.role === 'admin' && renderUsersSettings()}
             {activeTab === 'import' && renderImportSettings()}
             {activeTab === 'export' && renderExportSettings()}
             {activeTab === 'notifications' && renderNotificationSettings()}
             {activeTab === 'logout' && renderLogoutSettings()}
 
-            {/* Save Button - Don't show for import/export/users/logout tabs */}
-            {activeTab !== 'export' && activeTab !== 'import' && activeTab !== 'users' && activeTab !== 'logout' && (
+            {/* Save Button - Don't show for account/import/export/users/logout tabs */}
+            {activeTab !== 'account' && activeTab !== 'export' && activeTab !== 'import' && activeTab !== 'users' && activeTab !== 'logout' && (
               <div className="mt-8 pt-6 border-t border-vine-200 dark:border-gray-700">
                 <button
                   onClick={saveSettings}

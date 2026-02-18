@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const { validateStory } = require('../middleware/authValidators');
+const { requireRole } = require('../middleware/auth');
+const { validateId } = require('../middleware/validators');
 const { uploadConfigs } = require('../config/multer');
 const logger = require('../config/logger');
 const fs = require('fs');
 const path = require('path');
+const { safeUnlink, validateUploadPath } = require('../utils/pathSecurity');
 
 const MAX_AUDIO_PER_STORY = 3;
 
@@ -75,7 +78,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET single story by ID with members, photos, and audio recordings
-router.get('/:id', async (req, res) => {
+router.get('/:id', validateId(), async (req, res) => {
   const { id } = req.params;
 
   try {
@@ -96,7 +99,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST - Create new story
-router.post('/', validateStory, async (req, res) => {
+router.post('/', requireRole('editor'), validateStory, async (req, res) => {
   const { title, content, author_name, story_date, member_ids = [], photo_ids = [], transcript, historical_context } = req.body;
 
   // Validation
@@ -119,29 +122,29 @@ router.post('/', validateStory, async (req, res) => {
 
     const storyId = storyResult.rows[0].id;
 
-    // Link members
+    // Link members (storyId parameterized to prevent SQL injection)
     if (member_ids && member_ids.length > 0) {
-      const memberValues = member_ids.map((memberId, index) =>
-        `(${storyId}, $${index + 1}, NOW())`
+      const memberValues = member_ids.map((_, index) =>
+        `($1, $${index + 2}, NOW())`
       ).join(', ');
 
       await client.query(
         `INSERT INTO story_members (story_id, member_id, created_at)
          VALUES ${memberValues}`,
-        member_ids
+        [storyId, ...member_ids]
       );
     }
 
-    // Link photos
+    // Link photos (storyId parameterized to prevent SQL injection)
     if (photo_ids && photo_ids.length > 0) {
-      const photoValues = photo_ids.map((photoId, index) =>
-        `(${storyId}, $${index + 1}, NOW())`
+      const photoValues = photo_ids.map((_, index) =>
+        `($1, $${index + 2}, NOW())`
       ).join(', ');
 
       await client.query(
         `INSERT INTO story_photos (story_id, photo_id, created_at)
          VALUES ${photoValues}`,
-        photo_ids
+        [storyId, ...photo_ids]
       );
     }
 
@@ -164,7 +167,7 @@ router.post('/', validateStory, async (req, res) => {
 });
 
 // PUT - Update story
-router.put('/:id', validateStory, async (req, res) => {
+router.put('/:id', validateId(), requireRole('editor'), validateStory, async (req, res) => {
   const { id } = req.params;
   const { title, content, author_name, story_date, member_ids = [], photo_ids = [], transcript, historical_context } = req.body;
 
@@ -244,14 +247,14 @@ router.put('/:id', validateStory, async (req, res) => {
 });
 
 // POST - Upload audio for a story (supports up to 3 recordings)
-router.post('/:id/audio', uploadConfigs.audio.single('audio'), async (req, res) => {
+router.post('/:id/audio', validateId(), requireRole('editor'), uploadConfigs.audio.single('audio'), async (req, res) => {
   const { id } = req.params;
 
   try {
     // Verify story exists
     const storyCheck = await pool.query('SELECT id FROM stories WHERE id = $1', [id]);
     if (storyCheck.rows.length === 0) {
-      if (req.file) fs.unlink(req.file.path, () => {});
+      if (req.file) safeUnlink(req.file.path, logger);
       return res.status(404).json({ error: 'Story not found' });
     }
 
@@ -263,7 +266,7 @@ router.post('/:id/audio', uploadConfigs.audio.single('audio'), async (req, res) 
     const currentCount = parseInt(countResult.rows[0].count, 10);
 
     if (currentCount >= MAX_AUDIO_PER_STORY) {
-      if (req.file) fs.unlink(req.file.path, () => {});
+      if (req.file) safeUnlink(req.file.path, logger);
       return res.status(400).json({
         error: `Maximum of ${MAX_AUDIO_PER_STORY} audio recordings per story. Delete one before adding another.`
       });
@@ -299,7 +302,7 @@ router.post('/:id/audio', uploadConfigs.audio.single('audio'), async (req, res) 
 });
 
 // DELETE - Remove a specific audio recording by audio ID
-router.delete('/:storyId/audio/:audioId', async (req, res) => {
+router.delete('/:storyId/audio/:audioId', validateId(['storyId', 'audioId']), requireRole('editor'), async (req, res) => {
   const { storyId, audioId } = req.params;
 
   try {
@@ -315,14 +318,10 @@ router.delete('/:storyId/audio/:audioId', async (req, res) => {
 
     const audioRecord = result.rows[0];
 
-    // Delete the file
+    // Delete the file (with path traversal protection)
     if (audioRecord.audio_url) {
       const filePath = path.join(__dirname, '..', audioRecord.audio_url);
-      fs.unlink(filePath, (err) => {
-        if (err && err.code !== 'ENOENT') {
-          logger.error('Error deleting audio file:', err);
-        }
-      });
+      safeUnlink(filePath, logger);
     }
 
     // Delete from DB
@@ -351,7 +350,7 @@ router.delete('/:storyId/audio/:audioId', async (req, res) => {
 });
 
 // DELETE story
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', validateId(), requireRole('editor'), async (req, res) => {
   const { id } = req.params;
 
   const client = await pool.connect();
@@ -384,11 +383,11 @@ router.delete('/:id', async (req, res) => {
 
     await client.query('COMMIT');
 
-    // Clean up audio files after successful deletion
+    // Clean up audio files after successful deletion (with path traversal protection)
     for (const row of audioData.rows) {
       if (row.audio_url) {
         const filePath = path.join(__dirname, '..', row.audio_url);
-        fs.unlink(filePath, () => {});
+        safeUnlink(filePath, logger);
       }
     }
 

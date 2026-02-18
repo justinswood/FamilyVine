@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 import MemberCard from '../components/MemberCard';
 import ProfileImage from '../components/ProfileImage';
 import { formatFullName, formatSimpleName } from '../utils/nameUtils';
 import { computeKinship } from '../lib/familyvine-tree/react/kinship';
+import { useMembers, useMemoryCounts, useTreeDescendants } from '../hooks/useQueries';
 import { MapPin } from 'lucide-react';
 
 /* ── Decorative leaf icon ── */
@@ -15,14 +15,11 @@ const LeafIcon = ({ className = 'w-4 h-4' }) => (
   </svg>
 );
 
-const API = process.env.REACT_APP_API;
-
 const MemberList = () => {
-  const [allMembers, setAllMembers] = useState([]);
+  const { data: rawMembers = [], isLoading: loading } = useMembers();
+  const { data: memoryCounts = {} } = useMemoryCounts();
+  const { data: treeData } = useTreeDescendants();
   const [filteredMembers, setFilteredMembers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [memoryCounts, setMemoryCounts] = useState({});
-  const [kinshipMap, setKinshipMap] = useState({});
 
   // UI state
   const [viewMode, setViewMode] = useState('grid');
@@ -34,148 +31,113 @@ const MemberList = () => {
 
   const contentRef = useRef(null);
 
-  // Fetch all data on mount
-  useEffect(() => {
-    fetchMembers();
-    fetchMemoryCounts();
-    fetchTreeForKinship();
-  }, []);
+  // Filter out placeholder members from raw data
+  const allMembers = useMemo(() => {
+    return rawMembers.filter(member => {
+      const fullName = formatSimpleName(member);
+      return fullName !== 'Unknown Parent' &&
+             fullName !== 'Unknown Mother' &&
+             fullName !== 'Unknown Father';
+    });
+  }, [rawMembers]);
 
-  const fetchMembers = async () => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`${API}/api/members`);
-      const membersData = res.data || [];
+  // Compute kinship map from tree data
+  const kinshipMap = useMemo(() => {
+    if (!treeData || !treeData.unions) return {};
 
-      // Filter out placeholder members
-      const filtered = membersData.filter(member => {
-        const fullName = formatSimpleName(member);
-        return fullName !== 'Unknown Parent' &&
-               fullName !== 'Unknown Mother' &&
-               fullName !== 'Unknown Father';
-      });
+    const nodeMap = new Map();
+    const unions = treeData.unions;
 
-      setAllMembers(filtered);
-    } catch (err) {
-      console.error('Error fetching members:', err);
-      setAllMembers([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // First pass: create all member nodes
+    unions.forEach(union => {
+      const p1 = union.partner1;
+      const p2 = union.partner2;
 
-  const fetchMemoryCounts = async () => {
-    try {
-      const res = await axios.get(`${API}/api/members/memory-counts`);
-      setMemoryCounts(res.data || {});
-    } catch (err) {
-      console.error('Error fetching memory counts:', err);
-    }
-  };
-
-  const fetchTreeForKinship = async () => {
-    try {
-      const res = await axios.get(`${API}/api/tree/descendants?max_generations=6`);
-      if (!res.data || !res.data.unions) return;
-
-      // Build nodeMap from union data
-      const nodeMap = new Map();
-      const unions = res.data.unions;
-
-      // First pass: create all member nodes
-      unions.forEach(union => {
-        const p1 = union.partner1;
-        const p2 = union.partner2;
-
-        if (p1 && p1.id) {
-          if (!nodeMap.has(p1.id)) {
-            nodeMap.set(p1.id, {
-              id: p1.id,
-              firstName: p1.first_name,
-              lastName: p1.last_name,
-              fatherId: null,
-              motherId: null,
-              partnerIds: []
-            });
-          }
-          const node = nodeMap.get(p1.id);
-          if (p2 && p2.id && !node.partnerIds.includes(p2.id)) {
-            node.partnerIds.push(p2.id);
-          }
-        }
-
-        if (p2 && p2.id) {
-          if (!nodeMap.has(p2.id)) {
-            nodeMap.set(p2.id, {
-              id: p2.id,
-              firstName: p2.first_name,
-              lastName: p2.last_name,
-              fatherId: null,
-              motherId: null,
-              partnerIds: []
-            });
-          }
-          const node = nodeMap.get(p2.id);
-          if (p1 && p1.id && !node.partnerIds.includes(p1.id)) {
-            node.partnerIds.push(p1.id);
-          }
-        }
-
-        // Process children — assign parents
-        if (union.children) {
-          union.children.forEach(child => {
-            if (!child || !child.id) return;
-            if (!nodeMap.has(child.id)) {
-              nodeMap.set(child.id, {
-                id: child.id,
-                firstName: child.first_name,
-                lastName: child.last_name,
-                fatherId: null,
-                motherId: null,
-                partnerIds: []
-              });
-            }
-            const childNode = nodeMap.get(child.id);
-            // Assign parents based on gender
-            if (p1 && p1.id) {
-              if (p1.gender === 'male') childNode.fatherId = p1.id;
-              else childNode.motherId = p1.id;
-            }
-            if (p2 && p2.id) {
-              if (p2.gender === 'male') childNode.fatherId = p2.id;
-              else childNode.motherId = p2.id;
-            }
+      if (p1 && p1.id) {
+        if (!nodeMap.has(p1.id)) {
+          nodeMap.set(p1.id, {
+            id: p1.id,
+            firstName: p1.first_name,
+            lastName: p1.last_name,
+            fatherId: null,
+            motherId: null,
+            partnerIds: []
           });
         }
-      });
-
-      // Find root (generation 1) members
-      const rootUnion = unions.find(u => u.generation === 1);
-      if (!rootUnion) return;
-
-      const rootId = rootUnion.partner1?.id || rootUnion.partner2?.id;
-      if (!rootId) return;
-
-      // Compute kinship for all members
-      const kinships = {};
-      const rootNode = nodeMap.get(rootId);
-      const rootName = rootNode ?
-        `${rootNode.firstName || ''} ${rootNode.lastName || ''}`.trim() :
-        'Family Root';
-
-      for (const [memberId] of nodeMap) {
-        if (memberId === rootId) continue;
-        const result = computeKinship(nodeMap, rootId, memberId);
-        if (result) {
-          kinships[memberId] = `${result.title} of ${rootName}`;
+        const node = nodeMap.get(p1.id);
+        if (p2 && p2.id && !node.partnerIds.includes(p2.id)) {
+          node.partnerIds.push(p2.id);
         }
       }
 
-      setKinshipMap(kinships);
-    } catch (err) {
-      console.error('Error building kinship map:', err);
+      if (p2 && p2.id) {
+        if (!nodeMap.has(p2.id)) {
+          nodeMap.set(p2.id, {
+            id: p2.id,
+            firstName: p2.first_name,
+            lastName: p2.last_name,
+            fatherId: null,
+            motherId: null,
+            partnerIds: []
+          });
+        }
+        const node = nodeMap.get(p2.id);
+        if (p1 && p1.id && !node.partnerIds.includes(p1.id)) {
+          node.partnerIds.push(p1.id);
+        }
+      }
+
+      // Process children — assign parents
+      if (union.children) {
+        union.children.forEach(child => {
+          if (!child || !child.id) return;
+          if (!nodeMap.has(child.id)) {
+            nodeMap.set(child.id, {
+              id: child.id,
+              firstName: child.first_name,
+              lastName: child.last_name,
+              fatherId: null,
+              motherId: null,
+              partnerIds: []
+            });
+          }
+          const childNode = nodeMap.get(child.id);
+          if (p1 && p1.id) {
+            if (p1.gender === 'male') childNode.fatherId = p1.id;
+            else childNode.motherId = p1.id;
+          }
+          if (p2 && p2.id) {
+            if (p2.gender === 'male') childNode.fatherId = p2.id;
+            else childNode.motherId = p2.id;
+          }
+        });
+      }
+    });
+
+    // Find root (generation 1) members
+    const rootUnion = unions.find(u => u.generation === 1);
+    if (!rootUnion) return {};
+
+    const rootId = rootUnion.partner1?.id || rootUnion.partner2?.id;
+    if (!rootId) return {};
+
+    // Compute kinship for all members
+    const kinships = {};
+    const rootNode = nodeMap.get(rootId);
+    const rootName = rootNode ?
+      `${rootNode.firstName || ''} ${rootNode.lastName || ''}`.trim() :
+      'Family Root';
+
+    for (const [memberId] of nodeMap) {
+      if (memberId === rootId) continue;
+      const result = computeKinship(nodeMap, rootId, memberId);
+      if (result) {
+        kinships[memberId] = `${result.title} of ${rootName}`;
+      }
     }
-  };
+
+    return kinships;
+  }, [treeData]);
 
   // Extract unique branches (surnames) with counts
   const branches = useMemo(() => {
@@ -319,7 +281,7 @@ const MemberList = () => {
             </div>
 
             {/* Center: Search */}
-            <div className="flex items-center gap-1.5 flex-1 max-w-lg">
+            <div className="flex items-center gap-1.5 flex-1 max-w-lg" role="search" aria-label="Search family members">
               <div className="relative flex-1">
                 <svg className="absolute left-2 top-1/2 transform -translate-y-1/2 w-2.5 h-2.5" style={{ color: 'var(--vine-sage)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -329,6 +291,7 @@ const MemberList = () => {
                   placeholder="Search the registry..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  aria-label="Search family members by name, location, or occupation"
                   className="w-full pl-6 pr-6 py-1 rounded-lg border"
                   style={{
                     fontFamily: 'var(--font-body)',
@@ -342,6 +305,7 @@ const MemberList = () => {
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
+                    aria-label="Clear search"
                     className="absolute right-2 top-1/2 transform -translate-y-1/2"
                     style={{ color: 'var(--vine-sage)' }}
                   >
@@ -356,6 +320,8 @@ const MemberList = () => {
               <div className="flex rounded-md p-0.5" style={{ background: 'rgba(134, 167, 137, 0.08)', border: '1px solid rgba(134, 167, 137, 0.12)' }}>
                 <button
                   onClick={() => setViewMode('list')}
+                  aria-pressed={viewMode === 'list'}
+                  aria-label="List view"
                   className="px-1.5 py-0.5 rounded font-medium transition-all"
                   style={{
                     fontFamily: 'var(--font-body)',
@@ -369,6 +335,8 @@ const MemberList = () => {
                 </button>
                 <button
                   onClick={() => setViewMode('grid')}
+                  aria-pressed={viewMode === 'grid'}
+                  aria-label="Grid view"
                   className="px-1.5 py-0.5 rounded font-medium transition-all"
                   style={{
                     fontFamily: 'var(--font-body)',
@@ -388,6 +356,7 @@ const MemberList = () => {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
+                aria-label="Sort members by"
                 className="py-0.5 px-1.5 rounded-lg border"
                 style={{
                   fontFamily: 'var(--font-body)',
@@ -404,6 +373,7 @@ const MemberList = () => {
               </select>
               <button
                 onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                aria-label={`Sort order: ${sortOrder === 'asc' ? 'ascending' : 'descending'}`}
                 className="btn-registry btn-registry-secondary"
                 style={{ padding: '2px 6px' }}
               >
@@ -455,7 +425,7 @@ const MemberList = () => {
           {/* A-Z Sidebar (desktop only, grid mode) */}
           {viewMode === 'grid' && filteredMembers.length > 10 && (
             <div className="hidden lg:block flex-shrink-0" style={{ width: '28px' }}>
-              <div className="az-index">
+              <div className="az-index" role="navigation" aria-label="Alphabetical index">
                 {allLetters.map(letter => (
                   <button
                     key={letter}

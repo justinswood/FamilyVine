@@ -458,6 +458,7 @@ const HeroImageSelector = () => {
                   <img
                     src={`${process.env.REACT_APP_API}/${photo.file_path}`}
                     alt={photo.caption || 'Hero image'}
+                    loading="lazy"
                   />
                   <div className="curator-slot-badge">
                     Slot #{index + 1}

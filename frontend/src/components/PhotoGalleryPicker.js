@@ -115,6 +115,7 @@ const PhotoGalleryPicker = ({ onPhotoSelect, onCancel }) => {
                   <img
                     src={`${process.env.REACT_APP_API}/${photo.file_path}`}
                     alt={photo.caption || 'Gallery photo'}
+                    loading="lazy"
                     className="w-full h-24 object-cover"
                   />
                   

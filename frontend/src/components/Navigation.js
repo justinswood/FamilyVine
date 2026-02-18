@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Settings as SettingsIcon, User, LogOut, ChevronDown, UserPlus, Users, Image, Book, Clock, UtensilsCrossed, Sun, Moon } from 'lucide-react';
@@ -66,7 +66,7 @@ const Navigation = () => {
 
   // Archival nav link classes – parchment pill with gold active dot
   const getNavLinkClasses = (active) => `
-    inline-block rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-300 relative
+    inline-block rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors duration-300 relative
     ${active
       ? "text-[#2E5A2E] dark:text-vine-400 font-semibold after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-[#D4AF37]"
       : 'text-[#4A4A4A] dark:text-secondary-300 hover:text-[#2E5A2E] dark:hover:text-vine-400 hover:bg-[#2E5A2E]/10 dark:hover:bg-[#2E5A2E]/15'
@@ -77,7 +77,7 @@ const Navigation = () => {
   const dropdownItemClasses = "flex items-center gap-2 px-3 py-2 text-xs text-vine-600 dark:text-secondary-300 hover:bg-vine-50 dark:hover:bg-vine-900/20 hover:text-vine-dark dark:hover:text-vine-400 transition-colors";
 
   return (
-    <nav className="bg-vine-50/90 dark:bg-secondary-800 backdrop-blur-lg sticky top-0 z-50">
+    <nav className="bg-vine-50/90 dark:bg-secondary-800 backdrop-blur-lg sticky top-0 z-50" aria-label="Main navigation">
       <div className="max-w-7xl mx-auto px-3 py-1.5">
         <div className="flex items-center justify-between">
           {/* Left section - Logo */}
@@ -112,6 +112,8 @@ const Navigation = () => {
               <div className="relative">
                 <button
                   onClick={handleMembersClick}
+                  aria-expanded={showMembersMenu}
+                  aria-haspopup="true"
                   className={`${getNavLinkClasses(isActiveGroup(['/members', '/add']))} flex items-center gap-1`}
                 >
                   Members
@@ -123,6 +125,8 @@ const Navigation = () => {
               <div className="relative">
                 <button
                   onClick={handleMemoriesClick}
+                  aria-expanded={showMemoriesMenu}
+                  aria-haspopup="true"
                   className={`${getNavLinkClasses(isActiveGroup(['/gallery', '/recipes', '/stories', '/timeline']))} flex items-center gap-1`}
                 >
                   Memories
@@ -171,9 +175,12 @@ const Navigation = () => {
               <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setShowUserMenu(!showUserMenu)}
+                  aria-expanded={showUserMenu}
+                  aria-haspopup="true"
                   className="p-1.5 text-[#2E5A2E] dark:text-[#D4AF37] hover:text-[#D4AF37] dark:hover:text-vine-400
                              hover:bg-[#F9F8F3] dark:hover:bg-secondary-700 rounded-full transition-all duration-300"
                   title="User Menu"
+                  aria-label="User menu"
                 >
                   <User className="w-4 h-4" />
                 </button>
@@ -219,6 +226,8 @@ const Navigation = () => {
             </Link>
             <button
               onClick={handleMembersClick}
+              aria-expanded={showMembersMenu}
+              aria-haspopup="true"
               className={`${getNavLinkClasses(isActiveGroup(['/members', '/add']))} flex items-center gap-1`}
             >
               Members
@@ -226,6 +235,8 @@ const Navigation = () => {
             </button>
             <button
               onClick={handleMemoriesClick}
+              aria-expanded={showMemoriesMenu}
+              aria-haspopup="true"
               className={`${getNavLinkClasses(isActiveGroup(['/gallery', '/recipes', '/stories', '/timeline']))} flex items-center gap-1`}
             >
               Memories
@@ -242,6 +253,8 @@ const Navigation = () => {
       {showMembersMenu && membersButtonRect && createPortal(
         <div
           ref={membersMenuRef}
+          role="menu"
+          aria-label="Members menu"
           className="fixed w-44 card py-1.5 animate-scale-in"
           style={{
             top: `${membersButtonRect.bottom + 6}px`,
@@ -251,6 +264,7 @@ const Navigation = () => {
         >
           <Link
             to="/members"
+            role="menuitem"
             onClick={() => setShowMembersMenu(false)}
             className={dropdownItemClasses}
           >
@@ -259,6 +273,7 @@ const Navigation = () => {
           </Link>
           <Link
             to="/add"
+            role="menuitem"
             onClick={() => setShowMembersMenu(false)}
             className={dropdownItemClasses}
           >
@@ -273,6 +288,8 @@ const Navigation = () => {
       {showMemoriesMenu && memoriesButtonRect && createPortal(
         <div
           ref={memoriesMenuRef}
+          role="menu"
+          aria-label="Memories menu"
           className="fixed w-44 card py-1.5 animate-scale-in"
           style={{
             top: `${memoriesButtonRect.bottom + 6}px`,
@@ -282,6 +299,7 @@ const Navigation = () => {
         >
           <Link
             to="/gallery"
+            role="menuitem"
             onClick={() => setShowMemoriesMenu(false)}
             className={dropdownItemClasses}
           >
@@ -290,6 +308,7 @@ const Navigation = () => {
           </Link>
           <Link
             to="/recipes"
+            role="menuitem"
             onClick={() => setShowMemoriesMenu(false)}
             className={dropdownItemClasses}
           >
@@ -298,6 +317,7 @@ const Navigation = () => {
           </Link>
           <Link
             to="/stories"
+            role="menuitem"
             onClick={() => setShowMemoriesMenu(false)}
             className={dropdownItemClasses}
           >
@@ -306,6 +326,7 @@ const Navigation = () => {
           </Link>
           <Link
             to="/timeline"
+            role="menuitem"
             onClick={() => setShowMemoriesMenu(false)}
             className={dropdownItemClasses}
           >
@@ -319,4 +340,4 @@ const Navigation = () => {
   );
 };
 
-export default Navigation;
+export default React.memo(Navigation);

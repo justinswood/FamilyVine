@@ -13,6 +13,33 @@ const FleurDeLis = ({ className = 'w-5 h-5' }) => (
   </svg>
 );
 
+/* Classic Heritage Vine Flourish SVG */
+const VineFlourish = ({ className = '' }) => (
+  <svg className={className} viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M10 190 Q 30 170, 50 180 T 90 160 T 130 170 T 170 140 T 190 100 Q 180 80, 160 90 T 120 70 T 80 80 T 40 50 T 10 10"
+      stroke="var(--vine-green, #2E5A2E)"
+      strokeWidth="2"
+      fill="none"
+      strokeLinecap="round"
+    />
+    {/* Leaves */}
+    <ellipse cx="50" cy="175" rx="8" ry="12" fill="var(--vine-green, #2E5A2E)" opacity="0.6" transform="rotate(-30, 50, 175)"/>
+    <ellipse cx="90" cy="155" rx="7" ry="10" fill="var(--vine-green, #2E5A2E)" opacity="0.5" transform="rotate(-45, 90, 155)"/>
+    <ellipse cx="130" cy="165" rx="8" ry="11" fill="var(--vine-green, #2E5A2E)" opacity="0.6" transform="rotate(-20, 130, 165)"/>
+    <ellipse cx="170" cy="135" rx="6" ry="9" fill="var(--vine-green, #2E5A2E)" opacity="0.5" transform="rotate(-60, 170, 135)"/>
+    <ellipse cx="160" cy="85" rx="7" ry="10" fill="var(--vine-green, #2E5A2E)" opacity="0.6" transform="rotate(30, 160, 85)"/>
+    <ellipse cx="120" cy="65" rx="8" ry="11" fill="var(--vine-green, #2E5A2E)" opacity="0.5" transform="rotate(45, 120, 65)"/>
+    <ellipse cx="80" cy="75" rx="6" ry="9" fill="var(--vine-green, #2E5A2E)" opacity="0.6" transform="rotate(20, 80, 75)"/>
+    <ellipse cx="40" cy="45" rx="7" ry="10" fill="var(--vine-green, #2E5A2E)" opacity="0.5" transform="rotate(60, 40, 45)"/>
+    {/* Curling tendrils */}
+    <path d="M55 185 Q 60 195, 70 190" stroke="var(--vine-green, #2E5A2E)" strokeWidth="1" fill="none" opacity="0.4"/>
+    <path d="M95 150 Q 100 140, 110 145" stroke="var(--vine-green, #2E5A2E)" strokeWidth="1" fill="none" opacity="0.4"/>
+    <path d="M175 130 Q 185 125, 190 135" stroke="var(--vine-green, #2E5A2E)" strokeWidth="1" fill="none" opacity="0.4"/>
+    <path d="M115 60 Q 105 50, 100 60" stroke="var(--vine-green, #2E5A2E)" strokeWidth="1" fill="none" opacity="0.4"/>
+  </svg>
+);
+
 const LEGACY_QUOTES = [
   "Family is the vine that holds us all together.",
   "Every branch tells a story worth preserving.",
@@ -20,6 +47,8 @@ const LEGACY_QUOTES = [
   "The best heritage is a loving family.",
   "We carry the stories of those who came before us.",
   "A family tree is a garden of memories.",
+  "Our ancestors live on through the stories we tell.",
+  "Every generation adds a new chapter to our legacy.",
 ];
 
 const LoginPage = () => {
@@ -90,160 +119,172 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="login-gateway">
-      {/* Brand logo */}
-      <div className="login-brand">
-        <img
-          src="/logo.png"
-          alt="FamilyVine"
-          className="login-brand-logo h-16 w-auto object-contain"
-        />
-      </div>
+    <div className="login-stage">
+      {/* Vignette overlay */}
+      <div className="login-vignette" />
 
-      {/* Login form card */}
-      <div className="max-w-[400px] w-full">
-        <div className={`login-card-vellum ${shaking ? 'login-card-shake' : ''}`}>
-          <h2 style={{ fontFamily: 'var(--font-header)', color: 'var(--vine-dark)', fontSize: '1.2rem', fontWeight: 600, textAlign: 'center', marginBottom: '14px' }}>
-            Sign In
-          </h2>
+      {/* Corner Vine Flourishes */}
+      <VineFlourish className="vine-flourish vine-top-left" />
+      <VineFlourish className="vine-flourish vine-bottom-right" />
 
-          <form onSubmit={handleSubmit}>
-            {/* Session expired message */}
-            {sessionExpired && !error && (
-              <div className="mb-4 p-3 rounded-lg text-center" style={{
-                background: 'rgba(212, 175, 55, 0.1)',
-                border: '1px solid rgba(212, 175, 55, 0.3)',
-                color: 'var(--vine-dark)'
-              }}>
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', margin: 0 }}>
-                  Your session has expired. Please sign in again.
-                </p>
-              </div>
-            )}
+      {/* Main content container */}
+      <div className="login-content">
+        {/* Brand logo */}
+        <div className="login-brand">
+          <img
+            src="/logo.png"
+            alt="FamilyVine"
+            className="login-brand-logo h-16 w-auto object-contain"
+          />
+        </div>
 
-            {/* Error message */}
-            {error && (
-              <div className="login-error mb-4">
-                {error}
-              </div>
-            )}
+        {/* Login form card */}
+        <div className="max-w-[400px] w-full">
+          <div className={`login-card-vellum ${shaking ? 'login-card-shake' : ''}`}>
+            <h2 style={{ fontFamily: 'var(--font-header)', color: 'var(--vine-dark)', fontSize: '1.2rem', fontWeight: 600, textAlign: 'center', marginBottom: '14px' }}>
+              Sign In
+            </h2>
 
-            <div className="space-y-3">
-              {/* Username */}
-              <div>
-                <label style={{ fontFamily: 'var(--font-header)', fontSize: '0.8rem', fontWeight: 500, color: 'var(--vine-dark)', display: 'block', marginBottom: '6px' }}>
-                  Username
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    className="login-input"
-                    placeholder="Enter username"
-                    disabled={loading}
-                    autoComplete="username"
-                  />
-                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--vine-sage)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
+            <form onSubmit={handleSubmit}>
+              {/* Session expired message */}
+              {sessionExpired && !error && (
+                <div className="mb-4 p-3 rounded-lg text-center" role="status" style={{
+                  background: 'rgba(212, 175, 55, 0.1)',
+                  border: '1px solid rgba(212, 175, 55, 0.3)',
+                  color: 'var(--vine-dark)'
+                }}>
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.85rem', margin: 0 }}>
+                    Your session has expired. Please sign in again.
+                  </p>
                 </div>
-              </div>
+              )}
 
-              {/* Password */}
-              <div>
-                <label style={{ fontFamily: 'var(--font-header)', fontSize: '0.8rem', fontWeight: 500, color: 'var(--vine-dark)', display: 'block', marginBottom: '6px' }}>
-                  Password
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="login-input"
-                    style={{ paddingRight: '40px' }}
-                    placeholder="Enter password"
-                    disabled={loading}
-                    autoComplete="current-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={`login-fleur-toggle ${showPassword ? 'active' : ''}`}
-                    disabled={loading}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    <FleurDeLis className="w-4.5 h-4.5" />
-                  </button>
+              {/* Error message */}
+              {error && (
+                <div className="login-error mb-4" role="alert">
+                  {error}
                 </div>
-              </div>
+              )}
 
-              {/* Remember me & Forgot */}
-              <div className="flex items-center justify-between">
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="login-leaf-check"
-                  />
-                  <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--vine-sage)', marginLeft: '8px' }}>
-                    Remember me
-                  </span>
-                </label>
-                <Link
-                  to="/forgot-password"
-                  style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', fontWeight: 500, color: 'var(--vine-green)' }}
-                  className="hover:underline"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
-
-              {/* Sign In button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="login-btn-vine"
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <div className="space-y-3">
+                {/* Username */}
+                <div>
+                  <label htmlFor="login-username" style={{ fontFamily: 'var(--font-header)', fontSize: '0.8rem', fontWeight: 500, color: 'var(--vine-dark)', display: 'block', marginBottom: '6px' }}>
+                    Username
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="login-username"
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      className="login-input"
+                      placeholder="Enter username"
+                      disabled={loading}
+                      autoComplete="username"
+                    />
+                    <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: 'var(--vine-sage)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    Signing in...
-                  </span>
-                ) : (
-                  'Sign In'
-                )}
-              </button>
+                  </div>
+                </div>
 
-              {/* Register link */}
-              <div className="text-center">
-                <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--vine-sage)' }}>
-                  Don't have an account?{' '}
-                  <Link to="/register" style={{ color: 'var(--vine-green)', fontWeight: 600 }} className="hover:underline">
-                    Sign up
+                {/* Password */}
+                <div>
+                  <label htmlFor="login-password" style={{ fontFamily: 'var(--font-header)', fontSize: '0.8rem', fontWeight: 500, color: 'var(--vine-dark)', display: 'block', marginBottom: '6px' }}>
+                    Password
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="login-password"
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="login-input"
+                      style={{ paddingRight: '40px' }}
+                      placeholder="Enter password"
+                      disabled={loading}
+                      autoComplete="current-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className={`login-fleur-toggle ${showPassword ? 'active' : ''}`}
+                      disabled={loading}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      <FleurDeLis className="w-4.5 h-4.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Remember me & Forgot */}
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="login-leaf-check"
+                    />
+                    <span style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--vine-sage)', marginLeft: '8px' }}>
+                      Remember me
+                    </span>
+                  </label>
+                  <Link
+                    to="/forgot-password"
+                    style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', fontWeight: 500, color: 'var(--vine-green)' }}
+                    className="hover:underline"
+                  >
+                    Forgot Password?
                   </Link>
-                </p>
+                </div>
+
+                {/* Sign In button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="login-btn-vine"
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Signing in...
+                    </span>
+                  ) : (
+                    'Sign In'
+                  )}
+                </button>
+
+                {/* Register link */}
+                <div className="text-center">
+                  <p style={{ fontFamily: 'var(--font-body)', fontSize: '0.8rem', color: 'var(--vine-sage)' }}>
+                    Don't have an account?{' '}
+                    <Link to="/register" style={{ color: 'var(--vine-green)', fontWeight: 600 }} className="hover:underline">
+                      Sign up
+                    </Link>
+                  </p>
+                </div>
               </div>
-            </div>
-          </form>
-        </div>
+            </form>
+          </div>
 
-        {/* Legacy quote ticker */}
-        <div className="mt-3" key={quoteIndex}>
-          <p className="login-quote">
-            "{currentQuote}"
-          </p>
-        </div>
+          {/* Legacy wisdom quote */}
+          <div className="login-wisdom-footer" key={quoteIndex}>
+            <p className="login-wisdom-quote">
+              "{currentQuote}"
+            </p>
+          </div>
 
-        {/* Footer */}
-        <div className="text-center mt-3 mb-4 login-footer">
-          <p>
-            &copy; {new Date().getFullYear()} FamilyVine &mdash; Connecting Generations
-          </p>
+          {/* Footer */}
+          <div className="text-center mt-3 mb-4 login-footer">
+            <p>
+              &copy; {new Date().getFullYear()} FamilyVine &mdash; Connecting Generations
+            </p>
+          </div>
         </div>
       </div>
     </div>

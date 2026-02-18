@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:18.20-alpine
 
 # Install curl for healthcheck and production dependencies
 RUN apk add --no-cache curl

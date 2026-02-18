@@ -237,3 +237,122 @@ export function useDeleteRelationship() {
     },
   });
 }
+
+/**
+ * Create an album (mutation)
+ */
+export function useCreateAlbum() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (albumData) => {
+      const { data } = await axios.post(`${process.env.REACT_APP_API}/api/albums`, albumData);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.albums.all });
+    },
+  });
+}
+
+/**
+ * Fetch all recipes
+ */
+export function useRecipes() {
+  return useQuery({
+    queryKey: queryKeys.recipes.list(),
+    queryFn: async () => {
+      const { data } = await axios.get(`${process.env.REACT_APP_API}/api/recipes`);
+      return data;
+    },
+  });
+}
+
+/**
+ * Create a recipe (mutation)
+ */
+export function useCreateRecipe() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (recipeData) => {
+      const { data } = await axios.post(`${process.env.REACT_APP_API}/api/recipes`, recipeData);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.recipes.all });
+    },
+  });
+}
+
+/**
+ * Delete a story (mutation)
+ */
+export function useDeleteStory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (storyId) => {
+      await axios.delete(`${process.env.REACT_APP_API}/api/stories/${storyId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.stories.all });
+    },
+  });
+}
+
+/**
+ * Fetch memory counts for all members
+ */
+export function useMemoryCounts() {
+  return useQuery({
+    queryKey: [...queryKeys.members.all, 'memoryCounts'],
+    queryFn: async () => {
+      const { data } = await axios.get(`${process.env.REACT_APP_API}/api/members/memory-counts`);
+      return data || {};
+    },
+  });
+}
+
+/**
+ * Fetch tree descendants for kinship computation
+ */
+export function useTreeDescendants(maxGenerations = 6) {
+  return useQuery({
+    queryKey: [...queryKeys.tree.data(), 'descendants', maxGenerations],
+    queryFn: async () => {
+      const { data } = await axios.get(`${process.env.REACT_APP_API}/api/tree/descendants?max_generations=${maxGenerations}`);
+      return data;
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+/**
+ * Fetch current user's preferences
+ */
+export function usePreferences() {
+  return useQuery({
+    queryKey: queryKeys.preferences.current(),
+    queryFn: async () => {
+      const { data } = await axios.get(`${process.env.REACT_APP_API}/api/preferences`);
+      return data;
+    },
+  });
+}
+
+/**
+ * Update user preferences
+ */
+export function useUpdatePreferences() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (preferences) => {
+      const { data } = await axios.put(`${process.env.REACT_APP_API}/api/preferences`, preferences);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.preferences.all });
+    },
+  });
+}

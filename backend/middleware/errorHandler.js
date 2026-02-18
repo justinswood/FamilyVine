@@ -19,10 +19,16 @@ const errorHandler = (err, req, res, next) => {
   // Determine status code
   const statusCode = err.statusCode || err.status || 500;
 
+  // In production, don't expose internal error messages for 5xx errors
+  const isProduction = process.env.NODE_ENV === 'production';
+  const safeMessage = (statusCode >= 500 && isProduction)
+    ? 'Internal server error'
+    : (err.message || 'Internal server error');
+
   // Send error response
   res.status(statusCode).json({
     error: {
-      message: err.message || 'Internal server error',
+      message: safeMessage,
       code: err.code || 'INTERNAL_ERROR',
       ...(process.env.NODE_ENV === 'development' && {
         stack: err.stack,

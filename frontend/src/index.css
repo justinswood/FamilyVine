@@ -763,8 +763,7 @@ nav {
 }
 
 .almanac-today {
-  animation: todayPulse 3s ease-in-out infinite;
-  background: rgba(212, 160, 23, 0.03);
+  background: transparent;
 }
 
 /* Golden circle for today's date number — enhanced with metallic glow */
@@ -790,10 +789,10 @@ nav {
   box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.25);
 }
 
-/* Combined today + event */
+/* Combined today + event — use event-day styling, no extra pulse */
 .almanac-today.almanac-event-day {
-  background: rgba(212, 160, 23, 0.05);
-  animation: todayPulse 3s ease-in-out infinite;
+  background: rgba(255, 215, 0, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(212, 160, 23, 0.25);
 }
 
 /* Vine timeline connector */
@@ -978,7 +977,7 @@ nav {
 }
 
 .dark .almanac-today {
-  background: rgba(212, 160, 23, 0.06);
+  background: transparent;
 }
 
 .dark .almanac-event-day {
@@ -2265,10 +2264,11 @@ nav {
 .gallery-header-title {
   font-family: var(--font-header);
   color: #2c2c2c;
-  font-size: 0.5rem;
+  font-size: 1.25rem;
   font-weight: 500;
   letter-spacing: 0.5px;
-  margin: 0 0 1px 0;
+  line-height: 1;
+  margin: 0;
 }
 
 /* Empty state — archival style */
@@ -2420,9 +2420,10 @@ nav {
 .recipe-header-title {
   font-family: var(--font-header, 'Playfair Display', serif);
   font-weight: 700;
-  font-size: 0.51rem;
+  font-size: 0.8rem;
   color: var(--vine-dark, #2D4F1E);
   letter-spacing: 0.02em;
+  line-height: 1;
 }
 
 /* ── Recipe Grid (3 columns on desktop) ── */
@@ -4764,8 +4765,8 @@ nav {
 /* 3. Organic Section Divider — vine pattern with fleur-de-lis */
 .vine-divider {
   width: 100%;
-  max-width: 600px;
-  margin: 2rem auto;
+  max-width: 900px;
+  margin: 1rem auto;
   padding: 0 1rem;
   opacity: 0;
   animation: dividerFadeIn 1s ease-out forwards;
@@ -4775,6 +4776,12 @@ nav {
   width: 100%;
   height: 40px;
   color: var(--vine-sage, #86A789);
+}
+
+.vine-divider-logo {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 @keyframes dividerFadeIn {
@@ -6503,13 +6510,14 @@ nav {
   font-family: var(--font-header);
   font-weight: 700;
   color: var(--vine-dark);
-  font-size: 0.55rem;
-  letter-spacing: -0.01em;
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  line-height: 1;
 }
 
 .registry-count {
   font-family: var(--font-body);
-  font-size: 0.5rem;
+  font-size: 0.6rem;
   color: var(--vine-sage);
   letter-spacing: 0.06em;
   text-transform: uppercase;

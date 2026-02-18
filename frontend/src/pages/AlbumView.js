@@ -779,9 +779,10 @@ const AlbumView = () => {
               <img
                 src={`${process.env.REACT_APP_API}/${photo.file_path}`}
                 alt={photo.caption || 'Photo'}
-                className="w-full h-64 object-cover hover:opacity-90 cursor-pointer transition-all duration-200 hover:scale-105"
+                loading="lazy"
+                className="w-full h-64 object-cover hover:opacity-90 cursor-pointer transition-all duration-200"
                 style={{
-                  transform: `rotate(${photo.rotation_degrees || 0}deg)`,
+                  transform: `rotate(${photo.rotation_degrees || 0}deg)${(photo.rotation_degrees % 180 !== 0 && photo.rotation_degrees) ? ' scale(1.6)' : ''}`,
                   transition: 'transform 0.3s ease'
                 }}
                 onClick={() => enlargePhoto(photo)}
@@ -870,7 +871,7 @@ const AlbumView = () => {
           >
             <button
               onClick={closePhotoModal}
-              className="absolute top-4 right-4 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-10 h-10 flex items-center justify-center hover:bg-white/20 hover:border-white/30 transition-all duration-200 z-10 group/close"
+              className="absolute top-10 right-4 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-10 h-10 flex items-center justify-center hover:bg-white/20 hover:border-white/30 transition-all duration-200 z-10 group/close"
               title="Close (Esc)"
               style={{ touchAction: 'manipulation' }}
             >
@@ -882,7 +883,7 @@ const AlbumView = () => {
             <img
               src={`${process.env.REACT_APP_API}/${enlargedPhoto.file_path}`}
               alt={enlargedPhoto.caption || 'Photo'}
-              className="object-cover rounded-lg"
+              className="object-contain rounded-lg"
               style={{
                 transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel}) rotate(${enlargedPhoto.rotation_degrees || 0}deg)`,
                 transition: isPanning ? 'none' : 'transform 0.2s ease',
@@ -968,7 +969,7 @@ const AlbumView = () => {
             )}
 
             {/* Bottom toolbar - Rotate & Set as Cover */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <button
                 onClick={(e) => {
                   e.stopPropagation();

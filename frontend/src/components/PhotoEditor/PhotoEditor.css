@@ -265,6 +265,8 @@
   background: var(--alabaster-parchment, #F5F0E6);
   border-bottom: 1px solid rgba(212, 175, 55, 0.2);
   flex-wrap: wrap;
+  position: relative;
+  z-index: 2;
 }
 
 .curator-btn-group {
@@ -391,6 +393,9 @@
   padding: 16px;
   min-height: 150px;
   background: rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 /* ============================================================================

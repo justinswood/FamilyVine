@@ -13,8 +13,8 @@ export const queryClient = new QueryClient({
     queries: {
       // Global query options
       staleTime: 5 * 60 * 1000, // Data is fresh for 5 minutes
-      cacheTime: 10 * 60 * 1000, // Cache persists for 10 minutes
-      refetchOnWindowFocus: true, // Refetch when window regains focus
+      cacheTime: 30 * 60 * 1000, // Cache persists for 30 minutes
+      refetchOnWindowFocus: false, // Trust staleTime instead of refetching on focus
       refetchOnReconnect: true, // Refetch when internet connection is restored
       retry: 1, // Retry failed requests once
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
@@ -59,6 +59,12 @@ export const queryKeys = {
     list: () => [...queryKeys.stories.all, 'list'],
     detail: (id) => [...queryKeys.stories.all, 'detail', id],
   },
+  // Recipes
+  recipes: {
+    all: ['recipes'],
+    list: () => [...queryKeys.recipes.all, 'list'],
+    detail: (id) => [...queryKeys.recipes.all, 'detail', id],
+  },
   // Auth
   auth: {
     user: () => ['auth', 'user'],
@@ -67,6 +73,11 @@ export const queryKeys = {
   tree: {
     data: () => ['tree', 'data'],
     positions: () => ['tree', 'positions'],
+  },
+  // User preferences
+  preferences: {
+    all: ['preferences'],
+    current: () => ['preferences', 'current'],
   },
 };
 

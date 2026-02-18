@@ -17,6 +17,7 @@ const heroImagesRoute = require('./routes/hero-images');
 const usersRoute = require('./routes/users');
 const recipesRoute = require('./routes/recipes');
 const worldEventsRoute = require('./routes/world-events');
+const preferencesRoute = require('./routes/preferences');
 const app = express();
 
 // CORS configuration - allows local network access
@@ -167,10 +168,10 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// General API rate limiting (read operations)
+// General API rate limiting (authenticated users)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // 200 requests per window (reasonable for normal usage)
+  max: 1000, // 1000 requests per window (generous for authenticated family app)
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -216,6 +217,7 @@ app.use('/api/hero-images', apiLimiter, authenticateToken, heroImagesRoute);
 app.use('/api/stories', apiLimiter, authenticateToken, storiesRoute);
 app.use('/api/recipes', apiLimiter, authenticateToken, recipesRoute);
 app.use('/api/world-events', apiLimiter, authenticateToken, worldEventsRoute);
+app.use('/api/preferences', apiLimiter, authenticateToken, preferencesRoute);
 app.use('/api/users', apiLimiter, usersRoute); // User management (admin only, auth handled in route)
 
 // 404 handler for undefined routes (must come after all route definitions)
@@ -231,4 +233,8 @@ app.listen(PORT, '0.0.0.0', () => {
     environment: process.env.NODE_ENV || 'development',
     allowedOrigins: allowedOrigins
   });
+
+  // Start background jobs
+  const { startBirthdayReminderJob } = require('./jobs/birthdayReminders');
+  startBirthdayReminderJob();
 });

@@ -89,10 +89,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1.0'
-          memory: 512M
+          cpus: '2.0'
+          memory: 1024M
         reservations:
-          memory: 256M
+          memory: 512M
     logging:
       driver: json-file
       options:
@@ -100,7 +100,7 @@ services:
         max-file: "3"
 
   db:
-    image: postgres:14-alpine
+    image: postgres:14.15-alpine
     env_file:
       - .env
     environment:

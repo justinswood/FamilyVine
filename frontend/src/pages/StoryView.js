@@ -371,6 +371,7 @@ const StoryView = () => {
                         <img
                           src={`${API_URL}${photo.file_path}`}
                           alt={photo.caption || 'Story photo'}
+                          loading="lazy"
                           className="w-full h-48 object-cover rounded"
                           style={{
                             filter: 'sepia(0.06) contrast(1.04)',

@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/database');
 const logger = require('../config/logger');
+const { requireRole } = require('../middleware/auth');
+const { validateId } = require('../middleware/validators');
 const { uploadConfigs } = require('../config/multer');
 const { processImage } = require('../utils/imageProcessor');
 const fs = require('fs').promises;
 const path = require('path');
+const { safeUnlink } = require('../utils/pathSecurity');
 
 const upload = uploadConfigs.recipes;
 
@@ -23,10 +26,16 @@ router.get('/', async (req, res) => {
         m.photo_url as contributor_photo,
         rp.file_path as photo_url,
         rp.caption as photo_caption,
-        (SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = r.id AND is_deleted = false) as comment_count
+        COALESCE(rc.comment_count, 0) as comment_count
       FROM recipes r
       LEFT JOIN members m ON r.contributed_by = m.id
       LEFT JOIN recipe_photos rp ON r.id = rp.recipe_id
+      LEFT JOIN (
+        SELECT recipe_id, COUNT(*) as comment_count
+        FROM recipe_comments
+        WHERE is_deleted = false
+        GROUP BY recipe_id
+      ) rc ON r.id = rc.recipe_id
       WHERE r.is_active = true
     `;
 
@@ -137,7 +146,7 @@ router.get('/meta/tags', async (req, res) => {
 // ============================================================================
 // GET /api/recipes/:id - Get single recipe with all details
 // ============================================================================
-router.get('/:id', async (req, res) => {
+router.get('/:id', validateId(), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -218,7 +227,7 @@ router.get('/:id', async (req, res) => {
 // ============================================================================
 // POST /api/recipes - Create new recipe
 // ============================================================================
-router.post('/', async (req, res) => {
+router.post('/', requireRole('editor'), async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -299,17 +308,22 @@ router.post('/', async (req, res) => {
       chef_notes || null
     ]);
 
-    // Insert tags into recipe_tags table
+    // Batch insert tags into recipe_tags table
     if (tags) {
-      const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());
-      for (const tag of tagArray) {
-        if (tag) {
-          await client.query(`
-            INSERT INTO recipe_tags (recipe_id, tag_name, created_by)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (recipe_id, tag_name) DO NOTHING
-          `, [recipe.id, tag.toLowerCase(), req.user?.id || null]);
-        }
+      const tagArray = (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())).filter(t => t);
+      if (tagArray.length > 0) {
+        const tagValues = [];
+        const tagParams = [];
+        tagArray.forEach((tag, idx) => {
+          const base = idx * 3;
+          tagValues.push(`($${base + 1}, $${base + 2}, $${base + 3})`);
+          tagParams.push(recipe.id, tag.toLowerCase(), req.user?.id || null);
+        });
+        await client.query(`
+          INSERT INTO recipe_tags (recipe_id, tag_name, created_by)
+          VALUES ${tagValues.join(', ')}
+          ON CONFLICT (recipe_id, tag_name) DO NOTHING
+        `, tagParams);
       }
     }
 
@@ -330,7 +344,7 @@ router.post('/', async (req, res) => {
 // ============================================================================
 // PUT /api/recipes/:id - Update recipe
 // ============================================================================
-router.put('/:id', async (req, res) => {
+router.put('/:id', validateId(), requireRole('editor'), async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -438,16 +452,21 @@ router.put('/:id', async (req, res) => {
       // Delete old tags
       await client.query('DELETE FROM recipe_tags WHERE recipe_id = $1', [id]);
 
-      // Insert new tags
-      const tagArray = Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim());
-      for (const tag of tagArray) {
-        if (tag) {
-          await client.query(`
-            INSERT INTO recipe_tags (recipe_id, tag_name, created_by)
-            VALUES ($1, $2, $3)
-            ON CONFLICT (recipe_id, tag_name) DO NOTHING
-          `, [id, tag.toLowerCase(), req.user?.id || null]);
-        }
+      // Batch insert new tags
+      const tagArray = (Array.isArray(tags) ? tags : tags.split(',').map(t => t.trim())).filter(t => t);
+      if (tagArray.length > 0) {
+        const tagValues = [];
+        const tagParams = [];
+        tagArray.forEach((tag, idx) => {
+          const base = idx * 3;
+          tagValues.push(`($${base + 1}, $${base + 2}, $${base + 3})`);
+          tagParams.push(id, tag.toLowerCase(), req.user?.id || null);
+        });
+        await client.query(`
+          INSERT INTO recipe_tags (recipe_id, tag_name, created_by)
+          VALUES ${tagValues.join(', ')}
+          ON CONFLICT (recipe_id, tag_name) DO NOTHING
+        `, tagParams);
       }
     }
 
@@ -468,7 +487,7 @@ router.put('/:id', async (req, res) => {
 // ============================================================================
 // DELETE /api/recipes/:id - Soft delete recipe
 // ============================================================================
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', validateId(), requireRole('editor'), async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -495,7 +514,7 @@ router.delete('/:id', async (req, res) => {
 // ============================================================================
 // POST /api/recipes/:id/photo - Upload recipe photo
 // ============================================================================
-router.post('/:id/photo', upload.single('photo'), async (req, res) => {
+router.post('/:id/photo', validateId(), requireRole('editor'), upload.single('photo'), async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -525,20 +544,15 @@ router.post('/:id/photo', upload.single('photo'), async (req, res) => {
     // Process image (resize, convert HEIC, optimize)
     const processResult = await processImage(file, finalPath);
 
-    // Delete existing photo if any
+    // Check for existing photo (save path for cleanup after commit)
     const existingPhoto = await client.query(
       'SELECT file_path FROM recipe_photos WHERE recipe_id = $1',
       [id]
     );
 
+    let oldPhotoPath = null;
     if (existingPhoto.rows.length > 0) {
-      const oldPath = existingPhoto.rows[0].file_path;
-      try {
-        await fs.unlink(oldPath);
-      } catch (err) {
-        logger.warn('Failed to delete old recipe photo', { path: oldPath });
-      }
-
+      oldPhotoPath = existingPhoto.rows[0].file_path;
       // Delete from database
       await client.query('DELETE FROM recipe_photos WHERE recipe_id = $1', [id]);
     }
@@ -564,6 +578,11 @@ router.post('/:id/photo', upload.single('photo'), async (req, res) => {
 
     await client.query('COMMIT');
 
+    // Delete old photo file AFTER successful commit (prevents orphaned records on rollback)
+    if (oldPhotoPath) {
+      await safeUnlink(oldPhotoPath, logger);
+    }
+
     logger.info('Recipe photo uploaded', { recipeId: id, photoId: photoResult.rows[0].id });
     res.status(201).json(photoResult.rows[0]);
 
@@ -579,7 +598,7 @@ router.post('/:id/photo', upload.single('photo'), async (req, res) => {
 // ============================================================================
 // DELETE /api/recipes/:id/photo - Delete recipe photo
 // ============================================================================
-router.delete('/:id/photo', async (req, res) => {
+router.delete('/:id/photo', validateId(), requireRole('editor'), async (req, res) => {
   const client = await pool.connect();
 
   try {
@@ -599,17 +618,13 @@ router.delete('/:id/photo', async (req, res) => {
 
     const photo = photoResult.rows[0];
 
-    // Delete file
-    try {
-      await fs.unlink(photo.file_path);
-    } catch (err) {
-      logger.warn('Failed to delete recipe photo file', { path: photo.file_path });
-    }
-
-    // Delete from database
+    // Delete from database first
     await client.query('DELETE FROM recipe_photos WHERE id = $1', [photo.id]);
 
     await client.query('COMMIT');
+
+    // Delete file AFTER successful commit (prevents orphaned records on rollback)
+    await safeUnlink(photo.file_path, logger);
 
     logger.info('Recipe photo deleted', { recipeId: id, photoId: photo.id });
     res.json({ message: 'Photo deleted successfully' });
@@ -626,7 +641,7 @@ router.delete('/:id/photo', async (req, res) => {
 // ============================================================================
 // POST /api/recipes/:id/comments - Add comment to recipe
 // ============================================================================
-router.post('/:id/comments', async (req, res) => {
+router.post('/:id/comments', validateId(), async (req, res) => {
   try {
     const { id } = req.params;
     const { comment_text, member_id } = req.body;
@@ -659,7 +674,7 @@ router.post('/:id/comments', async (req, res) => {
 // ============================================================================
 // DELETE /api/recipes/:recipeId/comments/:commentId - Delete comment
 // ============================================================================
-router.delete('/:recipeId/comments/:commentId', async (req, res) => {
+router.delete('/:recipeId/comments/:commentId', validateId(['recipeId', 'commentId']), requireRole('editor'), async (req, res) => {
   try {
     const { commentId } = req.params;
 

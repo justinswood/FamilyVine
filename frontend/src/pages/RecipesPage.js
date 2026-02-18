@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useRecipes, useCreateRecipe } from '../hooks/useQueries';
 
 /* ── Leaf SVG Icon (matches Chronicle leaf motif) ── */
 const LeafIcon = ({ className = 'w-4 h-4' }) => (
@@ -12,30 +12,10 @@ const LeafIcon = ({ className = 'w-4 h-4' }) => (
 
 const RecipesPage = () => {
   const navigate = useNavigate();
-  const [recipes, setRecipes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { data: recipes = [], isLoading: loading, error } = useRecipes();
 
   // Create modal
   const [showCreateModal, setShowCreateModal] = useState(false);
-
-  // Fetch recipes
-  useEffect(() => {
-    fetchRecipes();
-  }, []);
-
-  const fetchRecipes = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${process.env.REACT_APP_API}/api/recipes`);
-      setRecipes(response.data);
-    } catch (err) {
-      console.error('Error fetching recipes:', err);
-      setError('Failed to load recipes');
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
   if (loading) {
@@ -54,19 +34,7 @@ const RecipesPage = () => {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <p className="text-red-600 text-xl mb-4">{error}</p>
-          <button
-            onClick={fetchRecipes}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all"
-            style={{
-              fontFamily: 'var(--font-body)',
-              color: '#fffdf9',
-              background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))',
-              boxShadow: '0 2px 8px rgba(45, 79, 30, 0.25)',
-            }}
-          >
-            Retry
-          </button>
+          <p className="text-red-600 text-xl mb-4">{error?.message || 'Failed to load recipes'}</p>
         </div>
       </div>
     );
@@ -163,6 +131,7 @@ const RecipesPage = () => {
             setShowCreateModal(false);
             navigate(`/recipes/${recipeId}`, { state: { editMode: true } });
           }}
+          useCreateRecipeHook={useCreateRecipe}
         />
       )}
     </div>
@@ -271,13 +240,15 @@ const RecipeCard = ({ recipe }) => {
 };
 
 // Create Recipe Modal Component — Heirloom Style
-const CreateRecipeModal = ({ onClose, onSuccess }) => {
+const CreateRecipeModal = ({ onClose, onSuccess, useCreateRecipeHook }) => {
+  const createRecipeMutation = useCreateRecipeHook();
   const [formData, setFormData] = useState({
     title: '',
     category: '',
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  const loading = createRecipeMutation.isPending;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -288,25 +259,16 @@ const CreateRecipeModal = ({ onClose, onSuccess }) => {
     }
 
     try {
-      setLoading(true);
       setError(null);
-
-      const response = await axios.post(
-        `${process.env.REACT_APP_API}/api/recipes`,
-        {
-          ...formData,
-          ingredients: 'Add ingredients...',
-          instructions: 'Add instructions...',
-        }
-      );
-
-      onSuccess(response.data.id);
-
+      const data = await createRecipeMutation.mutateAsync({
+        ...formData,
+        ingredients: 'Add ingredients...',
+        instructions: 'Add instructions...',
+      });
+      onSuccess(data.id);
     } catch (err) {
       console.error('Error creating recipe:', err);
       setError('Failed to create recipe. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 

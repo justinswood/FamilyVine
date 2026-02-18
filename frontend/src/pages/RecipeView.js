@@ -468,7 +468,7 @@ const RecipeView = () => {
               {/* Right Side - Image */}
               <div className="relative overflow-hidden min-h-[200px]" style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))' }}>
                 {displayPhotoUrl ? (
-                  <img src={displayPhotoUrl} alt={recipe.title} className="absolute inset-0 w-full h-full object-cover" />
+                  <img src={displayPhotoUrl} alt={recipe.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">
                     <Camera className="w-8 h-8 text-white/30" />

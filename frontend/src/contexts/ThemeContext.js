@@ -33,6 +33,13 @@ export const ThemeProvider = ({ children }) => {
 
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
+    } else if (theme === 'auto') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
     } else {
       document.documentElement.classList.remove('dark');
     }
@@ -45,21 +52,28 @@ export const ThemeProvider = ({ children }) => {
     localStorage.setItem('familyVine_theme', theme);
   }, [theme]);
 
-  // Listen for system theme changes
+  // Listen for system theme changes (for auto mode or unset preference)
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     const handleChange = (e) => {
-      const stored = localStorage.getItem('familyVine_theme');
-      // Only auto-switch if user hasn't manually set a preference
-      if (!stored) {
-        setThemeState(e.matches ? 'dark' : 'light');
+      if (theme === 'auto') {
+        if (e.matches) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } else {
+        const stored = localStorage.getItem('familyVine_theme');
+        if (!stored) {
+          setThemeState(e.matches ? 'dark' : 'light');
+        }
       }
     };
 
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [theme]);
 
   const setTheme = (newTheme) => {
     setThemeState(newTheme);
@@ -69,7 +83,7 @@ export const ThemeProvider = ({ children }) => {
     setThemeState(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
-  const isDark = theme === 'dark';
+  const isDark = theme === 'dark' || (theme === 'auto' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
   // Prevent flash of wrong theme
   if (!mounted) {

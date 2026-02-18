@@ -492,35 +492,41 @@ router.get('/member/:id/unions', async (req, res) => {
       ORDER BY u.display_order, u.union_date NULLS LAST
     `, [id]);
 
-    // Get children for each union
-    const unionsWithChildren = await Promise.all(
-      unionsResult.rows.map(async (union) => {
-        const childrenResult = await pool.query(`
-          SELECT
-            m.id,
-            m.first_name,
-            m.middle_name,
-            m.last_name,
-            m.suffix,
-            m.gender,
-            m.is_alive,
-            m.birth_date,
-            uc.birth_order,
-            uc.is_biological,
-            uc.is_adopted,
-            uc.is_step_child
-          FROM union_children uc
-          JOIN members m ON uc.child_id = m.id
-          WHERE uc.union_id = $1
-          ORDER BY uc.birth_order
-        `, [union.id]);
+    // Batch-fetch children for ALL unions in a single query (avoids N+1)
+    const unionIds = unionsResult.rows.map(u => u.id);
+    let childrenByUnion = {};
+    if (unionIds.length > 0) {
+      const childrenResult = await pool.query(`
+        SELECT
+          uc.union_id,
+          m.id,
+          m.first_name,
+          m.middle_name,
+          m.last_name,
+          m.suffix,
+          m.gender,
+          m.is_alive,
+          m.birth_date,
+          uc.birth_order,
+          uc.is_biological,
+          uc.is_adopted,
+          uc.is_step_child
+        FROM union_children uc
+        JOIN members m ON uc.child_id = m.id
+        WHERE uc.union_id = ANY($1)
+        ORDER BY uc.union_id, uc.birth_order
+      `, [unionIds]);
 
-        return {
-          ...union,
-          children: childrenResult.rows
-        };
-      })
-    );
+      for (const row of childrenResult.rows) {
+        if (!childrenByUnion[row.union_id]) childrenByUnion[row.union_id] = [];
+        childrenByUnion[row.union_id].push(row);
+      }
+    }
+
+    const unionsWithChildren = unionsResult.rows.map(union => ({
+      ...union,
+      children: childrenByUnion[union.id] || []
+    }));
 
     logger.info(`Found ${unionsWithChildren.length} unions for member ${id}`);
 

@@ -4,12 +4,88 @@ import { Github, Calendar, MapPin, BookOpen, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import FunFamilyFactsMetrics from '../components/FunFamilyFactsMetrics';
 
-/* ── Leaf SVG Icon ── */
-const LeafIcon = ({ className = 'w-5 h-5' }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M11 20A7 7 0 0 1 9.8 6.9C15.5 4.9 17 3.5 19 2c1 2 2 4.5 2 8 0 5.5-3.5 10-10 10Z" />
-    <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-  </svg>
+/* ── Heritage Watermark (large faint background logo) ── */
+const HeritageWatermark = () => (
+  <div className="heritage-watermark">
+    <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* Stylized vine/tree watermark */}
+      <path
+        d="M100 180 L100 80 M100 80 Q60 60 40 30 M100 80 Q140 60 160 30"
+        stroke="currentColor"
+        strokeWidth="3"
+        strokeLinecap="round"
+        fill="none"
+      />
+      {/* Leaves */}
+      <ellipse cx="55" cy="50" rx="15" ry="22" fill="currentColor" transform="rotate(-30, 55, 50)" />
+      <ellipse cx="145" cy="50" rx="15" ry="22" fill="currentColor" transform="rotate(30, 145, 50)" />
+      <ellipse cx="70" cy="75" rx="12" ry="18" fill="currentColor" transform="rotate(-20, 70, 75)" />
+      <ellipse cx="130" cy="75" rx="12" ry="18" fill="currentColor" transform="rotate(20, 130, 75)" />
+      <ellipse cx="100" cy="55" rx="14" ry="20" fill="currentColor" />
+      {/* Roots */}
+      <path
+        d="M100 180 Q80 190 60 195 M100 180 Q120 190 140 195 M100 180 Q100 195 100 200"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  </div>
+);
+
+/* ── Organic Section Divider with Fleur-de-lis Logo ── */
+const VineDivider = () => (
+  <div className="vine-divider">
+    <img
+      src="/FamilyVine_homepage_logo.png?v=2"
+      alt="FamilyVine divider"
+      className="vine-divider-logo"
+    />
+  </div>
+);
+
+/* ── Marginal Artifact Icons (desktop only) ── */
+const MarginalArtifacts = () => (
+  <div className="marginal-artifacts">
+    {/* Left margin artifacts */}
+    <div className="marginal-artifact marginal-artifact-left marginal-artifact-1">
+      {/* Fountain Pen */}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+        <path d="m15 5 4 4" />
+      </svg>
+    </div>
+    <div className="marginal-artifact marginal-artifact-left marginal-artifact-2">
+      {/* Wax Seal */}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="12" r="5" />
+        <path d="M12 7v5l3 3" />
+      </svg>
+    </div>
+
+    {/* Right margin artifacts */}
+    <div className="marginal-artifact marginal-artifact-right marginal-artifact-3">
+      {/* Antique Key */}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="7.5" cy="7.5" r="5.5" />
+        <path d="m21 21-5.197-5.197" />
+        <path d="M15.803 15.803 21 21" />
+        <path d="m11.5 11.5 4-4" />
+        <path d="m18 15 3 3" />
+        <path d="m15 18 3 3" />
+      </svg>
+    </div>
+    <div className="marginal-artifact marginal-artifact-right marginal-artifact-4">
+      {/* Postage Stamp */}
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2" />
+        <circle cx="12" cy="14" r="3" />
+      </svg>
+    </div>
+  </div>
 );
 
 const SLIDE_INTERVAL = 6000; // 6 seconds per slide
@@ -18,17 +94,12 @@ const HomePage = () => {
   const [heroImages, setHeroImages] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [facts, setFacts] = useState([]);
-  const [currentFact, setCurrentFact] = useState(0);
   const slideTimer = useRef(null);
-  const factTimer = useRef(null);
 
   useEffect(() => {
     fetchHeroImages();
-    fetchFacts();
     return () => {
       clearInterval(slideTimer.current);
-      clearInterval(factTimer.current);
     };
   }, []);
 
@@ -41,16 +112,6 @@ const HomePage = () => {
     }
     return () => clearInterval(slideTimer.current);
   }, [heroImages]);
-
-  /* Rotate facts every 8 seconds */
-  useEffect(() => {
-    if (facts.length > 1) {
-      factTimer.current = setInterval(() => {
-        setCurrentFact(prev => (prev + 1) % facts.length);
-      }, 8000);
-    }
-    return () => clearInterval(factTimer.current);
-  }, [facts]);
 
   const fetchHeroImages = async () => {
     try {
@@ -106,67 +167,6 @@ const HomePage = () => {
     }
   };
 
-  const fetchFacts = async () => {
-    try {
-      const [membersRes, unionsRes] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_API}/api/members`),
-        axios.get(`${process.env.REACT_APP_API}/api/tree/unions`).catch(() => ({ data: [] }))
-      ]);
-      const members = membersRes.data || [];
-      const unions = unionsRes.data || [];
-
-      if (members.length === 0) return;
-
-      const realMembers = members.filter(m =>
-        !m.first_name?.toLowerCase().includes('unknown') &&
-        !m.last_name?.toLowerCase().includes('unknown')
-      );
-
-      const computed = [];
-      const currentDate = new Date();
-
-      // Total members
-      computed.push({ label: 'Family Size', text: `${realMembers.length} members across the vine` });
-
-      // Year span
-      const withBirth = realMembers.filter(m => m.birth_date);
-      if (withBirth.length >= 2) {
-        const years = withBirth.map(m => new Date(m.birth_date).getFullYear());
-        const span = Math.max(...years) - Math.min(...years);
-        if (span > 0) computed.push({ label: `${span} Years`, text: `of shared family history` });
-      }
-
-      // Most common surname
-      const surnames = {};
-      realMembers.forEach(m => { if (m.last_name?.trim()) surnames[m.last_name.trim()] = (surnames[m.last_name.trim()] || 0) + 1; });
-      const topSurname = Object.entries(surnames).sort((a, b) => b[1] - a[1])[0];
-      if (topSurname) computed.push({ label: topSurname[0], text: `is the most common surname (${topSurname[1]} members)` });
-
-      // Oldest living
-      const living = realMembers.filter(m => m.birth_date && !m.death_date);
-      if (living.length > 0) {
-        const oldest = living.reduce((a, b) => new Date(a.birth_date) < new Date(b.birth_date) ? a : b);
-        const age = Math.floor((currentDate - new Date(oldest.birth_date)) / (365.25 * 24 * 60 * 60 * 1000));
-        if (age > 0 && age < 120) computed.push({ label: `${oldest.first_name}`, text: `is the eldest at ${age} years` });
-      }
-
-      // Locations
-      const locs = new Set();
-      realMembers.forEach(m => {
-        if (m.birth_place?.trim()) locs.add(m.birth_place.trim().split(',')[0].trim());
-        if (m.current_location?.trim()) locs.add(m.current_location.trim().split(',')[0].trim());
-      });
-      if (locs.size >= 2) computed.push({ label: `${locs.size} Places`, text: `the family has called home` });
-
-      // Unions
-      if (unions.length >= 2) computed.push({ label: `${unions.length} Unions`, text: `marriages & partnerships recorded` });
-
-      setFacts(computed);
-    } catch (error) {
-      console.error('Error fetching facts:', error);
-    }
-  };
-
   const goToSlide = useCallback((index) => {
     setCurrentSlide(index);
     // Reset timer
@@ -190,10 +190,15 @@ const HomePage = () => {
 
   // Build narrative content for the active photo
   const hasCaption = activePhoto?.caption || activePhoto?.albumTitle;
-  const narrativeFact = facts.length > 0 ? facts[currentFact] : null;
 
   return (
-    <div className="min-h-screen">
+    <div className="homepage-heritage min-h-screen">
+      {/* Heritage Watermark - large faint background logo */}
+      <HeritageWatermark />
+
+      {/* Marginal Artifacts - decorative icons in margins (desktop only) */}
+      <MarginalArtifacts />
+
       <div className="max-w-7xl mx-auto px-4 py-3 relative z-10">
 
         {/* Hero — Interactive Storybook (60/40 Split) */}
@@ -203,7 +208,7 @@ const HomePage = () => {
           </div>
         ) : (
           <>
-            <div className="storybook-hero">
+            <div className="storybook-hero" role="region" aria-label="Family photo slideshow">
               {/* Left: Visual Column (60%) */}
               <div className="storybook-visual">
                 {/* Slide counter pill */}
@@ -286,12 +291,6 @@ const HomePage = () => {
                   <p className="storybook-body">
                     {activePhoto.description}
                   </p>
-                ) : narrativeFact ? (
-                  <div className="storybook-body">
-                    <span className="storybook-empty-fact">
-                      {narrativeFact.label} — {narrativeFact.text}
-                    </span>
-                  </div>
                 ) : (
                   <p className="storybook-body">
                     Every photograph holds a story waiting to be told. These are the moments that weave our family together.
@@ -381,19 +380,10 @@ const HomePage = () => {
           </>
         )}
 
-        {/* Live Facts Ticker */}
-        {facts.length > 0 && (
-          <div className="hero-facts-ticker" key={currentFact}>
-            <div className="hero-ticker-icon">
-              <LeafIcon className="w-4 h-4" />
-            </div>
-            <div className="hero-ticker-text hero-ticker-fact">
-              <span className="hero-ticker-label">{facts[currentFact]?.label}</span>
-              <span className="hero-ticker-description">{facts[currentFact]?.text}</span>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Organic Section Divider */}
+      <VineDivider />
 
       {/* Fun Family Facts & Metrics Section */}
       <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">

@@ -1,5 +1,7 @@
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './config/queryClient';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Navigation from './components/Navigation';
@@ -57,13 +59,21 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function AppContent() {
+  const location = useLocation();
+
+  // Pages that use their own full-screen layout (no Navigation/accent bar)
+  const fullScreenPages = ['/tree'];
+  const isFullScreenPage = fullScreenPages.includes(location.pathname);
+
   return (
     <div className="min-h-screen transition-colors duration-200 main-content" style={{ backgroundColor: 'transparent' }}>
-      {/* Navigation */}
-      <Navigation />
+      {/* Navigation - hidden on full-screen pages like Family Tree */}
+      {!isFullScreenPage && <Navigation />}
 
-      {/* Vine accent bar — sage → leaf → mardi gras → leaf → sage */}
-      <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #86A789, #4A7C3F, #800080, #4A7C3F, #86A789)' }}></div>
+      {/* Vine accent bar — hidden on full-screen pages */}
+      {!isFullScreenPage && (
+        <div className="h-1 w-full" style={{ background: 'linear-gradient(to right, #86A789, #4A7C3F, #800080, #4A7C3F, #86A789)' }}></div>
+      )}
 
       {/* PWA Components */}
       <OfflineIndicator />
@@ -106,14 +116,16 @@ function AppContent() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <ScrollToTop />
-          <AppContent />
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <ScrollToTop />
+            <AppContent />
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
 

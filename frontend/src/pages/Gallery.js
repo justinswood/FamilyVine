@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import { useAlbums, useCreateAlbum } from '../hooks/useQueries';
 import ProfileImage from '../components/ProfileImage';
 
 /* ── Tagged Members Ribbon ── */
@@ -51,8 +51,8 @@ const LeafIcon = ({ className = 'w-5 h-5' }) => (
 );
 
 const Gallery = () => {
-  const [albums, setAlbums] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: albums = [], isLoading: loading } = useAlbums();
+  const createAlbumMutation = useCreateAlbum();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newAlbum, setNewAlbum] = useState({
     title: '',
@@ -61,28 +61,12 @@ const Gallery = () => {
     is_public: true
   });
 
-  useEffect(() => {
-    fetchAlbums();
-  }, []);
-
-  const fetchAlbums = async () => {
-    try {
-      const response = await axios.get(`${process.env.REACT_APP_API}/api/albums`);
-      setAlbums(response.data);
-    } catch (error) {
-      console.error('Error fetching albums:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleCreateAlbum = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${process.env.REACT_APP_API}/api/albums`, newAlbum);
+      await createAlbumMutation.mutateAsync(newAlbum);
       setNewAlbum({ title: '', description: '', event_date: '', is_public: true });
       setShowCreateForm(false);
-      fetchAlbums();
     } catch (error) {
       console.error('Error creating album:', error);
     }
@@ -139,7 +123,7 @@ const Gallery = () => {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5">
             <div>
               <h1 className="recipe-header-title">Family Archive</h1>
-              <p className="mt-0.5 tracking-widest uppercase" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)', fontSize: '0.45rem' }}>
+              <p className="mt-0.5 tracking-widest uppercase" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)', fontSize: '0.6rem' }}>
                 Preserving memories across generations
               </p>
             </div>
