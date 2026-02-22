@@ -374,13 +374,13 @@ const TimelinePage = () => {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-baseline gap-2 flex-wrap">
                                   <span className="chronicle-year">{event.year}</span>
-                                  <span className={`chronicle-badge ${event.isWorldEvent ? 'world-badge' : event.type}`}>
-                                    {event.isWorldEvent
-                                      ? event.category?.charAt(0).toUpperCase() + event.category?.slice(1)
-                                      : event.type === 'birth' ? 'Birth'
-                                      : event.type === 'marriage' ? 'Marriage'
-                                      : 'Passing'}
-                                  </span>
+                                  {!event.isWorldEvent && (
+                                    <span className={`chronicle-badge ${event.type}`}>
+                                      {event.type === 'birth' ? 'Birth'
+                                        : event.type === 'marriage' ? 'Marriage'
+                                        : 'Passing'}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
 

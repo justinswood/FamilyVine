@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Settings as SettingsIcon, User, LogOut, ChevronDown, UserPlus, Users, Image, Book, Clock, UtensilsCrossed, Sun, Moon } from 'lucide-react';
+import { Settings as SettingsIcon, User, LogOut, ChevronDown, UserPlus, Users, Image, Book, Clock, UtensilsCrossed, Heart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -9,7 +9,7 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { toggleTheme, isDark } = useTheme();
+  const { isDark } = useTheme();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMembersMenu, setShowMembersMenu] = useState(false);
   const [showMemoriesMenu, setShowMemoriesMenu] = useState(false);
@@ -147,19 +147,17 @@ const Navigation = () => {
           {/* Right section - Theme Toggle, Settings, and User Menu */}
           <div className="flex items-center gap-1 flex-1 justify-end">
 
-            {/* Theme Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              className="p-1.5 text-[#2E5A2E] dark:text-[#D4AF37] hover:text-[#D4AF37] dark:hover:text-vine-400
-                         hover:bg-[#F9F8F3] dark:hover:bg-secondary-700 rounded-full transition-all duration-300"
-              title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            {/* Donate Button */}
+            <a
+              href="https://www.paypal.com/donate/?business=ES3DVUN5F32GE&no_recurring=0&item_name=FamilyVine+is+a+labor+of+love.+Help+us+keep+our+history+safe%2C+private%2C+and+hosted+for+every+generation.+Thanks+for+the+support%21&currency_code=USD"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-1.5 text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300
+                         hover:bg-[#F9F8F3] dark:hover:bg-secondary-700 rounded-full transition-colors duration-300"
+              title="Support FamilyVine"
             >
-              {isDark ? (
-                <Sun className="w-4 h-4" />
-              ) : (
-                <Moon className="w-4 h-4" />
-              )}
-            </button>
+              <Heart className="w-4 h-4" fill="currentColor" />
+            </a>
 
             <Link
               to="/settings"

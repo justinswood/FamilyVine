@@ -382,13 +382,13 @@ const HomePage = () => {
 
       </div>
 
-      {/* Organic Section Divider */}
-      <VineDivider />
-
       {/* Fun Family Facts & Metrics Section */}
       <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
         <FunFamilyFactsMetrics />
       </div>
+
+      {/* Organic Section Divider */}
+      <VineDivider />
 
       {/* Heirloom Footer */}
       <div className="heirloom-footer">

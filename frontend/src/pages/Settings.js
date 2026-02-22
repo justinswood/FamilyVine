@@ -21,7 +21,6 @@ const Settings = () => {
   const { data: serverPrefs, isLoading: prefsLoading } = usePreferences();
   const updatePrefsMutation = useUpdatePreferences();
   const [activeTab, setActiveTab] = useState('general');
-  const [showExportModal, setShowExportModal] = useState(false);
   const [members, setMembers] = useState([]);
   const [relationships, setRelationships] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -746,39 +745,15 @@ const Settings = () => {
     <div className="space-y-6">
       <div className="bg-vine-50 dark:bg-vine-900/20 border border-vine-200 dark:border-vine-800 rounded-lg p-4">
         <h3 className="text-lg font-semibold font-heading text-vine-dark dark:text-white mb-2">Export Your Family Data</h3>
-        <p className="text-vine-600 dark:text-vine-300 text-sm mb-4">
+        <p className="text-vine-600 dark:text-vine-300 text-sm">
           Export your family tree in various formats for backup, sharing, or importing into other applications.
         </p>
-        <button
-          onClick={() => setShowExportModal(true)}
-          className="bg-gradient-to-r from-vine-500 to-vine-600 text-white px-4 py-2 rounded-lg hover:from-vine-600 hover:to-vine-dark transition-colors flex items-center gap-2"
-        >
-          <Download className="w-4 h-4" />
-          Open Export Tool
-        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="border border-vine-200 dark:border-gray-700 rounded-lg p-4 bg-white/80 backdrop-blur-sm dark:bg-gray-800">
-          <h4 className="font-medium text-vine-dark dark:text-gray-200 mb-2">Available Formats</h4>
-          <ul className="text-sm text-vine-sage dark:text-secondary-400 space-y-1">
-            <li>• CSV - Spreadsheet format</li>
-            <li>• JSON - Structured data</li>
-            <li>• GEDCOM - Genealogy standard</li>
-            <li>• PDF - Printable reports</li>
-          </ul>
-        </div>
-        
-        <div className="border border-vine-200 dark:border-gray-700 rounded-lg p-4 bg-white/80 backdrop-blur-sm dark:bg-gray-800">
-          <h4 className="font-medium text-vine-dark dark:text-gray-200 mb-2">Export Options</h4>
-          <ul className="text-sm text-vine-sage dark:text-secondary-400 space-y-1">
-            <li>• Include/exclude private data</li>
-            <li>• Select specific members</li>
-            <li>• Include photos (where supported)</li>
-            <li>• Relationship data</li>
-          </ul>
-        </div>
-      </div>
+      <ExportFamilyData
+        members={members}
+        relationships={relationships}
+      />
     </div>
   );
 
@@ -1173,45 +1148,6 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Export Modal */}
-      {showExportModal && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-          <div className="settings-content-panel max-w-6xl w-full max-h-[95vh] flex flex-col shadow-2xl">
-            {/* Modal Header - Sticky */}
-            <div className="flex items-center justify-between p-4 border-b border-vine-200 dark:border-gray-700 rounded-t-xl">
-              <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-header)', color: 'var(--vine-dark)' }}>Export Family Data</h2>
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="text-vine-sage hover:text-vine-dark dark:text-gray-400 dark:hover:text-gray-200 transition-colors p-2 hover:bg-vine-50 dark:hover:bg-gray-700 rounded-full"
-                title="Close"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Modal Content - Scrollable */}
-            <div className="flex-1 overflow-y-auto">
-              <ExportFamilyData
-                members={members}
-                relationships={relationships}
-              />
-            </div>
-
-            {/* Modal Footer - Sticky */}
-            <div className="p-4 border-t border-vine-200 dark:border-gray-700 bg-vine-50 dark:bg-gray-900 rounded-b-xl flex justify-end">
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="px-6 py-2 rounded-lg transition-colors"
-                style={{ background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))', color: '#fffdf9' }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
