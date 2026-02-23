@@ -1,7 +1,7 @@
 # FamilyVine
 
 <p align="center">
-  <img src="docs/images/familyvine-logo.png" alt="FamilyVine Logo" width="200"/>
+  <img src="logos/FamilyVine_homepage_logo.png" alt="FamilyVine Logo" width="200"/>
 </p>
 
 <p align="center">
