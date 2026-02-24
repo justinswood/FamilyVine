@@ -47,6 +47,7 @@ const FamilyTreeView = ({
   onError,                 // Callback when error occurs: (error) => void
   selectionMode = false,   // Enable selection mode for Relationship Finder
   onSelectionModeChange,   // Callback when selection mode changes: (enabled) => void
+  fitPadding = 80,         // Padding for fitToView (smaller on mobile)
 }) => {
   // ----- Layout pipeline -----
   const { nodes, edges, siblingGroups, bounds, treeModel, unionUnits, singleNodes } = useTreeLayout(
@@ -142,6 +143,8 @@ const FamilyTreeView = ({
 
   // ----- Pan / Zoom (imperative, no re-renders) -----
   const {
+    viewportRef,
+    transformRef,
     svgRef,
     contentGroupRef,
     controllerRef,
@@ -260,8 +263,8 @@ const FamilyTreeView = ({
       if (viewportTimerRef.current) return;
       viewportTimerRef.current = setTimeout(() => {
         viewportTimerRef.current = null;
-        if (!svgRef.current) return;
-        const rect = svgRef.current.getBoundingClientRect();
+        if (!viewportRef.current) return;
+        const rect = viewportRef.current.getBoundingClientRect();
         setViewport({
           x: -transform.panX / transform.zoom,
           y: -transform.panY / transform.zoom,
@@ -274,7 +277,7 @@ const FamilyTreeView = ({
     return () => {
       if (viewportTimerRef.current) clearTimeout(viewportTimerRef.current);
     };
-  }, [setTransformChangeCallback, svgRef]);
+  }, [setTransformChangeCallback, viewportRef]);
 
   // ----- Fit to view when bounds change -----
   const prevBoundsRef = useRef(null);
@@ -295,7 +298,7 @@ const FamilyTreeView = ({
     prevBoundsRef.current = bounds;
 
     const timer = setTimeout(() => {
-      fitToView(bounds, 80);
+      fitToView(bounds, fitPadding);
     }, 50);
 
     return () => clearTimeout(timer);
@@ -411,16 +414,19 @@ const FamilyTreeView = ({
 
   return (
     <div
+      ref={viewportRef}
       className={`fv-tree-wrapper relative ${className}`}
       style={style}
     >
-      {/* Main SVG canvas */}
+      {/* Pan/zoom wrapper — CSS transform applied here */}
+      <div ref={transformRef} className="fv-pan-zoom-target">
       <svg
         ref={svgRef}
         className="fv-tree-svg"
         width="100%"
         height="100%"
-        style={{ display: 'block', cursor: 'grab' }}
+        overflow="visible"
+        style={{ display: 'block' }}
       >
         <g ref={contentGroupRef} className="fv-tree-content">
           {/* Layer 1: Sibling group ghost containers (back) */}
@@ -497,6 +503,7 @@ const FamilyTreeView = ({
           ))}
         </g>
       </svg>
+      </div>
 
       {/* MiniMap overlay */}
       {showMiniMap && bounds && (

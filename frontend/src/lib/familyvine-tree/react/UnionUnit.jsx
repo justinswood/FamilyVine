@@ -130,7 +130,7 @@ const UnionUnit = memo(({
               alignItems: 'center',
               justifyContent: 'center',
               boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-              transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+              transition: 'box-shadow 0.2s ease',
             }}
             onClick={(e) => {
               if (!unionId) return;

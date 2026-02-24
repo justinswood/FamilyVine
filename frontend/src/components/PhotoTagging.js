@@ -17,7 +17,7 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
 
   // Filter family members based on search
   const filteredMembers = familyMembers.filter(member =>
-    `${member.first_name} ${member.last_name}`.toLowerCase().includes(searchTerm.toLowerCase())
+    `${member.first_name} ${member.last_name}${member.suffix ? ' ' + member.suffix : ''}`.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Load existing tags and family members
@@ -290,7 +290,7 @@ const PhotoTagging = ({ photo, albumId, onSaveTag, onDeleteTag, onClose }) => {
               <option value="">Select a family member</option>
               {filteredMembers.map((member) => (
                 <option key={member.id} value={member.id}>
-                  {member.first_name} {member.last_name}
+                  {member.first_name} {member.last_name}{member.suffix ? ` ${member.suffix}` : ''}
                   {member.birth_date && ` (b. ${new Date(member.birth_date).getFullYear()})`}
                 </option>
               ))}

@@ -62,7 +62,7 @@ const VitalStatTile = ({ icon, label, value, iconColor = '#2E5A2E' }) => {
         <span
           className="uppercase font-inter font-bold"
           style={{
-            fontSize: '0.56rem',
+            fontSize: '0.65rem',
             letterSpacing: '1.2px',
             color: '#800080',
           }}
@@ -511,7 +511,7 @@ const MemberPage = () => {
         {/* ═══════════════════════════════════════════════════════
             Heritage Header — Asymmetric Split-Pane
             ═══════════════════════════════════════════════════════ */}
-        <header className="flex flex-col md:flex-row items-center md:items-start gap-5 mb-6 pb-5 border-b border-vine-sage/20">
+        <header className="flex flex-col md:flex-row items-center md:items-start gap-3 md:gap-5 mb-6 pb-5 border-b border-vine-sage/20">
           {/* Left: Profile Photo */}
           <div className="relative flex-shrink-0">
             <div

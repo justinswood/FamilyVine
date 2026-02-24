@@ -399,7 +399,7 @@ const EditMember = () => {
             <div style={{ marginBottom: '32px' }}>
               <h3 className="registry-section-title">Family Branch</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                 <div>
                   <label className="registry-label">Branch / Surname Line</label>
                   <select
@@ -445,7 +445,7 @@ const EditMember = () => {
             <div style={{ marginBottom: '32px' }}>
               <h3 className="registry-section-title">Personal Details</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-5">
                 <div>
                   <label className="registry-label">First Name</label>
                   <input
@@ -497,7 +497,7 @@ const EditMember = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5 mt-5">
                 <div>
                   <label className="registry-label">Gender</label>
                   <select
@@ -524,7 +524,7 @@ const EditMember = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5 mt-5">
                 <div>
                   <label className="registry-label">Birth Place</label>
                   <input
@@ -548,7 +548,7 @@ const EditMember = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-5">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-5 mt-5">
                 <div>
                   <label className="registry-label">Occupation</label>
                   <input
@@ -562,7 +562,7 @@ const EditMember = () => {
                 <div>
                   <label className="registry-label">Phone</label>
                   <input
-                    type="text"
+                    type="tel"
                     name="phone"
                     value={formData.phone || ''}
                     onChange={handleChange}
@@ -587,7 +587,7 @@ const EditMember = () => {
             <div style={{ marginBottom: '32px' }}>
               <h3 className="registry-section-title">Status</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                 <div>
                   <label className="registry-label">Living?</label>
                   <select
@@ -607,7 +607,7 @@ const EditMember = () => {
                   background: 'rgba(139, 46, 46, 0.04)',
                   border: '1px solid rgba(139, 46, 46, 0.15)',
                 }}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                     <div>
                       <label className="registry-label">Date of Passing</label>
                       <input
@@ -658,7 +658,7 @@ const EditMember = () => {
                     background: 'rgba(46, 90, 46, 0.04)',
                     border: '1px solid rgba(46, 90, 46, 0.15)',
                   }}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-5">
                       <div>
                         <label className="registry-label">Marriage Date</label>
                         <input

@@ -130,10 +130,9 @@ const Gallery = () => {
 
             <button
               onClick={() => setShowCreateForm(true)}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-medium transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all"
               style={{
                 fontFamily: 'var(--font-body)',
-                fontSize: '0.5rem',
                 color: '#fffdf9',
                 background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))',
                 boxShadow: '0 2px 8px rgba(45, 79, 30, 0.25)',
@@ -141,7 +140,7 @@ const Gallery = () => {
               onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(45, 79, 30, 0.35)'; e.currentTarget.style.transform = 'scale(1.03)'; }}
               onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(45, 79, 30, 0.25)'; e.currentTarget.style.transform = 'scale(1)'; }}
             >
-              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
@@ -153,14 +152,14 @@ const Gallery = () => {
 
         {/* Create Album Modal */}
         {showCreateForm && (
-          <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-6 rounded-xl max-w-md w-full shadow-2xl border border-white/50 dark:border-gray-700">
-              <h2 className="text-xl font-bold mb-4" style={{ fontFamily: 'var(--font-header)', color: 'var(--vine-dark)' }}>
+          <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center z-[60] p-3 overflow-y-auto">
+            <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm p-4 rounded-xl max-w-sm w-full shadow-2xl border border-white/50 dark:border-gray-700 my-auto">
+              <h2 className="text-base font-bold mb-3" style={{ fontFamily: 'var(--font-header)', color: 'var(--vine-dark)' }}>
                 Create New Album
               </h2>
-              <form onSubmit={handleCreateAlbum} className="space-y-4">
+              <form onSubmit={handleCreateAlbum} className="space-y-2.5">
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
+                  <label className="block text-xs font-medium mb-1 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
                     Album Title
                   </label>
                   <input
@@ -168,25 +167,25 @@ const Gallery = () => {
                     name="title"
                     value={newAlbum.title}
                     onChange={handleInputChange}
-                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all"
+                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all"
                     placeholder="e.g., Christmas 1952"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
+                  <label className="block text-xs font-medium mb-1 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
                     Description
                   </label>
                   <textarea
                     name="description"
                     value={newAlbum.description}
                     onChange={handleInputChange}
-                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-4 py-2.5 h-24 bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all resize-none"
+                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-3 py-2 h-16 text-sm bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all resize-none"
                     placeholder="Historical context for this collection..."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
+                  <label className="block text-xs font-medium mb-1 text-vine-600 dark:text-vine-400" style={{ fontFamily: 'var(--font-body)' }}>
                     Historical Date
                   </label>
                   <input
@@ -194,11 +193,8 @@ const Gallery = () => {
                     name="event_date"
                     value={newAlbum.event_date}
                     onChange={handleInputChange}
-                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-4 py-2.5 bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all"
+                    className="w-full border border-vine-200 dark:border-gray-600 rounded-lg px-3 py-2 text-sm bg-white/90 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-vine-500 focus:border-transparent transition-all"
                   />
-                  <p className="text-xs mt-1" style={{ color: 'var(--vine-sage)' }}>
-                    When were these photos taken? Links to the Chronicle timeline.
-                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
@@ -208,12 +204,12 @@ const Gallery = () => {
                     onChange={handleInputChange}
                     className="w-4 h-4 text-vine-600 bg-white border-vine-200 rounded focus:ring-vine-500 focus:ring-2"
                   />
-                  <label className="text-sm text-vine-dark dark:text-gray-300">Make album public</label>
+                  <label className="text-xs text-vine-dark dark:text-gray-300">Make album public</label>
                 </div>
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-2 pt-1">
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2.5 rounded-lg text-white text-sm font-medium transition-all"
+                    className="flex-1 px-3 py-2 rounded-lg text-white text-xs font-medium transition-all"
                     style={{
                       background: 'linear-gradient(135deg, var(--vine-green), var(--vine-dark))',
                       boxShadow: '0 2px 8px rgba(45, 79, 30, 0.25)',
@@ -224,7 +220,7 @@ const Gallery = () => {
                   <button
                     type="button"
                     onClick={() => setShowCreateForm(false)}
-                    className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border border-vine-200 dark:border-gray-600 text-vine-dark dark:text-gray-300 hover:bg-vine-50 dark:hover:bg-gray-700 transition-all"
+                    className="flex-1 px-3 py-2 rounded-lg text-xs font-medium border border-vine-200 dark:border-gray-600 text-vine-dark dark:text-gray-300 hover:bg-vine-50 dark:hover:bg-gray-700 transition-all"
                   >
                     Cancel
                   </button>

@@ -6,6 +6,7 @@ import { usePreferences } from '../hooks/useQueries';
 
 // Import the Greenhouse family tree
 import { FamilyTreeView } from '../lib/familyvine-tree/react';
+import { getResponsiveConfig } from '../lib/familyvine-tree/core/layout/LayoutConfig';
 import '../lib/familyvine-tree/styles/family-tree.css';
 
 /* ── Custom Vine Link SVG Icon ── */
@@ -58,6 +59,13 @@ const FamilyTreePage = () => {
   const [timelineYear, setTimelineYear] = useState(null); // null = show all
   const [selectionMode, setSelectionMode] = useState(false); // Relationship Finder mode
   const [prefsApplied, setPrefsApplied] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
+
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   // Apply user preferences for generation depth
   useEffect(() => {
@@ -271,7 +279,7 @@ const FamilyTreePage = () => {
         className="overflow-hidden"
         style={{
           position: 'absolute',
-          top: '68px',
+          top: isMobile ? '52px' : '68px',
           left: 0,
           right: 0,
           bottom: 0,
@@ -288,6 +296,8 @@ const FamilyTreePage = () => {
             timelineYear={timelineYear}
             selectionMode={selectionMode}
             onSelectionModeChange={setSelectionMode}
+            config={getResponsiveConfig()}
+            fitPadding={isMobile ? 20 : 80}
             style={{ width: '100%', height: '100%' }}
           />
         )}

@@ -60,7 +60,7 @@ export default function TagMode({ photo, tags, onTagAdd, onTagUpdate, onTagDelet
     } else {
       const query = searchQuery.toLowerCase();
       const filtered = members.filter(member =>
-        `${member.first_name} ${member.last_name}`.toLowerCase().includes(query)
+        `${member.first_name} ${member.last_name}${member.suffix ? ' ' + member.suffix : ''}`.toLowerCase().includes(query)
       );
       setFilteredMembers(filtered);
     }
@@ -262,7 +262,7 @@ export default function TagMode({ photo, tags, onTagAdd, onTagUpdate, onTagDelet
                         {member.first_name ? member.first_name.charAt(0).toUpperCase() : '?'}
                       </span>
                       <span className="member-name">
-                        {member.first_name} {member.last_name}
+                        {member.first_name} {member.last_name}{member.suffix ? ` ${member.suffix}` : ''}
                       </span>
                     </div>
                     {member.birth_date && (

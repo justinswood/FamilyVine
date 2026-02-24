@@ -179,8 +179,8 @@ const GlobalSearch = () => {
 
       {/* Search Modal */}
       {isOpen && (
-        <div className="fixed inset-0 bg-vine-dark/40 dark:bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 z-50">
-          <div className="card w-full max-w-2xl mx-4 max-h-96 overflow-hidden">
+        <div className="fixed inset-0 bg-vine-dark/40 dark:bg-black/60 backdrop-blur-sm flex items-start justify-center pt-4 sm:pt-20 z-50">
+          <div className="card w-full max-w-2xl mx-4 max-h-[70vh] sm:max-h-96 overflow-hidden">
             {/* Search Input */}
             <div className="flex items-center gap-3 p-4 border-b border-vine-200 dark:border-secondary-700">
               <Search className="w-5 h-5 text-vine-sage" />

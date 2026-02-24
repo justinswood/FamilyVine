@@ -1,5 +1,11 @@
 /**
  * usePanZoom - Custom hook wrapping PanZoomController with React refs
+ *
+ * Uses a wrapper-div CSS transform approach:
+ *   viewportRef  → fixed outer container (receives events, clips overflow)
+ *   transformRef → inner div that receives CSS transform: translate() scale()
+ *   svgRef       → the SVG element (kept for dimension queries)
+ *   contentGroupRef → the <g> element (kept for compatibility)
  */
 
 import { useRef, useEffect, useCallback } from 'react';
@@ -7,17 +13,19 @@ import { PanZoomController } from '../core/interaction/PanZoomController.js';
 import LayoutConfig from '../core/layout/LayoutConfig.js';
 
 /**
- * Hook: attach PanZoomController to SVG + content group refs.
+ * Hook: attach PanZoomController to viewport + transform target refs.
  * Pan/zoom is handled via direct DOM manipulation (no React re-renders).
  * @param {Object} config - Optional PanZoomController config overrides
  */
 export function usePanZoom(config = {}) {
+  const viewportRef = useRef(null);
+  const transformRef = useRef(null);
   const svgRef = useRef(null);
   const contentGroupRef = useRef(null);
   const controllerRef = useRef(null);
 
   useEffect(() => {
-    if (!svgRef.current || !contentGroupRef.current) return;
+    if (!viewportRef.current || !transformRef.current) return;
 
     const mergedConfig = {
       minZoom: LayoutConfig.ZOOM_MIN,
@@ -27,8 +35,8 @@ export function usePanZoom(config = {}) {
       ...config,
     };
 
-    const controller = new PanZoomController(svgRef.current, mergedConfig);
-    controller.setContentGroup(contentGroupRef.current);
+    const controller = new PanZoomController(viewportRef.current, mergedConfig);
+    controller.setTransformTarget(transformRef.current);
     controller.setupEventListeners();
     controllerRef.current = controller;
 
@@ -36,7 +44,7 @@ export function usePanZoom(config = {}) {
       controller.destroy();
       controllerRef.current = null;
     };
-  }, []); // Mount/unmount only - controller is a singleton per SVG
+  }, []); // Mount/unmount only - controller is a singleton per viewport
 
   const fitToView = useCallback((bounds, padding = 50) => {
     controllerRef.current?.fitToView(bounds, padding);
@@ -57,6 +65,8 @@ export function usePanZoom(config = {}) {
   }, []);
 
   return {
+    viewportRef,
+    transformRef,
     svgRef,
     contentGroupRef,
     controllerRef,

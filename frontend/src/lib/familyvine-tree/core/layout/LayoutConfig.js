@@ -71,4 +71,33 @@ export const LayoutConfig = {
   }
 };
 
+/**
+ * Returns a responsive config — smaller nodes/gaps on mobile (<768px)
+ */
+export function getResponsiveConfig() {
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  if (!isMobile) return LayoutConfig;
+
+  return {
+    ...LayoutConfig,
+    NODE_WIDTH: 140,
+    NODE_HEIGHT: 100,
+    GENERATION_HEIGHT: 160,
+    GENERATION_GAP: 60,
+    SIBLING_SPACING: 20,
+    LEAF_SIBLING_SPACING: 14,
+    BRANCH_SIBLING_SPACING: 28,
+    SPOUSE_GAP: 16,
+    SUBTREE_SEPARATION: 28,
+    FIT_MIN_ZOOM: 0.25,
+    ZOOM_MIN: 0.15,
+    WALKER: {
+      ...LayoutConfig.WALKER,
+      MIN_SIBLING_DISTANCE: 12,
+      SUBTREE_SEPARATION: 28,
+      SPOUSE_DISTANCE: 16,
+    }
+  };
+}
+
 export default LayoutConfig;

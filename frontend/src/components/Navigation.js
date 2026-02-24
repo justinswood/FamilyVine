@@ -66,7 +66,7 @@ const Navigation = () => {
 
   // Archival nav link classes – parchment pill with gold active dot
   const getNavLinkClasses = (active) => `
-    inline-block rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors duration-300 relative
+    inline-block rounded-full px-3 py-2 md:px-3.5 md:py-1.5 text-xs font-medium transition-colors duration-300 relative
     ${active
       ? "text-[#2E5A2E] dark:text-vine-400 font-semibold after:content-[''] after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-1 after:h-1 after:rounded-full after:bg-[#D4AF37]"
       : 'text-[#4A4A4A] dark:text-secondary-300 hover:text-[#2E5A2E] dark:hover:text-vine-400 hover:bg-[#2E5A2E]/10 dark:hover:bg-[#2E5A2E]/15'
@@ -243,6 +243,9 @@ const Navigation = () => {
             <Link to="/map" className={getNavLinkClasses(isActive('/map'))}>
               Map
             </Link>
+            <Link to="/calendar" className={getNavLinkClasses(isActive('/calendar'))}>
+              Calendar
+            </Link>
           </div>
         </div>
       </div>
@@ -256,7 +259,7 @@ const Navigation = () => {
           className="fixed w-44 card py-1.5 animate-scale-in"
           style={{
             top: `${membersButtonRect.bottom + 6}px`,
-            left: `${membersButtonRect.left + (membersButtonRect.width / 2) - 88}px`,
+            left: `${Math.max(8, Math.min(window.innerWidth - 184, membersButtonRect.left + (membersButtonRect.width / 2) - 88))}px`,
             zIndex: 10000
           }}
         >
@@ -291,7 +294,7 @@ const Navigation = () => {
           className="fixed w-44 card py-1.5 animate-scale-in"
           style={{
             top: `${memoriesButtonRect.bottom + 6}px`,
-            left: `${memoriesButtonRect.left + (memoriesButtonRect.width / 2) - 88}px`,
+            left: `${Math.max(8, Math.min(window.innerWidth - 184, memoriesButtonRect.left + (memoriesButtonRect.width / 2) - 88))}px`,
             zIndex: 10000
           }}
         >

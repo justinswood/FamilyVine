@@ -14,6 +14,9 @@ const TreeNode = memo(({
 
   const fullName = [firstName, lastName, suffix].filter(Boolean).join(' ').trim();
 
+  // Responsive sizing — mobile config uses width <= 140
+  const compact = width <= 140;
+
   // Gender-based accent
   const isFemale = gender === 'female';
   const borderColor = isFemale ? VINE_COLORS.wood : VINE_COLORS.dark;
@@ -54,7 +57,7 @@ const TreeNode = memo(({
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          padding: '12px',
+          padding: compact ? '8px' : '12px',
           borderRadius: '12px',
           border: `2px solid ${borderColor}`,
           backgroundColor: VINE_COLORS.paper,
@@ -70,13 +73,13 @@ const TreeNode = memo(({
         onMouseEnter={() => onHover?.(node)}
         onMouseLeave={() => onHover?.(null)}
       >
-        {/* Profile photo - fixed 56px circle */}
+        {/* Profile photo */}
         <div
           style={{
             position: 'absolute',
-            top: '-24px',
-            width: '56px',
-            height: '56px',
+            top: compact ? '-18px' : '-24px',
+            width: compact ? '44px' : '56px',
+            height: compact ? '44px' : '56px',
             borderRadius: '50%',
             border: '4px solid white',
             boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
@@ -99,7 +102,7 @@ const TreeNode = memo(({
                 justifyContent: 'center',
                 width: '100%',
                 height: '100%',
-                fontSize: '20px',
+                fontSize: compact ? '16px' : '20px',
                 color: '#94a3b8',
               }}
             >
@@ -109,12 +112,12 @@ const TreeNode = memo(({
         </div>
 
         {/* Name + Years */}
-        <div style={{ marginTop: '24px', textAlign: 'center', width: '100%' }}>
+        <div style={{ marginTop: compact ? '18px' : '24px', textAlign: 'center', width: '100%' }}>
           <h3
             style={{
               fontFamily: VINE_FONTS.serif,
               fontWeight: 700,
-              fontSize: '16px',
+              fontSize: compact ? '13px' : '16px',
               lineHeight: 1.4,
               color: VINE_COLORS.wood,
               overflow: 'hidden',
@@ -131,7 +134,7 @@ const TreeNode = memo(({
             style={{
               fontFamily: VINE_FONTS.sans,
               fontWeight: 400,
-              fontSize: '12px',
+              fontSize: compact ? '10px' : '12px',
               lineHeight: 1.4,
               color: '#64748b',
               textTransform: 'uppercase',

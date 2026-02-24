@@ -1,19 +1,33 @@
 /**
  * PanZoomController - Handles pan and zoom interactions
- * Provides smooth mouse/touch pan, wheel zoom, and programmatic view control
+ *
+ * Uses CSS transform on a wrapper HTML <div> that contains the SVG.
+ * This avoids all known mobile WebKit bugs with SVG viewBox, SVG transform
+ * attributes, and CSS transforms on <g> / <foreignObject> elements.
+ *
+ * The wrapper div receives:
+ *   transform: translate(panXpx, panYpx) scale(zoom)
+ *   transform-origin: 0 0
+ *
+ * The SVG inside uses overflow: visible and natural coordinate space.
+ *
+ * Internal state:
+ *   screenX = treeX * zoom + panX
+ *   screenY = treeY * zoom + panY
  */
 
 import { LayoutConfig } from '../layout/LayoutConfig.js';
 
 export class PanZoomController {
-  constructor(svg, config = {}) {
-    this.svg = svg;
+  constructor(viewport, config = {}) {
+    this.viewport = viewport; // Fixed HTML container for events + clipping
+    this.transformTarget = null; // HTML div to apply CSS transform to
     this.config = {
       minZoom: config.minZoom || LayoutConfig.ZOOM_MIN,
       maxZoom: config.maxZoom || LayoutConfig.ZOOM_MAX,
       initialZoom: config.initialZoom || LayoutConfig.ZOOM_INITIAL,
       zoomSpeed: config.zoomSpeed || 0.1,
-      smoothing: config.smoothing !== false, // Default true
+      smoothing: config.smoothing !== false,
       transitionDuration: config.transitionDuration || LayoutConfig.TRANSITION_DURATION,
       ...config
     };
@@ -34,8 +48,12 @@ export class PanZoomController {
     this.lastTouchDistance = 0;
     this.touchStartZoom = 1;
 
-    // Content group (what we transform)
-    this.contentGroup = null;
+    // Cached viewport pixel dimensions (updated on resize)
+    this._vpWidth = 0;
+    this._vpHeight = 0;
+
+    // Animation state
+    this._animFrame = null;
 
     // Event handlers (bound to this instance)
     this.boundHandlers = {
@@ -53,116 +71,103 @@ export class PanZoomController {
   }
 
   /**
-   * Set the content group to transform
-   * @param {SVGGElement} contentGroup - Content group element
+   * Cache viewport element pixel dimensions
    */
-  setContentGroup(contentGroup) {
-    this.contentGroup = contentGroup;
+  _cacheViewportDimensions() {
+    if (!this.viewport) return;
+    const rect = this.viewport.getBoundingClientRect();
+    this._vpWidth = rect.width;
+    this._vpHeight = rect.height;
+  }
+
+  /**
+   * Set the HTML div that receives CSS transform.
+   */
+  setTransformTarget(el) {
+    this.transformTarget = el;
+    if (el) {
+      el.style.transformOrigin = '0 0';
+    }
+    this._cacheViewportDimensions();
     this.updateTransform();
   }
 
   /**
-   * Setup event listeners
+   * Setup event listeners on the viewport element.
    */
   setupEventListeners() {
-    if (!this.svg) {
-      return;
-    }
+    if (!this.viewport) return;
 
     // Wheel zoom
-    this.svg.addEventListener('wheel', this.boundHandlers.wheel, { passive: false });
+    this.viewport.addEventListener('wheel', this.boundHandlers.wheel, { passive: false });
 
     // Mouse pan
-    this.svg.addEventListener('mousedown', this.boundHandlers.mouseDown);
+    this.viewport.addEventListener('mousedown', this.boundHandlers.mouseDown);
     window.addEventListener('mousemove', this.boundHandlers.mouseMove);
     window.addEventListener('mouseup', this.boundHandlers.mouseUp);
 
     // Touch support
-    this.svg.addEventListener('touchstart', this.boundHandlers.touchStart, { passive: false });
-    this.svg.addEventListener('touchmove', this.boundHandlers.touchMove, { passive: false });
-    this.svg.addEventListener('touchend', this.boundHandlers.touchEnd);
+    this.viewport.addEventListener('touchstart', this.boundHandlers.touchStart, { passive: false });
+    this.viewport.addEventListener('touchmove', this.boundHandlers.touchMove, { passive: false });
+    this.viewport.addEventListener('touchend', this.boundHandlers.touchEnd);
+
+    // Window resize — update cached dimensions + re-fit
+    this.boundHandlers.resize = () => {
+      this._cacheViewportDimensions();
+      if (this._resizeTimer) clearTimeout(this._resizeTimer);
+      this._resizeTimer = setTimeout(() => {
+        this._cacheViewportDimensions();
+        if (this._lastBounds && !this.isPanning) {
+          this.fitToView(this._lastBounds, this._lastPadding || 50);
+        }
+      }, 250);
+    };
+    window.addEventListener('resize', this.boundHandlers.resize);
   }
 
-  /**
-   * Handle wheel event for zooming
-   * @param {WheelEvent} event - Wheel event
-   */
+  // ── Mouse / wheel handlers ──────────────────────────────────────
+
   handleWheel(event) {
     event.preventDefault();
-
-    // Get cursor position relative to SVG
-    const rect = this.svg.getBoundingClientRect();
+    const rect = this.viewport.getBoundingClientRect();
     const cursorX = event.clientX - rect.left;
     const cursorY = event.clientY - rect.top;
-
-    // Determine zoom direction
     const delta = event.deltaY > 0 ? -1 : 1;
     const zoomFactor = 1 + (delta * this.config.zoomSpeed);
-
-    // Zoom toward cursor
     this.zoom(zoomFactor, cursorX, cursorY);
   }
 
-  /**
-   * Handle mouse down for panning
-   * @param {MouseEvent} event - Mouse event
-   */
   handleMouseDown(event) {
-    // Only start pan on left click
-    if (event.button !== 0) {
-      return;
-    }
-
-    // Don't pan if clicking on a node
-    if (event.target.closest('.tree-node')) {
-      return;
-    }
+    if (event.button !== 0) return;
+    if (event.target.closest('.person-card') || event.target.closest('.subtree-toggle')) return;
 
     this.isPanning = true;
     this.startX = event.clientX;
     this.startY = event.clientY;
     this.startPanX = this.panX;
     this.startPanY = this.panY;
-
-    this.svg.style.cursor = 'grabbing';
+    this.viewport.style.cursor = 'grabbing';
   }
 
-  /**
-   * Handle mouse move for panning
-   * @param {MouseEvent} event - Mouse event
-   */
   handleMouseMove(event) {
-    if (!this.isPanning) {
-      return;
-    }
-
-    const dx = event.clientX - this.startX;
-    const dy = event.clientY - this.startY;
-
-    this.panX = this.startPanX + dx;
-    this.panY = this.startPanY + dy;
-
+    if (!this.isPanning) return;
+    this.panX = this.startPanX + (event.clientX - this.startX);
+    this.panY = this.startPanY + (event.clientY - this.startY);
     this.updateTransform();
   }
 
-  /**
-   * Handle mouse up to end panning
-   * @param {MouseEvent} event - Mouse event
-   */
-  handleMouseUp(event) {
+  handleMouseUp() {
     if (this.isPanning) {
       this.isPanning = false;
-      this.svg.style.cursor = 'default';
+      this.viewport.style.cursor = '';
     }
   }
 
-  /**
-   * Handle touch start
-   * @param {TouchEvent} event - Touch event
-   */
+  // ── Touch handlers ──────────────────────────────────────────────
+
   handleTouchStart(event) {
     if (event.touches.length === 1) {
-      // Single touch - pan
+      if (event.target.closest('.person-card') || event.target.closest('.subtree-toggle')) return;
       event.preventDefault();
       this.isPanning = true;
       this.startX = event.touches[0].clientX;
@@ -170,216 +175,120 @@ export class PanZoomController {
       this.startPanX = this.panX;
       this.startPanY = this.panY;
     } else if (event.touches.length === 2) {
-      // Two touches - pinch zoom
       event.preventDefault();
       this.isPanning = false;
-
-      const touch1 = event.touches[0];
-      const touch2 = event.touches[1];
-      this.lastTouchDistance = this.getTouchDistance(touch1, touch2);
+      this.lastTouchDistance = this.getTouchDistance(event.touches[0], event.touches[1]);
       this.touchStartZoom = this.currentZoom;
     }
   }
 
-  /**
-   * Handle touch move
-   * @param {TouchEvent} event - Touch event
-   */
   handleTouchMove(event) {
     if (event.touches.length === 1 && this.isPanning) {
-      // Single touch pan
       event.preventDefault();
-
-      const dx = event.touches[0].clientX - this.startX;
-      const dy = event.touches[0].clientY - this.startY;
-
-      this.panX = this.startPanX + dx;
-      this.panY = this.startPanY + dy;
-
+      this.panX = this.startPanX + (event.touches[0].clientX - this.startX);
+      this.panY = this.startPanY + (event.touches[0].clientY - this.startY);
       this.updateTransform();
     } else if (event.touches.length === 2) {
-      // Pinch zoom
       event.preventDefault();
-
-      const touch1 = event.touches[0];
-      const touch2 = event.touches[1];
-      const currentDistance = this.getTouchDistance(touch1, touch2);
+      const currentDistance = this.getTouchDistance(event.touches[0], event.touches[1]);
 
       if (this.lastTouchDistance > 0) {
         const zoomFactor = currentDistance / this.lastTouchDistance;
-
-        // Get center point between touches
-        const centerX = (touch1.clientX + touch2.clientX) / 2;
-        const centerY = (touch1.clientY + touch2.clientY) / 2;
-
-        const rect = this.svg.getBoundingClientRect();
-        const svgCenterX = centerX - rect.left;
-        const svgCenterY = centerY - rect.top;
-
-        this.zoom(zoomFactor, svgCenterX, svgCenterY);
+        const centerX = (event.touches[0].clientX + event.touches[1].clientX) / 2;
+        const centerY = (event.touches[0].clientY + event.touches[1].clientY) / 2;
+        const rect = this.viewport.getBoundingClientRect();
+        this.zoom(zoomFactor, centerX - rect.left, centerY - rect.top);
       }
 
       this.lastTouchDistance = currentDistance;
     }
   }
 
-  /**
-   * Handle touch end
-   * @param {TouchEvent} event - Touch event
-   */
   handleTouchEnd(event) {
-    if (event.touches.length < 2) {
-      this.lastTouchDistance = 0;
-    }
-
-    if (event.touches.length === 0) {
-      this.isPanning = false;
-    }
+    if (event.touches.length < 2) this.lastTouchDistance = 0;
+    if (event.touches.length === 0) this.isPanning = false;
   }
 
-  /**
-   * Calculate distance between two touch points
-   * @param {Touch} touch1 - First touch
-   * @param {Touch} touch2 - Second touch
-   * @returns {number} Distance in pixels
-   */
   getTouchDistance(touch1, touch2) {
     const dx = touch2.clientX - touch1.clientX;
     const dy = touch2.clientY - touch1.clientY;
     return Math.sqrt(dx * dx + dy * dy);
   }
 
-  /**
-   * Zoom by a factor toward a point
-   * @param {number} factor - Zoom factor (>1 = zoom in, <1 = zoom out)
-   * @param {number} centerX - X coordinate to zoom toward (in SVG space)
-   * @param {number} centerY - Y coordinate to zoom toward (in SVG space)
-   */
+  // ── Zoom / pan ──────────────────────────────────────────────────
+
   zoom(factor, centerX, centerY) {
     const newZoom = this.currentZoom * factor;
+    if (newZoom < this.config.minZoom || newZoom > this.config.maxZoom) return;
 
-    // Clamp zoom to min/max
-    if (newZoom < this.config.minZoom || newZoom > this.config.maxZoom) {
-      return;
-    }
-
-    // Calculate new pan to keep the point under cursor stationary
     const zoomRatio = newZoom / this.currentZoom;
-
-    // Adjust pan to zoom toward the cursor position
     this.panX = centerX - (centerX - this.panX) * zoomRatio;
     this.panY = centerY - (centerY - this.panY) * zoomRatio;
-
     this.currentZoom = newZoom;
 
     this.updateTransform();
   }
 
-  /**
-   * Pan by a delta
-   * @param {number} dx - Delta X
-   * @param {number} dy - Delta Y
-   */
   pan(dx, dy) {
     this.panX += dx;
     this.panY += dy;
     this.updateTransform();
   }
 
-  /**
-   * Fit the tree to the viewport
-   * @param {Object} bounds - Tree bounds {minX, minY, maxX, maxY}
-   * @param {number} padding - Padding around the tree
-   */
-  fitToView(bounds, padding = 50) {
-    if (!bounds || !this.svg) {
-      console.warn('⚠️ fitToView: missing bounds or svg');
-      return;
-    }
+  // ── Fit-to-view / center ────────────────────────────────────────
 
-    const rect = this.svg.getBoundingClientRect();
-    const svgWidth = rect.width;
-    const svgHeight = rect.height;
+  fitToView(bounds, padding = 50) {
+    if (!bounds || !this.viewport) return;
+    this._lastBounds = bounds;
+    this._lastPadding = padding;
+    this._cacheViewportDimensions();
+
+    const vpWidth = this._vpWidth;
+    const vpHeight = this._vpHeight;
+    if (vpWidth === 0 || vpHeight === 0) return;
 
     const treeWidth = bounds.maxX - bounds.minX;
     const treeHeight = bounds.maxY - bounds.minY;
 
-    console.log('📐 fitToView input:', {
-      bounds,
-      svgWidth,
-      svgHeight,
-      treeWidth,
-      treeHeight
-    });
-
-    // Calculate zoom to fit
-    const scaleX = (svgWidth - padding * 2) / treeWidth;
-    const scaleY = (svgHeight - padding * 2) / treeHeight;
+    const scaleX = (vpWidth - padding * 2) / treeWidth;
+    const scaleY = (vpHeight - padding * 2) / treeHeight;
     const newZoom = Math.min(scaleX, scaleY);
 
-    // Clamp zoom - use FIT_MIN_ZOOM so auto-fit doesn't shrink tree too small
     const fitMinZoom = LayoutConfig.FIT_MIN_ZOOM || this.config.minZoom;
-    this.currentZoom = Math.max(
-      fitMinZoom,
-      Math.min(this.config.maxZoom, newZoom)
-    );
+    this.currentZoom = Math.max(fitMinZoom, Math.min(this.config.maxZoom, newZoom));
 
-    // Center the tree
     const scaledTreeWidth = treeWidth * this.currentZoom;
     const scaledTreeHeight = treeHeight * this.currentZoom;
 
-    this.panX = (svgWidth - scaledTreeWidth) / 2 - (bounds.minX * this.currentZoom);
-    this.panY = (svgHeight - scaledTreeHeight) / 2 - (bounds.minY * this.currentZoom);
-
-    console.log('📐 fitToView result:', {
-      zoom: this.currentZoom,
-      panX: this.panX,
-      panY: this.panY,
-      scaledTreeWidth,
-      scaledTreeHeight
-    });
+    this.panX = (vpWidth - scaledTreeWidth) / 2 - (bounds.minX * this.currentZoom);
+    this.panY = (vpHeight - scaledTreeHeight) / 2 - (bounds.minY * this.currentZoom);
 
     this.updateTransform(true);
   }
 
-  /**
-   * Center the view on a specific point
-   * @param {number} x - X coordinate
-   * @param {number} y - Y coordinate
-   */
   centerOn(x, y) {
-    if (!this.svg) {
-      return;
-    }
-
-    const rect = this.svg.getBoundingClientRect();
-    const svgCenterX = rect.width / 2;
-    const svgCenterY = rect.height / 2;
-
-    this.panX = svgCenterX - (x * this.currentZoom);
-    this.panY = svgCenterY - (y * this.currentZoom);
-
+    if (!this.viewport) return;
+    this._cacheViewportDimensions();
+    this.panX = this._vpWidth / 2 - (x * this.currentZoom);
+    this.panY = this._vpHeight / 2 - (y * this.currentZoom);
     this.updateTransform(true);
   }
 
-  /**
-   * Update the transform on the content group
-   * @param {boolean} animated - Whether to animate the transition
-   */
-  updateTransform(animated = false) {
-    if (!this.contentGroup) {
-      return;
-    }
+  // ── Core: apply CSS transform on wrapper div ──────────────────
 
-    const transform = `translate(${this.panX}px, ${this.panY}px) scale(${this.currentZoom})`;
+  updateTransform(animated = false) {
+    if (!this.transformTarget) return;
 
     if (animated && this.config.smoothing) {
-      this.contentGroup.style.transition = `transform ${this.config.transitionDuration}ms ease-out`;
+      this._animateTransform();
     } else {
-      this.contentGroup.style.transition = 'none';
+      if (this._animFrame) {
+        cancelAnimationFrame(this._animFrame);
+        this._animFrame = null;
+      }
+      this.transformTarget.style.transform =
+        `translate(${this.panX}px, ${this.panY}px) scale(${this.currentZoom})`;
     }
-
-    this.contentGroup.style.transform = transform;
 
     // Notify listeners
     if (this.onTransformChange) {
@@ -392,8 +301,55 @@ export class PanZoomController {
   }
 
   /**
-   * Reset to initial view
+   * Animate CSS transform using requestAnimationFrame (ease-out cubic).
    */
+  _animateTransform() {
+    if (this._animFrame) cancelAnimationFrame(this._animFrame);
+
+    // Parse current CSS transform to get start values
+    let startPanX = 0, startPanY = 0, startZoom = 1;
+    const current = this.transformTarget.style.transform;
+    if (current) {
+      const translateMatch = current.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
+      const scaleMatch = current.match(/scale\(([-\d.]+)\)/);
+      if (translateMatch && scaleMatch) {
+        startPanX = parseFloat(translateMatch[1]);
+        startPanY = parseFloat(translateMatch[2]);
+        startZoom = parseFloat(scaleMatch[1]);
+      }
+    }
+
+    const targetPanX = this.panX;
+    const targetPanY = this.panY;
+    const targetZoom = this.currentZoom;
+
+    const duration = this.config.transitionDuration;
+    const startTime = performance.now();
+
+    const step = (now) => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
+
+      const px = startPanX + (targetPanX - startPanX) * ease;
+      const py = startPanY + (targetPanY - startPanY) * ease;
+      const z = startZoom + (targetZoom - startZoom) * ease;
+
+      this.transformTarget.style.transform =
+        `translate(${px}px, ${py}px) scale(${z})`;
+
+      if (t < 1) {
+        this._animFrame = requestAnimationFrame(step);
+      } else {
+        this._animFrame = null;
+      }
+    };
+
+    this._animFrame = requestAnimationFrame(step);
+  }
+
+  // ── Utility ─────────────────────────────────────────────────────
+
   reset() {
     this.currentZoom = this.config.initialZoom;
     this.panX = 0;
@@ -401,67 +357,43 @@ export class PanZoomController {
     this.updateTransform(true);
   }
 
-  /**
-   * Get current transform state
-   * @returns {Object} Transform state
-   */
   getTransform() {
-    return {
-      zoom: this.currentZoom,
-      panX: this.panX,
-      panY: this.panY
-    };
+    return { zoom: this.currentZoom, panX: this.panX, panY: this.panY };
   }
 
-  /**
-   * Set transform state
-   * @param {Object} transform - Transform state
-   * @param {boolean} animated - Whether to animate
-   */
   setTransform(transform, animated = false) {
     if (transform.zoom !== undefined) {
-      this.currentZoom = Math.max(
-        this.config.minZoom,
-        Math.min(this.config.maxZoom, transform.zoom)
-      );
+      this.currentZoom = Math.max(this.config.minZoom, Math.min(this.config.maxZoom, transform.zoom));
     }
-    if (transform.panX !== undefined) {
-      this.panX = transform.panX;
-    }
-    if (transform.panY !== undefined) {
-      this.panY = transform.panY;
-    }
-
+    if (transform.panX !== undefined) this.panX = transform.panX;
+    if (transform.panY !== undefined) this.panY = transform.panY;
     this.updateTransform(animated);
   }
 
-  /**
-   * Set the transform change callback
-   * @param {Function} callback - Callback function
-   */
   setTransformChangeCallback(callback) {
     this.onTransformChange = callback;
   }
 
-  /**
-   * Clean up event listeners and destroy
-   */
   destroy() {
-    if (!this.svg) {
-      return;
-    }
+    if (!this.viewport) return;
 
-    // Remove event listeners
-    this.svg.removeEventListener('wheel', this.boundHandlers.wheel);
-    this.svg.removeEventListener('mousedown', this.boundHandlers.mouseDown);
+    this.viewport.removeEventListener('wheel', this.boundHandlers.wheel);
+    this.viewport.removeEventListener('mousedown', this.boundHandlers.mouseDown);
     window.removeEventListener('mousemove', this.boundHandlers.mouseMove);
     window.removeEventListener('mouseup', this.boundHandlers.mouseUp);
-    this.svg.removeEventListener('touchstart', this.boundHandlers.touchStart);
-    this.svg.removeEventListener('touchmove', this.boundHandlers.touchMove);
-    this.svg.removeEventListener('touchend', this.boundHandlers.touchEnd);
+    this.viewport.removeEventListener('touchstart', this.boundHandlers.touchStart);
+    this.viewport.removeEventListener('touchmove', this.boundHandlers.touchMove);
+    this.viewport.removeEventListener('touchend', this.boundHandlers.touchEnd);
+    if (this.boundHandlers.resize) window.removeEventListener('resize', this.boundHandlers.resize);
+    if (this._resizeTimer) clearTimeout(this._resizeTimer);
+    if (this._animFrame) cancelAnimationFrame(this._animFrame);
 
-    this.svg = null;
-    this.contentGroup = null;
+    if (this.transformTarget) {
+      this.transformTarget.style.transform = '';
+    }
+
+    this.viewport = null;
+    this.transformTarget = null;
     this.onTransformChange = null;
   }
 }

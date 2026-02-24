@@ -191,6 +191,8 @@ const AlbumView = () => {
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const [lightboxTags, setLightboxTags] = useState([]);
+  const [imageFit, setImageFit] = useState(null);
   const modalOverlayRef = useRef(null);
   
   // NEW: Add these state variables for cropping functionality
@@ -483,12 +485,39 @@ const AlbumView = () => {
   };
 
   // New function to handle photo enlargement
+  const computeImageFit = (naturalW, naturalH) => {
+    const containerW = window.innerWidth - 120;
+    const containerH = window.innerHeight - 120;
+    const scale = Math.min(containerW / naturalW, containerH / naturalH);
+    const renderedW = naturalW * scale;
+    const renderedH = naturalH * scale;
+    setImageFit({
+      left: (containerW - renderedW) / 2,
+      top: (containerH - renderedH) / 2,
+      width: renderedW,
+      height: renderedH,
+    });
+  };
+
+  const fetchLightboxTags = async (photo) => {
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_API}/api/albums/${id}/photos/${photo.id}/tags`
+      );
+      setLightboxTags(response.data);
+    } catch (error) {
+      console.error('Error fetching photo tags:', error);
+      setLightboxTags([]);
+    }
+  };
+
   const enlargePhoto = (photo) => {
     console.log('enlargePhoto called with:', photo);
     setEnlargedPhoto(photo);
     setShowPhotoModal(true);
     setZoomLevel(1);
     setPanOffset({ x: 0, y: 0 });
+    fetchLightboxTags(photo);
   };
 
   // Close photo modal
@@ -497,6 +526,8 @@ const AlbumView = () => {
     setEnlargedPhoto(null);
     setZoomLevel(1);
     setPanOffset({ x: 0, y: 0 });
+    setLightboxTags([]);
+    setImageFit(null);
   };
 
   // Handle scroll wheel zoom in lightbox (native event for passive: false)
@@ -539,9 +570,12 @@ const AlbumView = () => {
     const currentIndex = album.photos.findIndex(p => p.id === enlargedPhoto.id);
     const newIndex = currentIndex + direction;
     if (newIndex >= 0 && newIndex < album.photos.length) {
-      setEnlargedPhoto(album.photos[newIndex]);
+      const newPhoto = album.photos[newIndex];
+      setEnlargedPhoto(newPhoto);
       setZoomLevel(1);
       setPanOffset({ x: 0, y: 0 });
+      setImageFit(null);
+      fetchLightboxTags(newPhoto);
     }
   };
 
@@ -863,9 +897,9 @@ const AlbumView = () => {
             onClick={(e) => e.stopPropagation()}
             style={{
               touchAction: 'pan-x pan-y pinch-zoom',
-              maxWidth: 'calc(100vw - 64px)',
-              maxHeight: 'calc(100vh - 64px)',
-              padding: '32px',
+              maxWidth: window.innerWidth < 640 ? 'calc(100vw - 16px)' : 'calc(100vw - 64px)',
+              maxHeight: window.innerWidth < 640 ? 'calc(100vh - 16px)' : 'calc(100vh - 64px)',
+              padding: window.innerWidth < 640 ? '8px' : '32px',
               cursor: zoomLevel > 1 ? (isPanning ? 'grabbing' : 'grab') : 'default'
             }}
           >
@@ -880,10 +914,9 @@ const AlbumView = () => {
               </svg>
             </button>
 
-            <img
-              src={`${process.env.REACT_APP_API}/${enlargedPhoto.file_path}`}
-              alt={enlargedPhoto.caption || 'Photo'}
-              className="object-contain rounded-lg"
+            {/* Image + Tag overlay container */}
+            <div
+              className="relative"
               style={{
                 transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomLevel}) rotate(${enlargedPhoto.rotation_degrees || 0}deg)`,
                 transition: isPanning ? 'none' : 'transform 0.2s ease',
@@ -892,8 +925,8 @@ const AlbumView = () => {
                 WebkitUserSelect: 'none',
                 MozUserSelect: 'none',
                 msUserSelect: 'none',
-                width: 'calc(100vw - 120px)',
-                height: 'calc(100vh - 120px)',
+                width: window.innerWidth < 640 ? 'calc(100vw - 16px)' : 'calc(100vw - 120px)',
+                height: window.innerWidth < 640 ? 'calc(100vh - 16px)' : 'calc(100vh - 120px)',
                 maxWidth: '100%',
                 maxHeight: '100%',
                 transformOrigin: 'center center'
@@ -916,8 +949,52 @@ const AlbumView = () => {
               onTouchEnd={(e) => {
                 e.stopPropagation();
               }}
-              draggable={false}
-            />
+            >
+              <img
+                src={`${process.env.REACT_APP_API}/${enlargedPhoto.file_path}`}
+                alt={enlargedPhoto.caption || 'Photo'}
+                className="object-contain rounded-lg"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none',
+                }}
+                draggable={false}
+                onLoad={(e) => computeImageFit(e.target.naturalWidth, e.target.naturalHeight)}
+              />
+
+              {/* Tag dot overlays — positioned over the actual rendered image area */}
+              {imageFit && lightboxTags.length > 0 && (
+                <div
+                  className="absolute pointer-events-none"
+                  style={{
+                    left: imageFit.left,
+                    top: imageFit.top,
+                    width: imageFit.width,
+                    height: imageFit.height,
+                  }}
+                >
+                  {lightboxTags.filter(t => t.x_coordinate != null && t.y_coordinate != null).map((tag) => (
+                    <div
+                      key={tag.id}
+                      className="absolute group/tag"
+                      style={{
+                        left: `${tag.x_coordinate}%`,
+                        top: `${tag.y_coordinate}%`,
+                        transform: 'translate(-50%, -50%)',
+                        pointerEvents: 'auto',
+                      }}
+                    >
+                      <div className="w-5 h-5 rounded-full opacity-0 group-hover/tag:opacity-100 group-hover/tag:bg-white/30 group-hover/tag:border-2 group-hover/tag:border-white/60 transition-all duration-200 cursor-pointer" />
+                      <div className="absolute left-1/2 -translate-x-1/2 top-full mt-1.5 bg-black/85 text-white text-xs px-2.5 py-1 rounded-md whitespace-nowrap opacity-0 group-hover/tag:opacity-100 transition-opacity duration-200 pointer-events-none z-10 shadow-lg">
+                        {tag.member_name}
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 border-4 border-transparent border-b-black/85" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Zoom indicator */}
             {zoomLevel !== 1 && (
@@ -931,7 +1008,7 @@ const AlbumView = () => {
               <>
                 <button
                   onClick={() => navigatePhoto(-1)}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-12 h-12 flex items-center justify-center hover:bg-white/20 hover:border-white/30 hover:scale-105 opacity-0 group-hover:opacity-100 transition-all duration-300 group/prev"
+                  className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center hover:bg-white/20 hover:border-white/30 hover:scale-105 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 group/prev"
                   title="Previous photo (←)"
                   style={{ touchAction: 'manipulation' }}
                   onTouchStart={(e) => e.stopPropagation()}
@@ -942,7 +1019,7 @@ const AlbumView = () => {
                 </button>
                 <button
                   onClick={() => navigatePhoto(1)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-12 h-12 flex items-center justify-center hover:bg-white/20 hover:border-white/30 hover:scale-105 opacity-0 group-hover:opacity-100 transition-all duration-300 group/next"
+                  className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 text-white bg-white/10 backdrop-blur-sm border border-white/20 rounded-full w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center hover:bg-white/20 hover:border-white/30 hover:scale-105 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-all duration-300 group/next"
                   title="Next photo (→)"
                   style={{ touchAction: 'manipulation' }}
                   onTouchStart={(e) => e.stopPropagation()}
@@ -969,7 +1046,7 @@ const AlbumView = () => {
             )}
 
             {/* Bottom toolbar - Rotate & Set as Cover */}
-            <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 flex items-center gap-2 opacity-60 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1125,7 +1202,10 @@ const AlbumView = () => {
           photo={selectedPhotoForEdit}
           albumId={id}
           onSave={handlePhotoSaved}
-          onClose={() => setShowPhotoEditor(false)}
+          onClose={() => {
+            setShowPhotoEditor(false);
+            if (enlargedPhoto) fetchLightboxTags(enlargedPhoto);
+          }}
         />
       )}
 

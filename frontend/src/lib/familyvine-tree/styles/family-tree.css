@@ -22,21 +22,32 @@
   color-scheme: light;
 }
 
+/* Pan/zoom target — CSS transform applied by PanZoomController.
+   This div wraps the SVG so the entire element (including foreignObject)
+   moves as one unit on mobile WebKit. */
+.fv-pan-zoom-target {
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+}
+
 .fv-tree-svg {
   display: block;
   width: 100%;
   height: 100%;
+  overflow: visible;
+}
+
+.fv-tree-wrapper {
   cursor: grab;
 }
 
-.fv-tree-svg:active {
+.fv-tree-wrapper:active {
   cursor: grabbing;
 }
 
-/* Content group - pan/zoom transform target */
 .fv-tree-content {
-  transform-origin: 0 0;
-  will-change: transform;
+  /* No transform styles — pan/zoom handled by wrapper div CSS transform */
 }
 
 /* ── foreignObject ────────────────────────────────────── */
@@ -58,12 +69,11 @@ foreignObject {
 }
 
 .union-container .partner-card {
-  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  transition: box-shadow 0.3s ease;
 }
 
 .union-container .partner-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-  transform: scale(1.05);
 }
 
 .union-container .union-bg {
@@ -93,7 +103,6 @@ foreignObject {
 .person-card {
   transition: border-color 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
               box-shadow 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-              transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
               opacity 0.4s ease,
               filter 0.4s ease;
 }
@@ -102,7 +111,6 @@ foreignObject {
 .person-card.active-glow {
   border-color: #800080 !important;
   box-shadow: 0 0 25px rgba(128, 0, 128, 0.7), 0 0 10px rgba(128, 0, 128, 0.4) !important;
-  transform: translateY(-5px) scale(1.02);
   z-index: 50;
 }
 
@@ -110,7 +118,6 @@ foreignObject {
 .person-card.active-glow-primary {
   border-color: #800080 !important;
   box-shadow: 0 0 32px rgba(128, 0, 128, 0.85), 0 0 16px rgba(128, 0, 128, 0.5) !important;
-  transform: translateY(-5px) scale(1.04);
   z-index: 50;
 }
 
@@ -152,11 +159,11 @@ foreignObject {
 
 /* Override partner-card hover scale when glowing (avoid competing transforms) */
 .union-container .partner-card.active-glow:hover {
-  transform: translateY(-5px) scale(1.05);
+  /* transform moved to desktop-only media query */
 }
 
 .union-container .partner-card.active-glow-primary:hover {
-  transform: translateY(-5px) scale(1.06);
+  /* transform moved to desktop-only media query */
 }
 
 /* ── Founder Card — Gold accent for root-generation "Origin" members ── */
@@ -364,7 +371,6 @@ foreignObject {
   box-shadow:
     0 0 0 3px rgba(212, 175, 55, 0.3),
     0 0 20px rgba(212, 175, 55, 0.5) !important;
-  transform: scale(1.03);
   z-index: 40;
 }
 
@@ -448,6 +454,40 @@ foreignObject {
 .fv-tree-svg:focus {
   outline: 2px solid rgba(74, 124, 63, 0.5); /* vine-leaf / 50% */
   outline-offset: 2px;
+}
+
+/* ── Desktop-only transforms ───────────────────────────
+   Disabled on touch devices to prevent foreignObject compositing bug
+   in mobile WebKit that breaks viewBox-based pan/zoom. */
+@media (hover: hover) and (pointer: fine) {
+  .person-card {
+    transition: border-color 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                box-shadow 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+                opacity 0.4s ease,
+                filter 0.4s ease;
+  }
+  .union-container .partner-card {
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+  .person-card.active-glow {
+    transform: translateY(-5px) scale(1.02);
+  }
+  .person-card.active-glow-primary {
+    transform: translateY(-5px) scale(1.04);
+  }
+  .union-container .partner-card:hover {
+    transform: scale(1.05);
+  }
+  .union-container .partner-card.active-glow:hover {
+    transform: translateY(-5px) scale(1.05);
+  }
+  .union-container .partner-card.active-glow-primary:hover {
+    transform: translateY(-5px) scale(1.06);
+  }
+  .person-card.kinship-selected {
+    transform: scale(1.03);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
