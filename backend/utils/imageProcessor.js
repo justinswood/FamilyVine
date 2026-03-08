@@ -94,13 +94,15 @@ async function processImage(file, outputPath) {
     }
     
     let metadata = { width: null, height: null };
-    
+
     // Get image metadata using Sharp if available
     if (sharp) {
       try {
         metadata = await sharp(inputBuffer).metadata();
 
-        // Create optimized version if image is large or if optimization is beneficial
+        // Auto-rotate based on EXIF orientation (fixes iPhone/Safari uploads)
+        // .rotate() with no args reads EXIF orientation and corrects it
+        const needsRotation = metadata.orientation && metadata.orientation > 1;
         const needsOptimization = metadata.width > 2048 || metadata.height > 2048;
 
         if (needsOptimization) {
@@ -108,6 +110,7 @@ async function processImage(file, outputPath) {
           const outputFormat = metadata.format === 'png' ? 'png' : 'jpeg';
 
           const sharpInstance = sharp(inputBuffer)
+            .rotate() // Auto-rotate based on EXIF orientation
             .resize(2048, 2048, {
               fit: 'inside',
               withoutEnlargement: true,
@@ -139,6 +142,18 @@ async function processImage(file, outputPath) {
             originalSize: inputBuffer.length,
             optimizedSize: optimizedBuffer.length,
             savings: `${Math.round((1 - optimizedBuffer.length / inputBuffer.length) * 100)}%`
+          });
+        } else if (needsRotation) {
+          // Image doesn't need resizing but does need EXIF rotation correction
+          const { data: rotatedBuffer, info: rotatedInfo } = await sharp(inputBuffer)
+            .rotate()
+            .toBuffer({ resolveWithObject: true });
+          await fsPromises.writeFile(outputPath, rotatedBuffer);
+          metadata.width = rotatedInfo.width;
+          metadata.height = rotatedInfo.height;
+
+          logger.info('Image auto-rotated based on EXIF orientation', {
+            originalOrientation: metadata.orientation
           });
         }
       } catch (sharpError) {
