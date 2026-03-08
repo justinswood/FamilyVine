@@ -72,6 +72,8 @@ const CalendarPage = () => {
           const birthDateStr = member.birth_date.split('T')[0];
           const [year, month, day] = birthDateStr.split('-').map(Number);
           const birthDate = new Date(year, month - 1, day);
+          const isDeceased = member.is_alive === false;
+          const deathYear = member.death_date ? Number(member.death_date.split('T')[0].split('-')[0]) : null;
 
           calendarEvents.push({
             type: 'birthday',
@@ -80,10 +82,12 @@ const CalendarPage = () => {
             day: birthDate.getDate(),
             year: birthDate.getFullYear(),
             description: `${fullName}'s Birthday`,
-            subtitle: `Born ${year}`,
+            subtitle: isDeceased ? `${year} – ${deathYear || '?'}` : `Born ${year}`,
             member: member,
             memberId: member.id,
-            memberName: fullName
+            memberName: fullName,
+            isDeceased,
+            deathYear
           });
         }
 
@@ -370,18 +374,16 @@ const CalendarPage = () => {
                               <button
                                 key={eventIndex}
                                 type="button"
-                                className="almanac-avatar-pip relative block rounded-full"
-                                title={`${event.description}${event.type === 'birthday' ? ` - Turning ${getTurningAge(event)}` : ` - ${getAnniversaryYears(event)} years`}`}
+                                className={`almanac-avatar-pip relative rounded-full ${
+                                  event.type === 'birthday' ? 'pip-birthday' : 'pip-anniversary'
+                                }${event.isDeceased ? ' pip-deceased' : ''}`}
+                                title={`${event.description}${event.type === 'birthday' ? (event.isDeceased ? ` - Remembered ${getTurningAge(event)} years` : ` - Turning ${getTurningAge(event)}`) : ` - ${getAnniversaryYears(event)} years`}`}
                                 onClick={() => setSpotlightEvent(event)}
                               >
                                 <ProfileImage
                                   member={event.member}
                                   size="w-7 h-7"
-                                  className={`rounded-full border-2 ${
-                                    event.type === 'birthday'
-                                      ? 'border-vine-500/60'
-                                      : 'border-amber-500/60'
-                                  }`}
+                                  className="rounded-full"
                                 />
                               </button>
                             ))}
@@ -564,7 +566,7 @@ const CalendarPage = () => {
                     </Link>
                     <p className="text-xs text-vine-sage dark:text-gray-400">
                       {months[upcomingEvents[0].month]} {upcomingEvents[0].day}
-                      {upcomingEvents[0].type === 'birthday' && ` - Turning ${getTurningAge(upcomingEvents[0])}`}
+                      {upcomingEvents[0].type === 'birthday' && (upcomingEvents[0].isDeceased ? ` - Remembered ${getTurningAge(upcomingEvents[0])} years` : ` - Turning ${getTurningAge(upcomingEvents[0])}`)}
                     </p>
                   </div>
                 )}
@@ -609,9 +611,13 @@ const CalendarPage = () => {
             </h3>
 
             {/* Celebration detail */}
-            <p className="text-sm mb-1" style={{ color: 'var(--gold-accent)' }}>
+            <p className="text-sm mb-1" style={{ color: spotlightEvent.isDeceased ? 'var(--vine-sage)' : 'var(--gold-accent)' }}>
               {spotlightEvent.type === 'birthday' ? (
-                <>Celebrating <strong>{getTurningAge(spotlightEvent)}</strong> Years</>
+                spotlightEvent.isDeceased ? (
+                  <>Remembered for <strong>{getTurningAge(spotlightEvent)}</strong> Years</>
+                ) : (
+                  <>Celebrating <strong>{getTurningAge(spotlightEvent)}</strong> Years</>
+                )
               ) : (
                 <>{getAnniversaryYears(spotlightEvent)} Years Together</>
               )}
@@ -620,7 +626,11 @@ const CalendarPage = () => {
             {/* Date */}
             <p className="text-xs text-vine-sage dark:text-gray-400 mb-4">
               {months[spotlightEvent.month]} {spotlightEvent.day}
-              {spotlightEvent.type === 'birthday' ? ` \u2022 Born ${spotlightEvent.year}` : ` \u2022 Married ${spotlightEvent.year}`}
+              {spotlightEvent.type === 'birthday'
+                ? spotlightEvent.isDeceased
+                  ? ` \u2022 ${spotlightEvent.year} – ${spotlightEvent.deathYear || '?'}`
+                  : ` \u2022 Born ${spotlightEvent.year}`
+                : ` \u2022 Married ${spotlightEvent.year}`}
             </p>
 
             {/* Bio snippet (if member has notes or bio) */}
@@ -633,7 +643,17 @@ const CalendarPage = () => {
             {/* Type icon */}
             <div className="flex justify-center mb-4">
               {spotlightEvent.type === 'birthday' ? (
-                <BirthdayCandleIcon className="w-6 h-6 text-vine-500 dark:text-vine-400" />
+                spotlightEvent.isDeceased ? (
+                  <svg className="w-6 h-6 text-vine-sage dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2a3 3 0 0 0-3 3c0 1.66 3 3 3 3s3-1.34 3-3a3 3 0 0 0-3-3z" />
+                    <path d="M12 8v4" />
+                    <path d="M6.5 14h11a1 1 0 0 1 1 1v1a3 3 0 0 1-3 3h-7a3 3 0 0 1-3-3v-1a1 1 0 0 1 1-1z" />
+                    <path d="M8 22h8" />
+                    <path d="M12 19v3" />
+                  </svg>
+                ) : (
+                  <BirthdayCandleIcon className="w-6 h-6 text-vine-500 dark:text-vine-400" />
+                )
               ) : (
                 <FleurDeLisIcon className="w-6 h-6 text-purple-500 dark:text-purple-400" />
               )}
