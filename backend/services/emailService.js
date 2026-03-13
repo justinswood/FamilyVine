@@ -100,8 +100,8 @@ function emailWrapper(title, bodyContent) {
             <td align="center" style="padding:36px 40px 20px 40px;border-bottom:1px solid #E8E4DB">
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="font-family:${FONT_HEADER};font-size:28px;font-weight:700;color:${VINE_GREEN};letter-spacing:0.5px">
-                    FamilyVine
+                  <td align="center">
+                    <img src="${FRONTEND_URL}/logo.png" alt="FamilyVine" width="180" style="display:block;max-width:180px;height:auto" />
                   </td>
                 </tr>
                 <tr>
@@ -349,9 +349,6 @@ async function sendBirthdayReminder(recipient, birthdays) {
 
   const birthdayCards = birthdays.map(m => {
     const name = `${m.first_name} ${m.last_name}`;
-    const kinshipLine = m.kinship
-      ? `<p style="margin:0 0 4px 0;font-family:${FONT_BODY};font-size:12px;color:${SAGE};font-weight:600;text-transform:uppercase;letter-spacing:1px">${m.kinship}</p>`
-      : '';
     const ageLine = m.turning_age
       ? `<span style="color:${GOLD_LEAF};font-weight:700">Turning ${m.turning_age}</span>`
       : '';
@@ -361,23 +358,36 @@ async function sendBirthdayReminder(recipient, birthdays) {
         ? 'Tomorrow'
         : `in ${m.days_until} days`;
 
+    // Circular member photo (matches family tree style)
+    const photoUrl = m.photo_url ? `${FRONTEND_URL}/${m.photo_url}` : null;
+    const photoHtml = photoUrl
+      ? `<img src="${photoUrl}" alt="${name}" width="48" height="48" style="width:48px;height:48px;border-radius:50%;object-fit:cover;display:block;border:2px solid ${GOLD_LEAF}" />`
+      : `<div style="width:48px;height:48px;border-radius:50%;background-color:${PARCHMENT};border:2px solid ${SAGE};display:flex;align-items:center;justify-content:center">
+          <span style="font-family:${FONT_HEADER};font-size:18px;color:${VINE_GREEN};font-weight:700;line-height:48px;text-align:center;display:block;width:48px">${m.first_name.charAt(0)}</span>
+        </div>`;
+
     return vellumCard(`
-      ${kinshipLine}
-      <p style="margin:0;font-family:${FONT_HEADER};font-size:18px;color:${VINE_DARK};font-weight:600">
-        ${name}
-      </p>
-      <p style="margin:6px 0 0 0;font-family:${FONT_BODY};font-size:14px;color:${MUTED_TEXT}">
-        ${m.birth_date} &mdash; ${daysText}${ageLine ? ` &middot; ${ageLine}` : ''}
-      </p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="width:60px;vertical-align:top;padding-right:14px">
+            ${photoHtml}
+          </td>
+          <td style="vertical-align:top">
+            <p style="margin:0;font-family:${FONT_HEADER};font-size:18px;color:${VINE_DARK};font-weight:600">
+              ${name}
+            </p>
+            <p style="margin:6px 0 0 0;font-family:${FONT_BODY};font-size:14px;color:${MUTED_TEXT}">
+              ${m.birth_date} &mdash; ${daysText}${ageLine ? ` &middot; ${ageLine}` : ''}
+            </p>
+          </td>
+        </tr>
+      </table>
     `);
   }).join('');
 
   const bodyContent = `
     <p style="font-family:${FONT_BODY};font-size:15px;color:${BODY_TEXT};line-height:1.7;margin:16px 0">
-      Hello <strong style="color:${VINE_DARK}">${recipient.username}</strong>,
-    </p>
-    <p style="font-family:${FONT_BODY};font-size:15px;color:${BODY_TEXT};line-height:1.7;margin:16px 0">
-      You have <strong style="color:${VINE_DARK}">${count}</strong> upcoming birthday${plural ? 's' : ''} in the next 7 days:
+      Your family has <strong style="color:${VINE_DARK}">${count}</strong> upcoming birthday${plural ? 's' : ''} in the next 7 days:
     </p>
 
     ${birthdayCards}
@@ -391,14 +401,14 @@ async function sendBirthdayReminder(recipient, birthdays) {
     </p>`;
 
   const birthdayLines = birthdays.map(m =>
-    `${m.kinship ? m.kinship + ', ' : ''}${m.first_name} ${m.last_name} — ${m.birth_date} (in ${m.days_until} day${m.days_until !== 1 ? 's' : ''})${m.turning_age ? `, turning ${m.turning_age}` : ''}`
+    `${m.first_name} ${m.last_name} — ${m.birth_date} (in ${m.days_until} day${m.days_until !== 1 ? 's' : ''})${m.turning_age ? `, turning ${m.turning_age}` : ''}`
   );
 
   const mailOptions = {
     from: { name: 'FamilyVine', address: EMAIL_FROM },
     to: recipient.email,
     subject: `Upcoming Birthday${plural ? 's' : ''} in Your Family Tree`,
-    text: `Hello ${recipient.username},\n\nYou have ${count} upcoming birthday${plural ? 's' : ''} in the next 7 days:\n\n${birthdayLines.join('\n')}\n\nView calendar: ${FRONTEND_URL}/calendar\n\n— FamilyVine`,
+    text: `Your family has ${count} upcoming birthday${plural ? 's' : ''} in the next 7 days:\n\n${birthdayLines.join('\n')}\n\nView calendar: ${FRONTEND_URL}/calendar\n\n— FamilyVine`,
     html: emailWrapper('Upcoming Birthdays', bodyContent),
   };
 

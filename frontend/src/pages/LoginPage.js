@@ -124,8 +124,10 @@ const LoginPage = () => {
       <div className="login-vignette" />
 
       {/* Corner Vine Flourishes */}
-      <VineFlourish className="vine-flourish vine-top-left" />
-      <VineFlourish className="vine-flourish vine-bottom-right" />
+      <img src="/homepage-vines.png" alt="" className="login-vine-corner login-vine-tl" aria-hidden="true" />
+      <img src="/homepage-vines.png" alt="" className="login-vine-corner login-vine-tr" aria-hidden="true" />
+      <img src="/homepage-vines.png" alt="" className="login-vine-corner login-vine-bl" aria-hidden="true" />
+      <img src="/homepage-vines.png" alt="" className="login-vine-corner login-vine-br" aria-hidden="true" />
 
       {/* Main content container */}
       <div className="login-content">

@@ -59,9 +59,9 @@ const RecipesPage = () => {
 
         {/* Recipe Header — Gilded Vellum */}
         <div className="recipe-header mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-            <div>
-              <h1 className="recipe-header-title">Heirloom Kitchen</h1>
+          <div className="flex flex-row justify-between items-center gap-2">
+            <div className="min-w-0">
+              <h1 className="recipe-header-title truncate">Heirloom Kitchen</h1>
               <p className="mt-0.5 tracking-widest uppercase" style={{ fontFamily: 'var(--font-body)', color: 'var(--vine-sage)', fontSize: '0.65rem' }}>
                 Preserving our culinary traditions
               </p>
@@ -69,7 +69,7 @@ const RecipesPage = () => {
 
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-0.5 sm:py-1.5 rounded-full font-medium transition-all shrink-0"
               style={{
                 fontFamily: 'var(--font-body)',
                 color: '#fffdf9',
@@ -79,11 +79,11 @@ const RecipesPage = () => {
               onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 4px 14px rgba(45, 79, 30, 0.35)'; e.currentTarget.style.transform = 'scale(1.03)'; }}
               onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(45, 79, 30, 0.25)'; e.currentTarget.style.transform = 'scale(1)'; }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg className="w-2 h-2 sm:w-3 sm:h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              Add Recipe
+              <span className="text-[8px] sm:text-xs">Add Recipe</span>
             </button>
           </div>
         </div>

@@ -35,7 +35,10 @@ CREATE TABLE IF NOT EXISTS members (
     pronouns VARCHAR(50),
     email VARCHAR(255),
     phone VARCHAR(50),
-    photo_url VARCHAR(500)
+    photo_url VARCHAR(500),
+    facebook_url VARCHAR(500),
+    instagram_url VARCHAR(500),
+    linkedin_url VARCHAR(500)
 );
 
 -- Albums table

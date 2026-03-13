@@ -70,8 +70,8 @@ const TreeNode = memo(({
           userSelect: 'none',
         }}
         onClick={() => onClick?.(node)}
-        onMouseEnter={() => onHover?.(node)}
-        onMouseLeave={() => onHover?.(null)}
+        onPointerEnter={(e) => { if (e.pointerType === 'mouse') onHover?.(node); }}
+        onPointerLeave={(e) => { if (e.pointerType === 'mouse') onHover?.(null); }}
       >
         {/* Profile photo */}
         <div

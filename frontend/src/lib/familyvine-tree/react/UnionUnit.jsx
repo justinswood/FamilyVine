@@ -137,15 +137,17 @@ const UnionUnit = memo(({
               e.stopPropagation();
               onJunctionClick?.({ unionId });
             }}
-            onMouseEnter={(e) => {
-              if (unionId) {
+            onPointerEnter={(e) => {
+              if (e.pointerType === 'mouse' && unionId) {
                 e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.2)';
                 e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
               }
             }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)';
-              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.15)';
+            onPointerLeave={(e) => {
+              if (e.pointerType === 'mouse') {
+                e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)';
+                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.15)';
+              }
             }}
           >
             <span style={{
@@ -216,8 +218,8 @@ const PartnerCard = memo(({
         flexShrink: 0,
       }}
       onClick={() => onClick?.(node)}
-      onMouseEnter={() => onHover?.(node)}
-      onMouseLeave={() => onHover?.(null)}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') onHover?.(node); }}
+      onPointerLeave={(e) => { if (e.pointerType === 'mouse') onHover?.(null); }}
     >
       {/* Profile photo */}
       <div

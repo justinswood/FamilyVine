@@ -15,7 +15,7 @@ function startBirthdayReminderJob() {
       // Members with birthdays in the next 7 days (include age calculation)
       const upcomingBirthdays = await pool.query(`
         SELECT
-          id, first_name, last_name,
+          id, first_name, last_name, photo_url,
           TO_CHAR(birth_date, 'Mon DD') AS birth_date_display,
           EXTRACT(YEAR FROM AGE(
             DATE(
@@ -67,38 +67,16 @@ function startBirthdayReminderJob() {
         return;
       }
 
-      // Batch-fetch relationships for all birthday members to find kinship per-recipient
-      const memberIds = upcomingBirthdays.rows.map(m => m.id);
-      const relationships = await pool.query(`
-        SELECT member1_id, member2_id, relationship_type
-        FROM relationships
-        WHERE member2_id = ANY($1)
-      `, [memberIds]);
-
-      // Build lookup: member_id -> [{from_member_id, type}]
-      const relMap = {};
-      for (const r of relationships.rows) {
-        if (!relMap[r.member2_id]) relMap[r.member2_id] = [];
-        relMap[r.member2_id].push({ from: r.member1_id, type: r.relationship_type });
-      }
+      // Format birthdays for email
+      const formatted = upcomingBirthdays.rows.map(m => ({
+        ...m,
+        birth_date: m.birth_date_display,
+      }));
 
       for (const recipient of subscribedUsers.rows) {
-        // Enrich birthdays with relationship context for this recipient
-        const enriched = upcomingBirthdays.rows.map(m => {
-          const rels = relMap[m.id] || [];
-          // Find direct relationship from any family member (best-effort kinship label)
-          const directRel = rels.find(r => r.from === recipient.default_root_member_id);
-          const kinship = directRel ? formatKinship(directRel.type) : null;
-          return {
-            ...m,
-            birth_date: m.birth_date_display,
-            kinship,
-          };
-        });
-
         await sendBirthdayReminder(
           { email: recipient.email, username: recipient.username },
-          enriched
+          formatted
         );
       }
 
@@ -112,16 +90,6 @@ function startBirthdayReminderJob() {
   });
 
   logger.info('Birthday reminder job scheduled (daily at 9:00 AM)');
-}
-
-/**
- * Format a relationship type into a readable kinship label
- * e.g. "grandmother" -> "Your Grandmother"
- */
-function formatKinship(type) {
-  if (!type) return null;
-  const label = type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, ' ');
-  return `Your ${label}`;
 }
 
 module.exports = { startBirthdayReminderJob };

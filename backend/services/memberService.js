@@ -330,6 +330,7 @@ async function createMember(memberData, photoUrl) {
     gender, is_alive, birth_date, death_date,
     birth_place, death_place, location,
     occupation, pronouns, email, phone,
+    facebook_url, instagram_url, linkedin_url,
     is_married, marriage_date, spouse_id
   } = memberData;
 
@@ -339,12 +340,13 @@ async function createMember(memberData, photoUrl) {
     await client.query('BEGIN');
 
     const result = await client.query(
-      'INSERT INTO members (first_name, middle_name, last_name, nickname, suffix, relationship, gender, is_alive, birth_date, death_date, birth_place, death_place, location, occupation, pronouns, email, phone, photo_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18) RETURNING *',
+      'INSERT INTO members (first_name, middle_name, last_name, nickname, suffix, relationship, gender, is_alive, birth_date, death_date, birth_place, death_place, location, occupation, pronouns, email, phone, photo_url, facebook_url, instagram_url, linkedin_url) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21) RETURNING *',
       [
         first_name, middle_name, last_name, nickname || null, suffix || null, relationship, gender, is_alive === 'true',
         parseDate(birth_date), parseDate(death_date),
         birth_place || null, death_place || null,
-        location || null, occupation || null, pronouns || null, email || null, phone || null, photoUrl
+        location || null, occupation || null, pronouns || null, email || null, phone || null, photoUrl,
+        facebook_url || null, instagram_url || null, linkedin_url || null
       ]
     );
 
@@ -383,6 +385,7 @@ async function updateMember(memberId, memberData, photoUrl) {
     gender, is_alive, birth_date, death_date,
     birth_place, death_place, location,
     occupation, pronouns, email, phone,
+    facebook_url, instagram_url, linkedin_url,
     is_married, marriage_date, spouse_id
   } = memberData;
 
@@ -395,7 +398,7 @@ async function updateMember(memberId, memberData, photoUrl) {
     await client.query('BEGIN');
 
     const result = await client.query(
-      'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, nickname = $4, suffix = $5, relationship = $6, gender = $7, is_alive = $8, birth_date = $9, death_date = $10, birth_place = $11, death_place = $12, location = $13, occupation = $14, pronouns = $15, email = $16, phone = $17, photo_url = $18 WHERE id = $19 RETURNING *',
+      'UPDATE members SET first_name = $1, middle_name = $2, last_name = $3, nickname = $4, suffix = $5, relationship = $6, gender = $7, is_alive = $8, birth_date = $9, death_date = $10, birth_place = $11, death_place = $12, location = $13, occupation = $14, pronouns = $15, email = $16, phone = $17, photo_url = $18, facebook_url = $19, instagram_url = $20, linkedin_url = $21 WHERE id = $22 RETURNING *',
       [
         first_name, middle_name, last_name, nickname || null, suffix || null,
         relationship, gender, is_alive === 'true',
@@ -403,6 +406,7 @@ async function updateMember(memberId, memberData, photoUrl) {
         birth_place || null, death_place || null,
         location || null, occupation || null, pronouns || null,
         email || null, phone || null, photoUrl,
+        facebook_url || null, instagram_url || null, linkedin_url || null,
         memberId
       ]
     );

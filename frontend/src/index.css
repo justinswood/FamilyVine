@@ -859,8 +859,38 @@ nav {
   box-shadow: 0 0 0 2px rgba(74, 124, 63, 0.6);
 }
 
-.almanac-avatar-pip.pip-anniversary {
-  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.6);
+/* Anniversary duo pip — side-by-side pair of avatars */
+.almanac-anniversary-duo {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: transform 200ms ease;
+  line-height: 0;
+}
+
+.almanac-anniversary-duo:hover {
+  transform: scale(1.3);
+  z-index: 10;
+}
+
+.duo-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--mardi-gras, #800080);
+  line-height: 0;
+}
+
+.duo-avatar img {
+  display: block;
+  border: none !important;
 }
 
 .almanac-avatar-pip.pip-deceased {
@@ -1089,51 +1119,48 @@ nav {
   z-index: 0;
 }
 
-/* Corner Vine Flourishes */
-.vine-flourish {
+/* Corner Vine Flourishes (login page) */
+.login-vine-corner {
   position: absolute;
-  width: 18%;
-  max-width: 280px;
-  min-width: 120px;
-  opacity: 0;
-  animation: flourishFadeIn 2s ease-out forwards;
+  width: 200px;
+  height: auto;
   pointer-events: none;
   z-index: 1;
+  opacity: 0;
+  animation: loginVineFadeIn 2s ease-out forwards;
 }
 
-.vine-top-left {
-  top: -15px;
-  left: -15px;
+.login-vine-tl {
+  top: 0;
+  left: 0;
+  transform: scaleX(-1);
 }
 
-.vine-bottom-right {
-  bottom: -15px;
-  right: -15px;
-  transform: rotate(180deg);
+.login-vine-tr {
+  top: 0;
+  right: 0;
 }
 
-@keyframes flourishFadeIn {
+.login-vine-bl {
+  bottom: 0;
+  left: 0;
+  transform: scaleX(-1) scaleY(-1);
+}
+
+.login-vine-br {
+  bottom: 0;
+  right: 0;
+  transform: scaleY(-1);
+}
+
+@keyframes loginVineFadeIn {
   0% {
     opacity: 0;
-    transform: scale(0.9);
+    scale: 0.9;
   }
   100% {
-    opacity: 0.35;
-  }
-}
-
-.vine-bottom-right {
-  animation: flourishFadeInRotated 2s ease-out forwards;
-}
-
-@keyframes flourishFadeInRotated {
-  0% {
-    opacity: 0;
-    transform: rotate(180deg) scale(0.9);
-  }
-  100% {
-    opacity: 0.35;
-    transform: rotate(180deg) scale(1);
+    opacity: 0.4;
+    scale: 1;
   }
 }
 
@@ -1386,10 +1413,8 @@ nav {
 
 /* Mobile adjustments */
 @media (max-width: 768px) {
-  .vine-flourish {
-    width: 12%;
-    min-width: 80px;
-    max-width: 150px;
+  .login-vine-corner {
+    width: 130px;
   }
 
   .login-wisdom-quote {
@@ -1420,7 +1445,7 @@ nav {
   }
 
   /* Hide flourishes on small mobile to prevent overlap */
-  .vine-flourish {
+  .login-vine-corner {
     display: none;
   }
 
@@ -1445,10 +1470,9 @@ nav {
   );
 }
 
-.dark .vine-flourish path,
-.dark .vine-flourish ellipse {
-  stroke: rgba(134, 167, 137, 0.5);
-  fill: rgba(134, 167, 137, 0.3);
+.dark .login-vine-corner {
+  opacity: 0.2;
+  filter: brightness(0.7);
 }
 
 .dark .login-wisdom-quote {
@@ -4833,31 +4857,202 @@ nav {
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
-/* 3. Organic Section Divider — vine pattern with fleur-de-lis */
-.vine-divider {
-  width: 100%;
-  max-width: 900px;
-  margin: 1rem auto;
-  padding: 0 1rem;
-  opacity: 0;
-  animation: dividerFadeIn 1s ease-out forwards;
+/* 3. Heritage Corner — Recent activity section */
+.heritage-corner-section {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 3rem;
+  position: relative;
+  z-index: 10;
 }
 
-.vine-divider svg {
-  width: 100%;
-  height: 40px;
-  color: var(--vine-sage, #86A789);
+.heritage-corner-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 1.5rem;
 }
 
-.vine-divider-logo {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
+.heritage-corner-title {
+  font-family: var(--font-header);
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--vine-dark);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
 }
 
-@keyframes dividerFadeIn {
-  0% { opacity: 0; }
-  100% { opacity: 0.6; }
+.heritage-corner-rule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--gold-accent), transparent);
+  opacity: 0.4;
+}
+
+.heritage-corner-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .heritage-corner-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.heritage-card {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 14px;
+  padding: 1.25rem;
+  text-align: center;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.heritage-card:hover {
+  box-shadow: 0 4px 20px rgba(212, 175, 55, 0.12);
+  transform: translateY(-2px);
+}
+
+.heritage-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(74, 124, 63, 0.1);
+  color: var(--vine-green);
+  margin-bottom: 0.5rem;
+}
+
+.heritage-card-icon-story {
+  background: rgba(128, 0, 128, 0.08);
+  color: var(--mardi-gras);
+}
+
+.heritage-card-icon-members {
+  background: rgba(212, 175, 55, 0.1);
+  color: var(--gold-accent);
+}
+
+.heritage-card-label {
+  font-family: var(--font-body);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vine-sage);
+  margin-bottom: 0.75rem;
+}
+
+.heritage-card-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.heritage-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heritage-card-title {
+  font-family: var(--font-header);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--vine-dark);
+  margin-bottom: 0.35rem;
+  line-height: 1.3;
+}
+
+.heritage-card-excerpt {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.heritage-card-meta {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--vine-sage);
+  margin-bottom: 0.5rem;
+}
+
+.heritage-card-avatars {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 0.75rem;
+}
+
+.heritage-card-members {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.heritage-member-pip {
+  display: inline-block;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px rgba(74, 124, 63, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.heritage-member-pip:hover {
+  transform: scale(1.15);
+}
+
+.heritage-card-names {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.heritage-member-name {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  color: var(--vine-sage);
+}
+
+.heritage-member-name:not(:last-child)::after {
+  content: ' ·';
+  color: var(--vine-sage);
+  opacity: 0.5;
+}
+
+.heritage-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--vine-green);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.heritage-card-link:hover {
+  color: var(--vine-dark);
+}
+
+.heritage-card-empty {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--vine-sage);
+  opacity: 0.6;
+  padding: 2rem 0;
 }
 
 /* 4. Marginal Artifact System — desktop only decorative icons */
@@ -4968,8 +5163,34 @@ nav {
   opacity: 0.03;
 }
 
-.dark .vine-divider svg {
-  color: var(--vine-sage, #86A789);
+/* Dark mode — Heritage Corner */
+.dark .heritage-corner-title {
+  color: #e5e7eb;
+}
+
+.dark .heritage-card {
+  background: rgba(30, 40, 50, 0.6);
+  border-color: rgba(212, 175, 55, 0.1);
+}
+
+.dark .heritage-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark .heritage-card-title {
+  color: #e5e7eb;
+}
+
+.dark .heritage-card-excerpt {
+  color: #9ca3af;
+}
+
+.dark .heritage-card-link {
+  color: var(--vine-sage);
+}
+
+.dark .heritage-card-link:hover {
+  color: #e5e7eb;
 }
 
 .dark .marginal-artifact {
@@ -5009,6 +5230,39 @@ nav {
   border-radius: 20px;
   overflow: hidden;
   box-shadow: inset 0 0 50px rgba(212, 175, 55, 0.1);
+}
+
+/* Corner vine flourish images */
+.vine-corner {
+  position: absolute;
+  width: 160px;
+  height: auto;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.5;
+}
+
+.vine-corner-tl {
+  top: -5px;
+  left: -5px;
+  transform: scaleX(-1);
+}
+
+.vine-corner-tr {
+  top: -5px;
+  right: -5px;
+}
+
+.vine-corner-bl {
+  bottom: -5px;
+  left: -5px;
+  transform: scaleX(-1) scaleY(-1);
+}
+
+.vine-corner-br {
+  bottom: -5px;
+  right: -5px;
+  transform: scaleY(-1);
 }
 
 /* Vine Garland Border Overlays — four edges */
@@ -8971,4 +9225,160 @@ a.btn,
 .dark .chronology-reset-btn:hover {
   background: rgba(134, 167, 137, 0.15);
   color: #A8C5A0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   Photo Lightbox — iOS-compatible fullscreen viewer
+   ═══════════════════════════════════════════════════════════════ */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.92);
+  /* iOS safe area insets */
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  /* Prevent text selection on swipe */
+  -webkit-user-select: none;
+  user-select: none;
+  /* Prevent iOS overscroll bounce */
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  outline: none;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: max(16px, env(safe-area-inset-top, 16px));
+  right: max(16px, env(safe-area-inset-right, 16px));
+  z-index: 10;
+  color: rgba(255, 255, 255, 0.8);
+  /* Large touch target for mobile — 44x44 minimum */
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s, color 0.2s;
+}
+
+.lightbox-close:hover {
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.lightbox-image {
+  max-height: 85vh;
+  max-height: 85dvh; /* Dynamic viewport height — iOS Safari address bar aware */
+  max-width: 92vw;
+  object-fit: contain;
+  border-radius: 8px;
+  -webkit-touch-callout: none; /* Prevent iOS long-press save dialog */
+  pointer-events: auto;
+}
+
+/* Nav buttons — visible on all devices, larger touch targets on mobile */
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  color: rgba(255, 255, 255, 0.8);
+  min-width: 48px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  -webkit-tap-highlight-color: transparent;
+  transition: background 0.2s, color 0.2s;
+}
+
+.lightbox-nav:hover {
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.lightbox-nav:active {
+  background: rgba(0, 0, 0, 0.7);
+  transform: translateY(-50%) scale(0.95);
+}
+
+.lightbox-nav-prev {
+  left: max(12px, env(safe-area-inset-left, 12px));
+}
+
+.lightbox-nav-next {
+  right: max(12px, env(safe-area-inset-right, 12px));
+}
+
+.lightbox-caption {
+  position: absolute;
+  bottom: max(24px, env(safe-area-inset-bottom, 24px));
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.lightbox-swipe-hint {
+  display: none;
+}
+
+/* ── Mobile-specific adjustments ──────────────────────────── */
+@media (max-width: 768px) {
+  .lightbox-image {
+    max-width: 98vw;
+    max-height: 80vh;
+    max-height: 80dvh;
+    border-radius: 4px;
+  }
+
+  .lightbox-nav {
+    min-width: 44px;
+    min-height: 44px;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .lightbox-nav-prev {
+    left: 4px;
+  }
+
+  .lightbox-nav-next {
+    right: 4px;
+  }
+
+  .lightbox-swipe-hint {
+    display: block;
+    font-size: 10px;
+    font-family: 'Inter', sans-serif;
+    color: rgba(255, 255, 255, 0.35);
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    /* Fade out after 3s */
+    animation: lightbox-hint-fade 3s ease-out forwards;
+  }
+
+}
+
+@keyframes lightbox-hint-fade {
+  0%, 60% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* Touch-only: active state feedback on photo grid */
+@media (hover: none) and (pointer: coarse) {
+  .photo-grid-item:active {
+    transform: scale(0.97);
+    transition: transform 0.1s;
+  }
 }

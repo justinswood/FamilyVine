@@ -371,21 +371,44 @@ const CalendarPage = () => {
                           {/* Event avatar pips — click to open spotlight */}
                           <div className="flex flex-wrap gap-1">
                             {cell.events.slice(0, 4).map((event, eventIndex) => (
-                              <button
-                                key={eventIndex}
-                                type="button"
-                                className={`almanac-avatar-pip relative rounded-full ${
-                                  event.type === 'birthday' ? 'pip-birthday' : 'pip-anniversary'
-                                }${event.isDeceased ? ' pip-deceased' : ''}`}
-                                title={`${event.description}${event.type === 'birthday' ? (event.isDeceased ? ` - Remembered ${getTurningAge(event)} years` : ` - Turning ${getTurningAge(event)}`) : ` - ${getAnniversaryYears(event)} years`}`}
-                                onClick={() => setSpotlightEvent(event)}
-                              >
-                                <ProfileImage
-                                  member={event.member}
-                                  size="w-7 h-7"
-                                  className="rounded-full"
-                                />
-                              </button>
+                              event.type === 'anniversary' && event.spouse ? (
+                                <button
+                                  key={eventIndex}
+                                  type="button"
+                                  className="almanac-anniversary-duo"
+                                  title={`${event.description} - ${getAnniversaryYears(event)} years`}
+                                  onClick={() => setSpotlightEvent(event)}
+                                >
+                                  <span className="duo-avatar">
+                                    <ProfileImage
+                                      member={event.member}
+                                      size="w-7 h-7"
+                                      className="rounded-full"
+                                    />
+                                  </span>
+                                  <span className="duo-avatar">
+                                    <ProfileImage
+                                      member={event.spouse}
+                                      size="w-7 h-7"
+                                      className="rounded-full"
+                                    />
+                                  </span>
+                                </button>
+                              ) : (
+                                <button
+                                  key={eventIndex}
+                                  type="button"
+                                  className={`almanac-avatar-pip relative rounded-full pip-birthday${event.isDeceased ? ' pip-deceased' : ''}`}
+                                  title={`${event.description}${event.isDeceased ? ` - Remembered ${getTurningAge(event)} years` : ` - Turning ${getTurningAge(event)}`}`}
+                                  onClick={() => setSpotlightEvent(event)}
+                                >
+                                  <ProfileImage
+                                    member={event.member}
+                                    size="w-7 h-7"
+                                    className="rounded-full"
+                                  />
+                                </button>
+                              )
                             ))}
                             {cell.events.length > 4 && (
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-vine-100 dark:bg-gray-700 text-xs font-medium text-vine-600 dark:text-gray-300 border-2 border-vine-200/50 dark:border-gray-600">

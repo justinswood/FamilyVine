@@ -37,7 +37,10 @@ const EditMember = () => {
     death_place: '',
     is_married: 'false',
     marriage_date: '',
-    spouse_id: ''
+    spouse_id: '',
+    facebook_url: '',
+    instagram_url: '',
+    linkedin_url: ''
   });
   const [photoFile, setPhotoFile] = useState(null);
   const [selectedImageFile, setSelectedImageFile] = useState(null);
@@ -89,7 +92,10 @@ const EditMember = () => {
           birth_date: res.data.birth_date ? res.data.birth_date.split('T')[0] : '',
           death_date: res.data.death_date ? res.data.death_date.split('T')[0] : '',
           marriage_date: res.data.marriage_date ? res.data.marriage_date.split('T')[0] : '',
-          spouse_id: res.data.spouse_id || ''
+          spouse_id: res.data.spouse_id || '',
+          facebook_url: res.data.facebook_url || '',
+          instagram_url: res.data.instagram_url || '',
+          linkedin_url: res.data.linkedin_url || ''
         };
         setFormData(memberData);
         if (memberData.photo_url) {
@@ -577,6 +583,46 @@ const EditMember = () => {
                     name="email"
                     value={formData.email || ''}
                     onChange={handleChange}
+                    className="registry-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* ── Social Media ── */}
+            <div style={{ marginBottom: '32px' }}>
+              <h3 className="registry-section-title">Social Media</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-5">
+                <div>
+                  <label className="registry-label">Facebook</label>
+                  <input
+                    type="url"
+                    name="facebook_url"
+                    value={formData.facebook_url}
+                    onChange={handleChange}
+                    placeholder="https://facebook.com/..."
+                    className="registry-input"
+                  />
+                </div>
+                <div>
+                  <label className="registry-label">Instagram</label>
+                  <input
+                    type="url"
+                    name="instagram_url"
+                    value={formData.instagram_url}
+                    onChange={handleChange}
+                    placeholder="https://instagram.com/..."
+                    className="registry-input"
+                  />
+                </div>
+                <div>
+                  <label className="registry-label">LinkedIn</label>
+                  <input
+                    type="url"
+                    name="linkedin_url"
+                    value={formData.linkedin_url}
+                    onChange={handleChange}
+                    placeholder="https://linkedin.com/in/..."
                     className="registry-input"
                   />
                 </div>

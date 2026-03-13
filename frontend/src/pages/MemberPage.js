@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import RelationshipsList from '../components/RelationshipsList';
@@ -94,6 +94,106 @@ const VitalStatTile = ({ icon, label, value, iconColor = '#2E5A2E' }) => {
   );
 };
 
+/* ── SocialTile — VitalStatTile-style card for social links ────────── */
+const SOCIAL_CONFIG = {
+  Facebook: {
+    color: '#1877F2',
+    icon: (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="#1877F2">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+      </svg>
+    ),
+    extract: (url) => {
+      const m = url.match(/facebook\.com\/(?:profile\.php\?id=)?([^/?&#]+)/i);
+      return m ? m[1] : url.replace(/^https?:\/\/(www\.)?/i, '');
+    },
+  },
+  Instagram: {
+    color: '#E4405F',
+    icon: (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="#E4405F">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+      </svg>
+    ),
+    extract: (url) => {
+      const m = url.match(/instagram\.com\/([^/?&#]+)/i);
+      return m ? `@${m[1]}` : url.replace(/^https?:\/\/(www\.)?/i, '');
+    },
+  },
+  LinkedIn: {
+    color: '#0A66C2',
+    icon: (
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="#0A66C2">
+        <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+      </svg>
+    ),
+    extract: (url) => {
+      const m = url.match(/linkedin\.com\/in\/([^/?&#]+)/i);
+      return m ? m[1] : url.replace(/^https?:\/\/(www\.)?/i, '');
+    },
+  },
+};
+
+const SocialTile = ({ platform, url }) => {
+  const config = SOCIAL_CONFIG[platform];
+  if (!config) return null;
+  const displayName = config.extract(url);
+
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="rounded-lg transition-all duration-300 block no-underline"
+      style={{
+        padding: '12px',
+        backgroundColor: '#FFFFFF',
+        border: '1px solid rgba(212, 175, 55, 0.3)',
+        borderLeft: `3px solid ${config.color}`,
+        borderRadius: '6px',
+        boxShadow: '0 3px 10px rgba(139, 115, 85, 0.08)',
+        textDecoration: 'none',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderLeftColor = config.color;
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = `0 6px 16px ${config.color}33`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderLeftColor = config.color;
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 3px 10px rgba(139, 115, 85, 0.08)';
+      }}
+    >
+      <div className="flex items-center gap-1.5 mb-1">
+        <span
+          className="flex items-center justify-center w-5 h-5 rounded-full"
+          style={{ backgroundColor: `${config.color}18` }}
+        >
+          {config.icon}
+        </span>
+        <span
+          className="uppercase font-inter font-bold"
+          style={{ fontSize: '0.65rem', letterSpacing: '1.2px', color: config.color }}
+        >
+          {platform}
+        </span>
+      </div>
+      <p
+        className="font-medium leading-tight truncate"
+        style={{
+          fontFamily: "'Playfair Display', serif",
+          fontSize: '0.9rem',
+          color: '#2E5A2E',
+          marginLeft: '26px',
+        }}
+      >
+        {displayName}
+      </p>
+    </a>
+  );
+};
+
 /* ── MilestoneTag - Horizontal archival tag (for sparse milestones) ── */
 const MilestoneTag = ({ milestone }) => (
   <div
@@ -154,6 +254,145 @@ const LineageNode = ({ name, id, isActive, isLast }) => (
   </div>
 );
 
+/* ── PhotoLightbox — iOS-compatible fullscreen viewer ──────────── */
+const PhotoLightbox = ({ photos, currentIndex, onClose, onNavigate, apiUrl }) => {
+  const touchStart = useRef(null);
+  const touchDelta = useRef(0);
+  const overlayRef = useRef(null);
+  const savedScrollY = useRef(0);
+
+  // Lock body scroll on mount (iOS Safari compatible)
+  useEffect(() => {
+    savedScrollY.current = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${savedScrollY.current}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.overflow = '';
+      window.scrollTo(0, savedScrollY.current);
+    };
+  }, []);
+
+  // Focus for keyboard support
+  useEffect(() => {
+    overlayRef.current?.focus();
+  }, [currentIndex]);
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') onClose();
+    if (e.key === 'ArrowRight' && currentIndex < photos.length - 1) onNavigate(currentIndex + 1);
+    if (e.key === 'ArrowLeft' && currentIndex > 0) onNavigate(currentIndex - 1);
+  }, [currentIndex, photos.length, onClose, onNavigate]);
+
+  // Touch handlers for swipe navigation
+  const handleTouchStart = useCallback((e) => {
+    touchStart.current = e.touches[0].clientX;
+    touchDelta.current = 0;
+  }, []);
+
+  const handleTouchMove = useCallback((e) => {
+    if (touchStart.current === null) return;
+    touchDelta.current = e.touches[0].clientX - touchStart.current;
+    // Prevent iOS pull-to-refresh / overscroll
+    e.preventDefault();
+  }, []);
+
+  const handleTouchEnd = useCallback(() => {
+    const SWIPE_THRESHOLD = 50;
+    if (touchDelta.current > SWIPE_THRESHOLD && currentIndex > 0) {
+      onNavigate(currentIndex - 1);
+    } else if (touchDelta.current < -SWIPE_THRESHOLD && currentIndex < photos.length - 1) {
+      onNavigate(currentIndex + 1);
+    }
+    touchStart.current = null;
+    touchDelta.current = 0;
+  }, [currentIndex, photos.length, onNavigate]);
+
+  const photo = photos[currentIndex];
+  const rotationStyle = photo.rotation_degrees ? { transform: `rotate(${photo.rotation_degrees}deg)` } : undefined;
+
+  return (
+    <div
+      ref={overlayRef}
+      className="lightbox-overlay"
+      onClick={onClose}
+      onKeyDown={handleKeyDown}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      tabIndex={0}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Photo lightbox"
+    >
+      {/* Close button — large touch target */}
+      <button
+        className="lightbox-close"
+        onClick={onClose}
+        aria-label="Close lightbox"
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+
+      {/* Previous arrow — always visible on mobile */}
+      {currentIndex > 0 && (
+        <button
+          className="lightbox-nav lightbox-nav-prev"
+          onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex - 1); }}
+          aria-label="Previous photo"
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      )}
+
+      {/* Photo */}
+      <img
+        src={`${apiUrl}/${photo.file_path}`}
+        alt={photo.album_title || 'Tagged photo'}
+        className="lightbox-image"
+        style={rotationStyle}
+        onClick={(e) => e.stopPropagation()}
+        draggable={false}
+      />
+
+      {/* Next arrow — always visible on mobile */}
+      {currentIndex < photos.length - 1 && (
+        <button
+          className="lightbox-nav lightbox-nav-next"
+          onClick={(e) => { e.stopPropagation(); onNavigate(currentIndex + 1); }}
+          aria-label="Next photo"
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 18l6-6-6-6" />
+          </svg>
+        </button>
+      )}
+
+      {/* Caption + swipe hint */}
+      <div className="lightbox-caption">
+        {photo.album_title && (
+          <p className="text-white/90 text-sm font-inter">{photo.album_title}</p>
+        )}
+        <p className="text-white/50 text-xs font-inter mt-1">{currentIndex + 1} / {photos.length}</p>
+        {photos.length > 1 && (
+          <p className="lightbox-swipe-hint">Swipe to navigate</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
 /* ════════════════════════════════════════════════════════════════
    MemberPage - Dynamic Personal Archive
    ════════════════════════════════════════════════════════════════ */
@@ -166,6 +405,7 @@ const MemberPage = () => {
   const [showAddRelationship, setShowAddRelationship] = useState(false);
   const [spouseInfo, setSpouseInfo] = useState(null);
   const [activeTab, setActiveTab] = useState('details');
+  const [lightboxIndex, setLightboxIndex] = useState(null);
   const [relationships, setRelationships] = useState([]);
   const [lineage, setLineage] = useState([]);
 
@@ -484,10 +724,12 @@ const MemberPage = () => {
   const age = calculateAge(member.birth_date, member.death_date);
   const isMinor = () => age !== null && age < 18;
 
+  const hasSocials = member.facebook_url || member.instagram_url || member.linkedin_url;
   const tabs = [
     { key: 'details', label: 'Details' },
     { key: 'family', label: 'Family' },
     { key: 'photos', label: 'Photos' },
+    ...(hasSocials ? [{ key: 'socials', label: 'Socials' }] : []),
   ];
 
   return (
@@ -716,8 +958,12 @@ const MemberPage = () => {
                         </button>
                       </div>
                       <div className="grid grid-cols-3 gap-3">
-                        {taggedPhotos.slice(0, 6).map((photo) => (
-                          <div key={photo.id} className="aspect-square rounded-xl overflow-hidden border border-vine-sage/15 bg-white/60">
+                        {taggedPhotos.slice(0, 6).map((photo, index) => (
+                          <div
+                            key={photo.id}
+                            className="aspect-square rounded-xl overflow-hidden border border-vine-sage/15 bg-white/60 cursor-pointer"
+                            onClick={() => setLightboxIndex(index)}
+                          >
                             <img
                               src={`${apiUrl}/${photo.file_path}`}
                               alt="Memory"
@@ -899,9 +1145,12 @@ const MemberPage = () => {
 
             {taggedPhotos.length > 0 ? (
               <div className="columns-2 md:columns-3 lg:columns-4 gap-4">
-                {taggedPhotos.map((photo) => (
+                {taggedPhotos.map((photo, index) => (
                   <div key={photo.id} className="break-inside-avoid mb-4 group relative">
-                    <div className="rounded-xl overflow-hidden border border-vine-sage/15 bg-white/60 hover:shadow-lg transition-all hover:-translate-y-1">
+                    <div
+                      className="photo-grid-item rounded-xl overflow-hidden border border-vine-sage/15 bg-white/60 hover:shadow-lg transition-all hover:-translate-y-1 cursor-pointer"
+                      onClick={() => setLightboxIndex(index)}
+                    >
                       <img
                         src={`${apiUrl}/${photo.file_path}`}
                         alt="Tagged photo"
@@ -910,10 +1159,11 @@ const MemberPage = () => {
                         style={photo.rotation_degrees ? { transform: `rotate(${photo.rotation_degrees}deg)` } : undefined}
                         onError={(e) => { e.target.style.display = 'none'; }}
                       />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-xl transition-all flex items-center justify-center">
+                      {/* Set as Profile — desktop hover only */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-xl transition-all flex items-center justify-center pointer-events-none">
                         <button
-                          onClick={() => setAsProfilePhoto(photo.id)}
-                          className="opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-white text-vine-dark rounded-full text-xs font-inter font-medium hover:bg-vine-leaf hover:text-white transition-all shadow-md"
+                          onClick={(e) => { e.stopPropagation(); setAsProfilePhoto(photo.id); }}
+                          className="pointer-events-auto opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-white text-vine-dark rounded-full text-xs font-inter font-medium hover:bg-vine-leaf hover:text-white transition-all shadow-md hidden md:block"
                         >
                           Set as Profile
                         </button>
@@ -938,6 +1188,26 @@ const MemberPage = () => {
           </div>
         )}
 
+        {/* ═══════════════════════════════════════════════════════
+            Socials Tab
+            ═══════════════════════════════════════════════════════ */}
+        {activeTab === 'socials' && hasSocials && (
+          <div
+            style={{
+              backgroundColor: 'rgba(46, 90, 46, 0.03)',
+              borderRadius: '10px',
+              padding: '16px',
+            }}
+          >
+            <h2 className="font-serif text-sm text-vine-dark font-semibold mb-2">Social Media</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {member.facebook_url && <SocialTile platform="Facebook" url={member.facebook_url} />}
+              {member.instagram_url && <SocialTile platform="Instagram" url={member.instagram_url} />}
+              {member.linkedin_url && <SocialTile platform="LinkedIn" url={member.linkedin_url} />}
+            </div>
+          </div>
+        )}
+
       </div>
 
       {/* Add Relationship Modal */}
@@ -946,6 +1216,17 @@ const MemberPage = () => {
           member={member}
           onRelationshipAdded={handleRelationshipAdded}
           onClose={() => setShowAddRelationship(false)}
+        />
+      )}
+
+      {/* Photo Lightbox — iOS-compatible with swipe + scroll lock */}
+      {lightboxIndex !== null && taggedPhotos[lightboxIndex] && (
+        <PhotoLightbox
+          photos={taggedPhotos}
+          currentIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onNavigate={setLightboxIndex}
+          apiUrl={apiUrl}
         />
       )}
     </div>
