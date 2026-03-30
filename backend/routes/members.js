@@ -132,8 +132,8 @@ router.get('/:id', validateId('id'), async (req, res) => {
 
 router.post('/', upload.single('photo'), async (req, res) => {
   try {
-    // Process uploaded photo if present
-    let photo_url = null;
+    // Process uploaded photo if present, or use gallery photo path
+    let photo_url = req.body.photo_url || null;
     if (req.file) {
       const finalPath = path.join('uploads/', `profile_${Date.now()}`);
       const processResult = await processImage(req.file, finalPath);

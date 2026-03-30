@@ -74,7 +74,7 @@ const Navigation = () => {
   `;
 
   // Common dropdown item classes
-  const dropdownItemClasses = "flex items-center gap-2 px-3 py-2 text-xs text-vine-600 dark:text-secondary-300 hover:bg-vine-50 dark:hover:bg-vine-900/20 hover:text-vine-dark dark:hover:text-vine-400 transition-colors";
+  const dropdownItemClasses = "flex items-center gap-2 mx-1.5 px-2 py-2 text-xs text-vine-600 dark:text-secondary-300 hover:bg-vine-50 dark:hover:bg-vine-900/20 hover:text-vine-dark dark:hover:text-vine-400 transition-colors rounded-lg";
 
   return (
     <nav className="bg-vine-50/90 dark:bg-secondary-800 backdrop-blur-lg sticky top-0 z-50" aria-label="Main navigation">
@@ -185,7 +185,7 @@ const Navigation = () => {
 
                 {/* Dropdown Menu */}
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-1.5 w-48 card py-1.5 z-50 animate-scale-in">
+                  <div className="absolute right-0 mt-1.5 w-48 card py-1.5 z-50 animate-scale-in overflow-hidden">
                     <div className="px-3 py-2 border-b border-vine-200 dark:border-secondary-700">
                       <p className="text-xs font-semibold text-vine-dark dark:text-white font-heading">{user.username}</p>
                       <p className="text-[0.65rem] text-vine-sage dark:text-secondary-400 mt-0.5">{user.email}</p>
@@ -195,7 +195,7 @@ const Navigation = () => {
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-vine-600 dark:text-secondary-300 hover:bg-error-50 dark:hover:bg-error-900/20 hover:text-error-600 dark:hover:text-error-400 transition-colors"
+                      className="w-full flex items-center gap-2 mx-1.5 px-2 py-2 text-xs text-vine-600 dark:text-secondary-300 hover:bg-error-50 dark:hover:bg-error-900/20 hover:text-error-600 dark:hover:text-error-400 transition-colors rounded-lg"
                     >
                       <LogOut className="w-3.5 h-3.5" />
                       Sign out
@@ -256,7 +256,7 @@ const Navigation = () => {
           ref={membersMenuRef}
           role="menu"
           aria-label="Members menu"
-          className="fixed w-44 card py-1.5 animate-scale-in"
+          className="fixed w-44 card py-1.5 animate-scale-in overflow-hidden"
           style={{
             top: `${membersButtonRect.bottom + 6}px`,
             left: `${Math.max(8, Math.min(window.innerWidth - 184, membersButtonRect.left + (membersButtonRect.width / 2) - 88))}px`,
@@ -291,7 +291,7 @@ const Navigation = () => {
           ref={memoriesMenuRef}
           role="menu"
           aria-label="Memories menu"
-          className="fixed w-44 card py-1.5 animate-scale-in"
+          className="fixed w-44 card py-1.5 animate-scale-in overflow-hidden"
           style={{
             top: `${memoriesButtonRect.bottom + 6}px`,
             left: `${Math.max(8, Math.min(window.innerWidth - 184, memoriesButtonRect.left + (memoriesButtonRect.width / 2) - 88))}px`,

@@ -5232,37 +5232,25 @@ nav {
   box-shadow: inset 0 0 50px rgba(212, 175, 55, 0.1);
 }
 
-/* Corner vine flourish images */
+/* Heritage Corner SVG vine flourishes */
 .vine-corner {
   position: absolute;
-  width: 160px;
-  height: auto;
+  width: 250px;
+  height: 250px;
   pointer-events: none;
   z-index: 10;
-  opacity: 0.5;
-}
-
-.vine-corner-tl {
-  top: -5px;
-  left: -5px;
-  transform: scaleX(-1);
-}
-
-.vine-corner-tr {
-  top: -5px;
-  right: -5px;
+  opacity: 0.8;
 }
 
 .vine-corner-bl {
-  bottom: -5px;
-  left: -5px;
-  transform: scaleX(-1) scaleY(-1);
+  bottom: -20px;
+  left: -20px;
 }
 
-.vine-corner-br {
-  bottom: -5px;
-  right: -5px;
-  transform: scaleY(-1);
+.vine-corner-tr {
+  top: -20px;
+  right: -20px;
+  transform: rotate(180deg);
 }
 
 /* Vine Garland Border Overlays — four edges */
@@ -5327,10 +5315,37 @@ nav {
   height: 100%;
 }
 
-/* Amethyst accent for location & date context items */
-.storybook-context-amethyst svg {
+/* Amethyst "Pulse" Description Tag */
+.hero-description-tag {
+  background: rgba(128, 0, 128, 0.05);
+  border-left: 3px solid var(--amethyst-purple, #7B2D8E);
+  color: var(--vine-green, #2E5A2E);
+  padding: 10px 20px;
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  border-radius: 0 8px 8px 0;
+}
+
+.hero-tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hero-tag-item svg {
   color: var(--amethyst-purple, #7B2D8E);
-  opacity: 1;
+  flex-shrink: 0;
+}
+
+.hero-tag-separator {
+  color: var(--vine-sage, #86A789);
+  opacity: 0.5;
+  margin: 0 2px;
 }
 
 /* Responsive: scale vines down on mobile */
@@ -5338,17 +5353,21 @@ nav {
   .hero-storybook-container {
     padding: 16px;
   }
-  .vine-border-top,
-  .vine-border-bottom {
-    height: 24px;
-    left: 8px;
-    right: 8px;
+  .vine-corner {
+    width: 100px;
+    height: 100px;
   }
-  .vine-border-left,
-  .vine-border-right {
-    width: 24px;
-    top: 8px;
-    bottom: 8px;
+  .vine-corner-bl {
+    bottom: -10px;
+    left: -10px;
+  }
+  .vine-corner-tr {
+    top: -10px;
+    right: -10px;
+  }
+  .hero-description-tag {
+    padding: 8px 14px;
+    font-size: 0.75rem;
   }
 }
 
@@ -5784,12 +5803,22 @@ nav {
   box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.2);
 }
 
-.dark .hero-vine-border {
+.dark .vine-corner {
   opacity: 0.4;
 }
 
-.dark .storybook-context-amethyst svg {
+.dark .hero-description-tag {
+  background: rgba(128, 0, 128, 0.08);
+  border-left-color: #b366cc;
+  color: #d1d5db;
+}
+
+.dark .hero-tag-item svg {
   color: #b366cc;
+}
+
+.dark .hero-tag-separator {
+  color: rgba(134, 167, 137, 0.4);
 }
 
 /* Dark mode — Storybook Hero */

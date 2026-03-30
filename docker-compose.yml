@@ -9,6 +9,8 @@ services:
     environment:
       - REACT_APP_API=
       - NODE_ENV=production
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     depends_on:
       backend:
         condition: service_healthy
@@ -50,6 +52,8 @@ services:
     build: ./backend
     ports:
       - "5050:5000"  # Changed from 5000 to 5050 (Kavita conflict)
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     env_file:
       - .env
     environment:

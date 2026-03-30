@@ -39,7 +39,6 @@ const HeritageWatermark = () => (
 );
 
 
-/* Vine garland SVG components removed — replaced by Homepage_vines.png corner flourishes */
 
 /* ── Marginal Artifact Icons (desktop only) ── */
 const MarginalArtifacts = () => (
@@ -222,11 +221,6 @@ const HomePage = () => {
 
         {/* Hero — Gilded Storybook with Vine Flourish Frame */}
         <section className="hero-storybook-container">
-          {/* Corner vine flourishes */}
-          <img src="/homepage-vines.png" alt="" className="vine-corner vine-corner-tl" aria-hidden="true" />
-          <img src="/homepage-vines.png" alt="" className="vine-corner vine-corner-tr" aria-hidden="true" />
-          <img src="/homepage-vines.png" alt="" className="vine-corner vine-corner-bl" aria-hidden="true" />
-          <img src="/homepage-vines.png" alt="" className="vine-corner vine-corner-br" aria-hidden="true" />
 
         {loading ? (
           <div className="storybook-hero" style={{ alignItems: 'center', justifyContent: 'center' }}>
@@ -280,24 +274,28 @@ const HomePage = () => {
                 {/* Gold divider */}
                 <div className="storybook-divider" />
 
-                {/* Context items — location override, date, album */}
-                {activePhoto?.hero_location_override && (
-                  <div className="storybook-context-item storybook-context-amethyst">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span>{activePhoto.hero_location_override}</span>
-                  </div>
-                )}
-
-                {activePhoto?.event_date && (
-                  <div className="storybook-context-item storybook-context-amethyst">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <span>
-                      {new Date(activePhoto.event_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
+                {/* Amethyst description tag — combined location & date */}
+                {(activePhoto?.hero_location_override || activePhoto?.event_date) && (
+                  <div className="hero-description-tag">
+                    {activePhoto?.hero_location_override && (
+                      <span className="hero-tag-item">
+                        <MapPin className="w-3.5 h-3.5" />
+                        {activePhoto.hero_location_override}
+                      </span>
+                    )}
+                    {activePhoto?.hero_location_override && activePhoto?.event_date && (
+                      <span className="hero-tag-separator">&mdash;</span>
+                    )}
+                    {activePhoto?.event_date && (
+                      <span className="hero-tag-item">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {new Date(activePhoto.event_date).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
+                      </span>
+                    )}
                   </div>
                 )}
 

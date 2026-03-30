@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from '../utils/axios';
 import { useNavigate, Link } from 'react-router-dom';
-import { Home, X } from 'lucide-react';
+import { Home, X, Download } from 'lucide-react';
 import { usePreferences } from '../hooks/useQueries';
 
 // Import the Greenhouse family tree
@@ -60,6 +60,8 @@ const FamilyTreePage = () => {
   const [selectionMode, setSelectionMode] = useState(false); // Relationship Finder mode
   const [prefsApplied, setPrefsApplied] = useState(false);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 768);
+  const [isExporting, setIsExporting] = useState(false);
+  const treeViewRef = useRef(null);
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 768);
@@ -149,6 +151,19 @@ const FamilyTreePage = () => {
   // Reset to root union
   const handleResetToRoot = () => {
     loadRootUnion();
+  };
+
+  const handleExportPdf = async () => {
+    if (!treeViewRef.current || isExporting) return;
+    setIsExporting(true);
+    try {
+      await treeViewRef.current.exportToPdf();
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      alert('Failed to export PDF. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   // Change generation count
@@ -271,6 +286,21 @@ const FamilyTreePage = () => {
             <Home className="w-3 h-3" />
             <span>Reset</span>
           </button>
+
+          {/* Export PDF Button */}
+          <button
+            onClick={handleExportPdf}
+            disabled={isExporting}
+            className="chronology-reset-btn"
+            title="Export tree as PDF"
+          >
+            {isExporting ? (
+              <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
+            ) : (
+              <Download className="w-3 h-3" />
+            )}
+            <span>{isExporting ? 'Exporting...' : 'PDF'}</span>
+          </button>
         </div>
       </div>
 
@@ -288,6 +318,7 @@ const FamilyTreePage = () => {
       >
         {generationsData && (
           <FamilyTreeView
+            ref={treeViewRef}
             data={generationsData}
             apiUrl={process.env.REACT_APP_API ?? ''}
             maxGenerations={maxGenerations}

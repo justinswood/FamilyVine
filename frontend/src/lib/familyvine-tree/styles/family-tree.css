@@ -522,3 +522,19 @@ foreignObject {
     animation: none;
   }
 }
+
+/* ── PDF Export Mode ─────────────────────────────────── */
+/* Hide interactive overlays and disable animations during capture */
+
+.fv-exporting .fv-minimap,
+.fv-exporting .kinship-tooltip,
+.fv-exporting .subtree-toggle,
+.fv-exporting .ancestral-glow-layer,
+.fv-exporting .relationship-finder-overlay {
+  display: none !important;
+}
+
+.fv-exporting * {
+  animation: none !important;
+  transition: none !important;
+}

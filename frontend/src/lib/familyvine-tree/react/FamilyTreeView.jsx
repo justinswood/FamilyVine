@@ -16,7 +16,8 @@
  *   - Subtree Collapse: click toggle on descent lines to hide/show branches
  */
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
+import { exportTreeToPdf } from '../../../utils/exportTreePdf';
 import { useTreeLayout } from './useTreeLayout.js';
 import { usePanZoom } from './usePanZoom.js';
 import { useAncestralPath } from './useAncestralPath.js';
@@ -33,7 +34,7 @@ import { getFullKinshipInfo } from './kinship.js';
 import { VINE_COLORS } from '../greenhouse.js';
 import '../styles/family-tree.css';
 
-const FamilyTreeView = ({
+const FamilyTreeView = forwardRef(({
   data,                    // Generations data from backend API
   apiUrl,                  // Base API URL for images
   maxGenerations = 4,      // Max generation depth
@@ -48,7 +49,7 @@ const FamilyTreeView = ({
   selectionMode = false,   // Enable selection mode for Relationship Finder
   onSelectionModeChange,   // Callback when selection mode changes: (enabled) => void
   fitPadding = 80,         // Padding for fitToView (smaller on mobile)
-}) => {
+}, ref) => {
   // ----- Layout pipeline -----
   const { nodes, edges, siblingGroups, bounds, treeModel, unionUnits, singleNodes } = useTreeLayout(
     data, apiUrl, maxGenerations, config
@@ -153,6 +154,17 @@ const FamilyTreeView = ({
     getTransform,
     setTransformChangeCallback,
   } = usePanZoom(config);
+
+  // ----- Expose export API to parent via ref -----
+  useImperativeHandle(ref, () => ({
+    exportToPdf: () => exportTreeToPdf({
+      transformRef: transformRef.current,
+      viewportRef: viewportRef.current,
+      controllerRef,
+      bounds,
+      fitToView,
+    }),
+  }), [bounds, fitToView]);
 
   // ----- Subtree Collapse state -----
   // Keyed by edge ID (e.g. "family-123-456")
@@ -568,6 +580,8 @@ const FamilyTreeView = ({
       )}
     </div>
   );
-};
+});
+
+FamilyTreeView.displayName = 'FamilyTreeView';
 
 export default FamilyTreeView;

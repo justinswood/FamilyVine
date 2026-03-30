@@ -143,13 +143,26 @@ const EditMember = () => {
     if (fileInput) fileInput.value = '';
   };
 
-  const handleGalleryPhotoSelect = (photoPath) => {
-    setGalleryPhotoPath(photoPath);
+  const handleGalleryPhotoSelect = async (photoPath) => {
     setShowGalleryPicker(false);
-    setPhotoFile(null);
-    setPreviewUrl(`${process.env.REACT_APP_API}/${photoPath}`);
+    setGalleryPhotoPath(photoPath);
     const fileInput = document.getElementById('photo-upload');
     if (fileInput) fileInput.value = '';
+
+    // Fetch the gallery image as a File so the cropper can process it
+    try {
+      const imageUrl = `${process.env.REACT_APP_API}/${photoPath}`;
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const filename = photoPath.split('/').pop() || 'gallery-photo.jpg';
+      const file = new File([blob], filename, { type: blob.type || 'image/jpeg' });
+      setSelectedImageFile(file);
+      setShowCropper(true);
+    } catch (err) {
+      // Fallback: use gallery path directly without cropping
+      setPhotoFile(null);
+      setPreviewUrl(`${process.env.REACT_APP_API}/${photoPath}`);
+    }
   };
 
   const handleGalleryCancel = () => {
