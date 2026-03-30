@@ -7,7 +7,7 @@ const EMAIL_SERVICE = getEnvVar('EMAIL_SERVICE', 'gmail');
 const EMAIL_USER = getEnvVar('EMAIL_USER', null);
 const EMAIL_PASSWORD = getEnvVar('EMAIL_PASSWORD', null);
 const EMAIL_FROM = getEnvVar('EMAIL_FROM', EMAIL_USER);
-const FRONTEND_URL = getEnvVar('FRONTEND_URL', 'http://192.168.1.171:3030');
+const FRONTEND_URL = getEnvVar('FRONTEND_URL', 'http://localhost:3030');
 
 // Create transporter
 let transporter = null;

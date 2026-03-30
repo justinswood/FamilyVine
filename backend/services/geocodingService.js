@@ -22,7 +22,7 @@ const GEOCODING_CONFIG = {
   DELAY_MS: 1000,                // 1 second between requests (Nominatim policy compliant)
   TIMEOUT_MS: 10000,              // 10 second timeout per request
   MAX_RETRIES: 2,                 // Retry failed requests up to 2 times
-  USER_AGENT: 'FamilyVine Genealogy App (family.techwoods.cc)',
+  USER_AGENT: 'FamilyVine Genealogy App',
   NOMINATIM_URL: 'https://nominatim.openstreetmap.org/search'
 };
 

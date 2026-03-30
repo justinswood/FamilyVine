@@ -21,9 +21,10 @@ const preferencesRoute = require('./routes/preferences');
 const app = express();
 
 // CORS configuration - allows local network access
-const allowedOrigins = [
-  'https://family.techwoods.cc',     // Production domain (HTTPS only)
-];
+// Set CORS_ORIGIN in .env (comma-separated for multiple origins)
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim()).filter(Boolean)
+  : ['http://localhost:3030'];
 
 // Helper to check if origin is from local network
 const isLocalNetworkOrigin = (origin) => {
@@ -134,14 +135,14 @@ app.use(helmet({
         "'self'",
         "data:",
         "blob:",
-        "https://family.techwoods.cc",
+        ...allowedOrigins,
         "https://images.unsplash.com"
       ],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       connectSrc: [
         "'self'",
-        "https://family.techwoods.cc"
+        ...allowedOrigins
       ],
       mediaSrc: [
         "'self'",
